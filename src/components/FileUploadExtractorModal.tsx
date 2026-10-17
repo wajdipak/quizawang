@@ -35,6 +35,26 @@ export const FileUploadExtractorModal: React.FC<Props> = ({
   const [fileBase64, setFileBase64] = useState<string>('');
   const [textContent, setTextContent] = useState<string>('');
   const [targetCount, setTargetCount] = useState(5);
+  const [targetCountInput, setTargetCountInput] = useState('5');
+
+  const handleTargetCountChange = (val: string) => {
+    setTargetCountInput(val);
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num > 0) {
+      setTargetCount(Math.min(Math.max(num, 1), 50));
+    }
+  };
+
+  const handleTargetPreset = (preset: number) => {
+    setTargetCount(preset);
+    setTargetCountInput(preset.toString());
+  };
+
+  const handleTargetStep = (delta: number) => {
+    const next = Math.min(Math.max((targetCount || 1) + delta, 1), 50);
+    setTargetCount(next);
+    setTargetCountInput(next.toString());
+  };
   const [preferredType, setPreferredType] = useState('campuran');
   const [gradeLevel, setGradeLevel] = useState('SMP');
   const [additionalNote, setAdditionalNote] = useState('');
@@ -184,23 +204,23 @@ LATIHAN SOAL EVALUASI:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-2 sm:p-4 md:p-6 overflow-y-auto">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 my-auto">
         
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-400 to-teal-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+        <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-cyan-400 to-teal-500 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-sm shrink-0">
               📄
             </div>
             <div>
-              <h2 className="font-bold text-lg text-slate-800 flex items-center gap-1.5">
+              <h2 className="font-bold text-base sm:text-lg text-slate-800 flex items-center gap-1.5 leading-snug">
                 <span>Ekstrak Soal dari File (AI Gemini)</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 font-bold">
+                <span className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 font-bold shrink-0">
                   Dokumen ➔ Kuis
                 </span>
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 Unggah file dokumen soal, modul ajar, atau foto lembar ujian (PDF, TXT, Gambar).
               </p>
             </div>
@@ -209,14 +229,14 @@ LATIHAN SOAL EVALUASI:
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="overflow-y-auto p-6 space-y-6 flex-1">
+        <div className="overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex-1">
           {errorMessage && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -307,20 +327,75 @@ LATIHAN SOAL EVALUASI:
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <label className="font-semibold text-slate-600 block mb-1">
-                      Jumlah Soal:
-                    </label>
-                    <select
-                      value={targetCount}
-                      onChange={(e) => setTargetCount(Number(e.target.value))}
-                      className="w-full p-2 rounded-xl border border-slate-300 bg-white"
-                    >
-                      <option value={3}>3 Soal Kilat</option>
-                      <option value={5}>5 Soal Standar</option>
-                      <option value={8}>8 Soal Komprehensif</option>
-                      <option value={10}>10 Soal Lengkap</option>
-                    </select>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="file-target-count-input" className="font-semibold text-slate-700">
+                        Jumlah Soal:
+                      </label>
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-teal-100 text-teal-800">
+                        {targetCount} Soal
+                      </span>
+                    </div>
+
+                    {/* Stepper + Direct Typing Input */}
+                    <div className="flex items-center border border-teal-300 focus-within:border-teal-500 rounded-xl bg-white overflow-hidden shadow-xs">
+                      <button
+                        type="button"
+                        onClick={() => handleTargetStep(-1)}
+                        disabled={targetCount <= 1}
+                        className="px-2.5 py-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 disabled:opacity-40 font-bold border-r border-slate-200 cursor-pointer"
+                        title="Kurangi 1"
+                      >
+                        -
+                      </button>
+                      <input
+                        id="file-target-count-input"
+                        type="number"
+                        min={1}
+                        max={50}
+                        value={targetCountInput}
+                        onChange={(e) => handleTargetCountChange(e.target.value)}
+                        onBlur={() => {
+                          if (!targetCountInput || isNaN(Number(targetCountInput)) || Number(targetCountInput) < 1) {
+                            setTargetCountInput('5');
+                            setTargetCount(5);
+                          } else {
+                            const clamped = Math.min(Math.max(Number(targetCountInput), 1), 50);
+                            setTargetCountInput(clamped.toString());
+                            setTargetCount(clamped);
+                          }
+                        }}
+                        placeholder="Ketik..."
+                        className="w-full text-center py-1.5 px-1 font-bold text-slate-800 outline-none text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleTargetStep(1)}
+                        disabled={targetCount >= 50}
+                        className="px-2.5 py-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 disabled:opacity-40 font-bold border-l border-slate-200 cursor-pointer"
+                        title="Tambah 1"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div className="flex items-center flex-wrap gap-1 pt-0.5">
+                      {[3, 5, 8, 10, 15, 20].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => handleTargetPreset(preset)}
+                          className={`text-[10px] px-1.5 py-0.5 rounded-md border font-semibold cursor-pointer ${
+                            targetCount === preset
+                              ? 'bg-teal-600 text-white border-teal-600'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-teal-300'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div>

@@ -31,13 +31,15 @@ service cloud.firestore {
     }
 
     match /quizzes/{quizId} {
-      allow read: if isValidId(quizId);
+      allow get: if isValidId(quizId);
+      allow list: if true;
       allow create, update: if isValidId(quizId) && isValidQuiz(request.resource.data);
       allow delete: if isValidId(quizId);
     }
 
     match /submissions/{submissionId} {
-      allow read: if isValidId(submissionId);
+      allow get: if isValidId(submissionId);
+      allow list: if true;
       allow create: if isValidId(submissionId) && isValidSubmission(request.resource.data);
       allow update, delete: if isValidId(submissionId);
     }

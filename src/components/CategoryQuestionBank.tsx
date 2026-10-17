@@ -88,16 +88,16 @@ export const CategoryQuestionBank: React.FC<Props> = ({
     <div className="space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-lg sm:text-xl shrink-0">
             🏷️
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-800">
               Bank Soal & Kategorisasi Materi
             </h1>
-            <p className="text-xs text-slate-500">
+            <p className="text-[11px] sm:text-xs text-slate-500">
               Kelola kategori soal (Sejarah, Biologi, Logika) dan lihat daftar seluruh butir soal per kategori.
             </p>
           </div>
@@ -106,7 +106,7 @@ export const CategoryQuestionBank: React.FC<Props> = ({
         <button
           type="button"
           onClick={() => setIsAddingCategory(true)}
-          className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-2 cursor-pointer"
+          className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Buat Kategori Baru</span>

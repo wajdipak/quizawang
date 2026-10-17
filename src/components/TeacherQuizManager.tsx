@@ -78,17 +78,17 @@ export const TeacherQuizManager: React.FC<Props> = ({
     <div className="space-y-6">
       
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-xs">
         <div>
           <div className="flex items-center gap-2">
-            <span className="p-2 rounded-xl bg-teal-100 text-teal-700">
+            <span className="p-1.5 sm:p-2 rounded-xl bg-teal-100 text-teal-700 text-base sm:text-lg">
               📚
             </span>
             <div>
-              <h1 className="text-xl font-bold text-slate-800">
+              <h1 className="text-lg sm:text-xl font-bold text-slate-800">
                 Manajemen Kuis Guru
               </h1>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 Buat kuis tugas baru, bagikan tautan pengerjaan otomatis ke siswa, dan pantau hasil penilaian seketika.
               </p>
             </div>
@@ -99,15 +99,15 @@ export const TeacherQuizManager: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenFileUpload}
-            className="flex-1 sm:flex-none px-4 py-2.5 rounded-2xl bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 font-bold text-xs shadow-xs flex items-center justify-center gap-2 cursor-pointer transition-all"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-cyan-50 hover:bg-cyan-100 text-cyan-800 border border-cyan-200 font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all"
           >
-            <span>📄 Upload Dokumen Soal (AI)</span>
+            <span>📄 Upload Dokumen (AI)</span>
           </button>
 
           <button
             type="button"
             onClick={onCreateNew}
-            className="flex-1 sm:flex-none px-5 py-2.5 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-2 cursor-pointer transition-all"
+            className="flex-1 sm:flex-none px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all"
           >
             <Plus className="w-4 h-4" />
             <span>Buat Kuis Baru</span>
@@ -116,16 +116,16 @@ export const TeacherQuizManager: React.FC<Props> = ({
       </div>
 
       {/* Student Link Workflow Info Banner */}
-      <div className="p-4 rounded-3xl bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 border border-teal-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-teal-600 text-white flex items-center justify-center shrink-0 text-sm shadow-xs font-bold">
+      <div className="p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 border border-teal-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shadow-xs">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-teal-600 text-white flex items-center justify-center shrink-0 text-xs sm:text-sm shadow-xs font-bold">
             🎓
           </div>
           <div className="space-y-0.5">
-            <span className="font-bold text-teal-950 block">
+            <span className="font-bold text-teal-950 block text-xs">
               Alur Halaman Siswa Otomatis (Sesi 1 & Sesi 2)
             </span>
-            <p className="text-slate-600 text-[11px]">
+            <p className="text-slate-600 text-[10px] sm:text-[11px] leading-snug">
               Setiap kuis otomatis memiliki link pengerjaan siswa. Siswa akan melalui <strong>Sesi 1 (Input Keterangan Diri)</strong> lalu lanjut ke <strong>Sesi 2 (Pengerjaan 1 Soal per Halaman dengan Navigasi Nomor Soal & Submit)</strong>.
             </p>
           </div>

@@ -16,10 +16,10 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 // Initialize Gemini SDK with server-side environment key
-const apiKey = process.env.GEMINI_API_KEY || '';
-let genAI: GoogleGenAI | null = null;
-if (apiKey) {
-  genAI = new GoogleGenAI({ apiKey });
+function getGeminiClient(): GoogleGenAI | null {
+  const key = process.env.GEMINI_API_KEY || '';
+  if (!key) return null;
+  return new GoogleGenAI({ apiKey: key });
 }
 
 // Fallback high-quality question generator if API key is unconfigured or rate limited
@@ -92,7 +92,31 @@ function getFallbackQuestions(topic: string, count: number = 5) {
         explanation: 'Awang Long bergelar Pangeran Senapati Sakti atas jasa kepemimpinan angkatan perangnya.'
       }
     ];
-    return list.slice(0, count);
+    if (count <= list.length) {
+      return list.slice(0, count);
+    }
+    // If requested more than sample list, generate additional contextual questions
+    const extra = Array.from({ length: count - list.length }, (_, idx) => {
+      const i = list.length + idx + 1;
+      return {
+        id: `q-demo-extra-${i}`,
+        type: i % 2 === 0 ? 'multiple_choice' : 'short_answer',
+        category: 'Sejarah & Ekosistem Mahakam',
+        points: 20,
+        text: `Pertanyaan Soal #${i}: Bagaimana keterkaitan nilai perjuangan Awang Long dengan pelestarian identitas Kutai Kartanegara?`,
+        options: [
+          'Menjadi fondasi kearifan lokal dalam menjaga persatuan dan kelestarian alam',
+          'Hanya relevan pada masa penjajahan kolonial',
+          'Tidak memiliki pengaruh terhadap kebudayaan saat ini',
+          'Mengabaikan hubungan sosial masyarakat perairan'
+        ],
+        correctOption: 0,
+        acceptedAnswers: ['Persatuan', 'Kearifan lokal', 'Kelestarian'],
+        caseSensitive: false,
+        explanation: 'Nilai perjuangan pahlawan dan ekosistem Sungai Mahakam menjadi warisan luhur masyarakat Kutai yang terus dijaga.'
+      };
+    });
+    return [...list, ...extra];
   }
 
   // Generic fallback generator based on topic
@@ -103,7 +127,7 @@ function getFallbackQuestions(topic: string, count: number = 5) {
         type: 'short_answer',
         category: topic,
         points: 20,
-        text: `Pertanyaan Isian Singkat terkait materi: ${topic}. Sebutkan kata kunci utamanya!`,
+        text: `Pertanyaan Isian Singkat #${i + 1} terkait materi: ${topic}. Sebutkan kata kunci utamanya!`,
         acceptedAnswers: [topic, `${topic} Dasar`],
         caseSensitive: false,
         explanation: `Pemahaman inti materi ${topic} sangat esensial.`
@@ -115,7 +139,7 @@ function getFallbackQuestions(topic: string, count: number = 5) {
         type: 'matching',
         category: topic,
         points: 20,
-        text: `Jodohkan istilah-istilah terkait ${topic}:`,
+        text: `Jodohkan istilah-istilah terkait ${topic} (Soal #${i + 1}):`,
         matchingPairs: [
           { id: `p-${i}-1`, left: `Konsep A (${topic})`, right: `Definisi A` },
           { id: `p-${i}-2`, left: `Konsep B (${topic})`, right: `Definisi B` }
@@ -128,7 +152,7 @@ function getFallbackQuestions(topic: string, count: number = 5) {
       type: 'multiple_choice',
       category: topic,
       points: 20,
-      text: `Pertanyaan Pilihan Ganda terkait: ${topic}. Manakah pernyataan yang paling tepat?`,
+      text: `Pertanyaan Pilihan Ganda #${i + 1} terkait: ${topic}. Manakah pernyataan yang paling tepat?`,
       options: [
         `Konsep dasar yang benar mengenai ${topic}`,
         `Fakta pendukung sekunder dari ${topic}`,
@@ -145,7 +169,7 @@ function getFallbackQuestions(topic: string, count: number = 5) {
 app.get('/api/generate-quiz-stream', async (req: Request, res: Response) => {
   const topic = String(req.query.topic || 'Sejarah Awang Long dan Kutai');
   const gradeLevel = String(req.query.gradeLevel || 'SMP');
-  const count = Math.min(Math.max(Number(req.query.count) || 5, 2), 10);
+  const count = Math.min(Math.max(Number(req.query.count) || 5, 1), 50);
   const difficulty = String(req.query.difficulty || 'Sedang');
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -156,9 +180,9 @@ app.get('/api/generate-quiz-stream', async (req: Request, res: Response) => {
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
 
-  sendEvent('status', { message: `Memulai perancangan kuis materi "${topic}" tingkat ${gradeLevel}...` });
+  const genAI = getGeminiClient();
 
-  if (!apiKey || !genAI) {
+  if (!genAI) {
     // Stream simulation with smart curated data
     sendEvent('status', { message: 'Merancang kisi-kisi soal interaktif...' });
     await new Promise((r) => setTimeout(r, 600));
@@ -279,9 +303,11 @@ Contoh skema JSON:
 
 // JSON Post endpoint for direct AI generation
 app.post('/api/generate-quiz', async (req: Request, res: Response) => {
-  const { topic = 'Sejarah Awang Long dan Kutai', gradeLevel = 'SMP', count = 5, difficulty = 'Sedang' } = req.body;
+  const { topic = 'Sejarah Awang Long dan Kutai', gradeLevel = 'SMP', count: rawCount = 5, difficulty = 'Sedang' } = req.body;
+  const count = Math.min(Math.max(Number(rawCount) || 5, 1), 50);
+  const genAI = getGeminiClient();
 
-  if (!apiKey || !genAI) {
+  if (!genAI) {
     const fallback = getFallbackQuestions(topic, count);
     return res.json({
       title: `Kuis ${topic}`,
@@ -349,9 +375,10 @@ app.post('/api/extract-quiz-from-file', async (req: Request, res: Response) => {
     gradeLevel = 'SMP'
   } = req.body;
 
-  const count = Math.min(Math.max(Number(targetCount) || 5, 2), 15);
+  const count = Math.min(Math.max(Number(targetCount) || 5, 1), 50);
+  const genAI = getGeminiClient();
 
-  if (!apiKey || !genAI) {
+  if (!genAI) {
     // Intelligent fallback for demo when no API key is provided
     const topicExtracted = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
     const fallback = getFallbackQuestions(topicExtracted, count);
@@ -495,7 +522,12 @@ async function startServer() {
   });
 }
 
-startServer().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
+// In local dev, Docker, or standalone Node environments, start the listener
+if (!process.env.VERCEL) {
+  startServer().catch((err) => {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  });
+}
+
+export default app;

@@ -38,20 +38,20 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 space-y-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 space-y-4 sm:space-y-6 my-auto">
         
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-500 to-cyan-500 text-white flex items-center justify-center font-bold shadow-xs">
-              <Share2 className="w-5 h-5" />
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-teal-500 to-cyan-500 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
+              <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="font-extrabold text-base text-slate-800">
+              <h2 className="font-extrabold text-sm sm:text-base text-slate-800 leading-snug">
                 Link & Halaman Ujian Siswa
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 Otomatis disiapkan untuk Sesi 1 (Data Diri) & Sesi 2 (Pengerjaan Soal)
               </p>
             </div>
@@ -59,26 +59,26 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-1 sm:p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Big PIN Code Box (Classroom Display) */}
-        <div className="p-5 rounded-3xl bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 border-2 border-teal-200 text-center space-y-3 shadow-inner">
-          <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-teal-800">
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 border-2 border-teal-200 text-center space-y-2.5 sm:space-y-3 shadow-inner">
+          <div className="flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-teal-800">
             <Sparkles className="w-3.5 h-3.5 text-teal-600" />
             <span>Kode PIN Ujian Siswa</span>
           </div>
-          <div className="text-4xl sm:text-5xl font-black font-mono tracking-widest text-teal-900 bg-white/90 py-3 px-6 rounded-2xl inline-block shadow-sm border border-teal-200">
+          <div className="text-3xl sm:text-5xl font-black font-mono tracking-widest text-teal-900 bg-white/90 py-2 sm:py-3 px-4 sm:px-6 rounded-xl sm:rounded-2xl inline-block shadow-sm border border-teal-200">
             {quiz.code}
           </div>
           <div className="flex items-center justify-center gap-2 pt-1">
             <button
               type="button"
               onClick={handleCopyCode}
-              className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+              className="px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
             >
               {copiedCode ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               <span>{copiedCode ? 'PIN Disalin!' : 'Salin Kode PIN'}</span>

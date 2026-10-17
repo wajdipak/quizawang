@@ -101,15 +101,15 @@ export const StudentQuizRoom: React.FC<Props> = ({
 
   // If no quiz has been chosen yet, show PIN entry / Quiz Selector
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-in fade-in duration-300">
-      <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/90 shadow-sm space-y-6">
+    <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in duration-300">
+      <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200/90 shadow-sm space-y-4 sm:space-y-6">
         
         {/* Welcome Header */}
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-cyan-400 via-teal-400 to-sky-400 text-white flex items-center justify-center mx-auto text-3xl shadow-md">
+        <div className="text-center space-y-1.5 sm:space-y-2">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-cyan-400 via-teal-400 to-sky-400 text-white flex items-center justify-center mx-auto text-2xl sm:text-3xl shadow-md">
             🎓
           </div>
-          <h1 className="text-2xl font-black text-slate-800">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-800">
             Portal Ujian Siswa
           </h1>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">

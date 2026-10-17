@@ -272,20 +272,20 @@ export const QuizEditorModal: React.FC<Props> = ({
   const allSelectableCategories = Array.from(new Set([...globalCategories, ...categories]));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-2 sm:p-4 md:p-6 overflow-y-auto">
+      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 my-auto">
         
         {/* Modal Header */}
-        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-lg">
+        <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-base sm:text-lg shrink-0">
               ✏️
             </div>
             <div>
-              <h2 className="font-bold text-lg text-slate-800">
+              <h2 className="font-bold text-base sm:text-lg text-slate-800 leading-snug">
                 {initialQuiz ? 'Edit Kuis & Bank Soal Multi-Tipe' : 'Buat Kuis Baru (Multi-Tipe & Kategori)'}
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500">
                 Mendukung Pilihan Ganda, Isian Singkat, dan Menjodohkan dengan kategorisasi soal.
               </p>
             </div>
@@ -294,23 +294,23 @@ export const QuizEditorModal: React.FC<Props> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-6 flex-1">
+        <form onSubmit={handleSubmit} className="overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex-1">
           {errorMessage && (
-            <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+            <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {/* Section 1: Basic Information */}
-          <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80 space-y-4">
+          <div className="bg-slate-50/70 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200/80 space-y-3 sm:space-y-4">
             <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700">
               1. Informasi Umum Kuis & Kategori
             </h3>
@@ -510,11 +510,11 @@ export const QuizEditorModal: React.FC<Props> = ({
             </div>
 
             {/* Questions List */}
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               {questions.map((q, qIdx) => (
                 <div
                   key={q.id || qIdx}
-                  className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-4 relative group"
+                  className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3 sm:space-y-4 relative group"
                 >
                   {/* Top Bar of each Question: Number, Type Selector, Category Selector, Points, Delete */}
                   <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">

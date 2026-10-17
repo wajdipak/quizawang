@@ -120,16 +120,16 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
     <div className="space-y-6">
       
       {/* Header bar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-xl">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 bg-white p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200 shadow-xs">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-lg sm:text-xl shrink-0">
             🏆
           </div>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">
+            <h1 className="text-lg sm:text-xl font-bold text-slate-800">
               Rekap & Penilaian Otomatis Siswa
             </h1>
-            <p className="text-xs text-slate-500">
+            <p className="text-[11px] sm:text-xs text-slate-500">
               Hasil penilaian terhitung otomatis berdasarkan jenis soal (Pilihan Ganda, Isian Singkat, dan Menjodohkan).
             </p>
           </div>
@@ -139,7 +139,7 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
           type="button"
           onClick={handleExportCSV}
           disabled={filtered.length === 0}
-          className="px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           <FileSpreadsheet className="w-4 h-4" />
           <span>Ekspor Rekap CSV / Excel</span>
@@ -147,35 +147,35 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-1">
-          <span className="text-xs font-semibold text-slate-400 block">Siswa Mengikuti</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-slate-800">{totalSubmissions}</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
+          <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block">Siswa Mengikuti</span>
+          <div className="flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-black text-slate-800">{totalSubmissions}</span>
             <span className="text-xs text-slate-500">orang</span>
           </div>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-1">
-          <span className="text-xs font-semibold text-slate-400 block">Rata-Rata Nilai</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-teal-700">{avgScore}</span>
+        <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
+          <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block">Rata-Rata Nilai</span>
+          <div className="flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-black text-teal-700">{avgScore}</span>
             <span className="text-xs text-slate-500">/ 100</span>
           </div>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-1">
-          <span className="text-xs font-semibold text-slate-400 block">Nilai Tertinggi</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-amber-600">{highestScore}</span>
+        <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
+          <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block">Nilai Tertinggi</span>
+          <div className="flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-black text-amber-600">{highestScore}</span>
             <span className="text-xs text-slate-500">poin</span>
           </div>
         </div>
 
-        <div className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-1">
-          <span className="text-xs font-semibold text-slate-400 block">Tingkat Kelulusan (KKM)</span>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black text-emerald-600">{passRate}%</span>
+        <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white border border-slate-200/90 shadow-xs space-y-1">
+          <span className="text-[11px] sm:text-xs font-semibold text-slate-400 block">Tingkat Kelulusan (KKM)</span>
+          <div className="flex items-baseline gap-1.5 sm:gap-2">
+            <span className="text-xl sm:text-2xl font-black text-emerald-600">{passRate}%</span>
             <span className="text-xs text-slate-500">({passedCount} lulus)</span>
           </div>
         </div>

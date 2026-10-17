@@ -42,6 +42,26 @@ export const AiQuizWorkspace: React.FC<Props> = ({
   const [promptText, setPromptText] = useState('Bikin kuis tentang sejarah kepahlawanan Awang Long dan pesut di Sungai Mahakam');
   const [showAdjustDrawer, setShowAdjustDrawer] = useState(false);
   const [questionCount, setQuestionCount] = useState(5);
+  const [countInput, setCountInput] = useState('5');
+
+  const handleCountInputChange = (val: string) => {
+    setCountInput(val);
+    const num = parseInt(val, 10);
+    if (!isNaN(num) && num > 0) {
+      setQuestionCount(Math.min(Math.max(num, 1), 50));
+    }
+  };
+
+  const handleCountPreset = (preset: number) => {
+    setQuestionCount(preset);
+    setCountInput(preset.toString());
+  };
+
+  const handleCountStep = (delta: number) => {
+    const next = Math.min(Math.max((questionCount || 1) + delta, 1), 50);
+    setQuestionCount(next);
+    setCountInput(next.toString());
+  };
   const [gradeLevel, setGradeLevel] = useState('SMP');
   const [difficulty, setDifficulty] = useState('Sedang');
   const [durationMinutes, setDurationMinutes] = useState(10);
@@ -207,26 +227,26 @@ export const AiQuizWorkspace: React.FC<Props> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       
       {/* Visual Workspace Hero Banner */}
-      <div className="bg-gradient-to-r from-teal-500/10 via-cyan-500/10 to-emerald-500/10 rounded-3xl p-6 border border-teal-200/50 shadow-xs relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/80 border border-teal-200 text-teal-800 text-xs font-semibold shadow-xs">
+      <div className="bg-gradient-to-r from-teal-500/10 via-cyan-500/10 to-emerald-500/10 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-7 border border-teal-200/50 shadow-xs relative overflow-hidden">
+        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
+          <div className="space-y-2 max-w-xl text-center md:text-left">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/80 border border-teal-200 text-teal-800 text-[11px] sm:text-xs font-semibold shadow-xs">
               <Sparkles className="w-3.5 h-3.5 text-teal-600" />
               <span>Wayground-style AI Learning Studio</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-slate-800 tracking-tight leading-tight">
               Tugas Online & Kuis Interaktif Awang Long
             </h1>
-            <p className="text-sm text-slate-600 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
               Bantu guru merancang soal kuis seru secara instan, otomatis memberikan penjelasan edukatif, dan bagikan kode PIN langsung kepada siswa di kelas.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 bg-white/90 backdrop-blur-sm p-4 rounded-2xl border border-teal-100 shadow-sm">
-            <PesutMahakamMascot className="w-20 h-20" isProcessing={isLoading} />
+          <div className="flex items-center gap-3 sm:gap-4 bg-white/90 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-teal-100 shadow-sm w-full md:w-auto justify-center md:justify-start shrink-0">
+            <PesutMahakamMascot className="w-16 h-16 sm:w-20 sm:h-20" isProcessing={isLoading} />
             <div className="text-xs space-y-1">
               <span className="font-bold text-slate-800 block">Pesut Mahakam AI</span>
               <span className="text-slate-500 block">Sahabat Belajar Kutai</span>
@@ -238,7 +258,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Tool Selector Buttons (Mockup: Pembuat Cerita, Kuis Seru, Asisten Belajar, Tanya Jawab) */}
+      {/* Tool Selector Buttons */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
@@ -247,22 +267,22 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           <span className="text-xs text-slate-500">Pilih mode kreasi edukasi</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 sm:gap-3">
           <button
             type="button"
             onClick={() => setActiveTool('pembuat-kuis')}
-            className={`p-3.5 rounded-2xl text-left border transition-all flex flex-col items-center sm:items-start gap-2 shadow-xs ${
+            className={`p-3 sm:p-3.5 rounded-xl sm:rounded-2xl text-left border transition-all flex flex-col items-center sm:items-start gap-1.5 sm:gap-2 shadow-xs ${
               activeTool === 'pembuat-kuis'
                 ? 'bg-gradient-to-br from-teal-50 to-emerald-50 border-teal-400 ring-2 ring-teal-300/40 text-teal-900'
                 : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
             }`}
           >
-            <div className="w-10 h-10 rounded-xl bg-teal-100/80 text-teal-700 flex items-center justify-center font-bold text-lg">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-teal-100/80 text-teal-700 flex items-center justify-center font-bold text-base sm:text-lg">
               📝
             </div>
             <div>
-              <span className="block font-bold text-sm">Pembuat Kuis</span>
-              <span className="block text-[11px] text-slate-500">Prompt & Topik</span>
+              <span className="block font-bold text-xs sm:text-sm">Pembuat Kuis</span>
+              <span className="block text-[10px] sm:text-[11px] text-slate-500">Prompt & Topik</span>
             </div>
           </button>
 
@@ -348,18 +368,18 @@ export const AiQuizWorkspace: React.FC<Props> = ({
       </div>
 
       {/* Main Workspace 2-Column Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
         
         {/* Left Column: Input Panel */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-5">
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-sm space-y-4 sm:space-y-5">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
               <span>Masukkan Imajinasimu!</span>
             </h2>
             <span className="text-xs text-slate-400 font-mono">Google AI Studio</span>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5 sm:space-y-2">
             <label htmlFor="prompt-input" className="text-xs font-semibold text-slate-600 block">
               Materi / Topik Kuis yang Ingin Dibuat:
             </label>
@@ -370,7 +390,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                 value={promptText}
                 onChange={(e) => setPromptText(e.target.value)}
                 placeholder="Ketik topik kuis atau tempel rangkuman materi pelajaran..."
-                className="w-full p-4 rounded-2xl border border-slate-300 focus:border-teal-500 focus:ring-3 focus:ring-teal-200/50 outline-none text-sm text-slate-800 transition-all resize-none shadow-xs"
+                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-300 focus:border-teal-500 focus:ring-3 focus:ring-teal-200/50 outline-none text-xs sm:text-sm text-slate-800 transition-all resize-none shadow-xs"
               />
             </div>
           </div>
@@ -427,21 +447,86 @@ export const AiQuizWorkspace: React.FC<Props> = ({
             {/* Expandable Settings */}
             {showAdjustDrawer && (
               <div className="mt-4 p-4 rounded-2xl bg-slate-50/90 border border-slate-200 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-600 block mb-1">
-                      Jumlah Soal:
-                    </label>
-                    <select
-                      value={questionCount}
-                      onChange={(e) => setQuestionCount(Number(e.target.value))}
-                      className="w-full text-xs p-2 rounded-xl border border-slate-300 bg-white"
-                    >
-                      <option value={3}>3 Soal (Kuis Kilat)</option>
-                      <option value={5}>5 Soal (Standar)</option>
-                      <option value={8}>8 Soal (Komprehensif)</option>
-                      <option value={10}>10 Soal (Ujian Bab)</option>
-                    </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Kebebasan Menentukan Jumlah Soal dengan Ketik Langsung */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="custom-question-count-input" className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                        <span>Jumlah Soal:</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-teal-100 text-teal-800">
+                          Bebas Ketik Langsung
+                        </span>
+                      </label>
+                      <span className="text-[11px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200">
+                        {questionCount} Soal
+                      </span>
+                    </div>
+
+                    {/* Stepper + Direct Typing Input */}
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center border border-teal-300 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-200 rounded-xl bg-white overflow-hidden shadow-xs flex-1">
+                        <button
+                          type="button"
+                          onClick={() => handleCountStep(-1)}
+                          disabled={questionCount <= 1}
+                          className="px-3 py-2 text-slate-500 hover:text-teal-700 hover:bg-teal-50 active:bg-teal-100 disabled:opacity-40 font-bold text-sm transition-colors cursor-pointer border-r border-slate-200"
+                          title="Kurangi 1 soal"
+                        >
+                          -
+                        </button>
+                        <input
+                          id="custom-question-count-input"
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={countInput}
+                          onChange={(e) => handleCountInputChange(e.target.value)}
+                          onBlur={() => {
+                            if (!countInput || isNaN(Number(countInput)) || Number(countInput) < 1) {
+                              setCountInput('5');
+                              setQuestionCount(5);
+                            } else {
+                              const clamped = Math.min(Math.max(Number(countInput), 1), 50);
+                              setCountInput(clamped.toString());
+                              setQuestionCount(clamped);
+                            }
+                          }}
+                          placeholder="Ketik jumlah soal..."
+                          className="w-full text-center py-2 px-2 text-sm font-bold text-slate-800 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleCountStep(1)}
+                          disabled={questionCount >= 50}
+                          className="px-3 py-2 text-slate-500 hover:text-teal-700 hover:bg-teal-50 active:bg-teal-100 disabled:opacity-40 font-bold text-sm transition-colors cursor-pointer border-l border-slate-200"
+                          title="Tambah 1 soal"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Quick Preset Buttons */}
+                    <div className="flex items-center flex-wrap gap-1.5 pt-1">
+                      <span className="text-[10px] text-slate-400 font-medium">Pilihan Cepat:</span>
+                      {[3, 5, 8, 10, 15, 20, 25, 30].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => handleCountPreset(preset)}
+                          className={`text-[11px] px-2 py-0.5 rounded-lg border font-semibold transition-all cursor-pointer ${
+                            questionCount === preset
+                              ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                              : 'bg-white text-slate-600 border-slate-200 hover:border-teal-300 hover:text-teal-700'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400">
+                      💡 Ketik bebas angka berapa pun (1 - 50 soal) sesuai target pembelajaran.
+                    </p>
                   </div>
 
                   <div>
@@ -518,8 +603,8 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           </div>
         </div>
 
-        {/* Right Column: Output / Result Panel (Mockup: Hasil Cerita Ajaib / Kuis) */}
-        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-sm space-y-4 min-h-[440px] flex flex-col justify-between">
+        {/* Right Column: Output / Result Panel */}
+        <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90 shadow-sm space-y-4 min-h-[380px] sm:min-h-[440px] flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">

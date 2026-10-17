@@ -47,7 +47,9 @@ export default function App() {
   const [isStandaloneExam, setIsStandaloneExam] = useState(false);
 
   // Load persistent storage & check URL params on mount
+  // Load persistent storage & subscribe to live Firebase real-time updates
   useEffect(() => {
+    // 1. Initial immediate load from local cache for instant zero-latency UI
     const loadedQuizzes = loadStoredQuizzes();
     const loadedSubs = loadStoredSubmissions();
     const loadedCats = loadStoredCategories();
@@ -55,6 +57,24 @@ export default function App() {
     setQuizzes(loadedQuizzes);
     setSubmissions(loadedSubs);
     setCategories(loadedCats);
+
+    // 2. Real-time Firebase Firestore synchronizer for Quizzes
+    const unsubQuizzes = subscribeQuizzesRealtime((syncedQuizzes) => {
+      setQuizzes(syncedQuizzes);
+      // Automatically derive and sync categories
+      const allCats = new Set(loadedCats);
+      syncedQuizzes.forEach((q) => {
+        if (q.categories) q.categories.forEach((c) => allCats.add(c));
+      });
+      const updatedCats = Array.from(allCats);
+      setCategories(updatedCats);
+      saveStoredCategories(updatedCats);
+    });
+
+    // 3. Real-time Firebase Firestore synchronizer for Student Submissions
+    const unsubSubmissions = subscribeSubmissionsRealtime((syncedSubs) => {
+      setSubmissions(syncedSubs);
+    });
 
     // Check if ?exam= or ?code= is present in URL
     if (typeof window !== 'undefined') {
@@ -77,10 +97,15 @@ export default function App() {
         setActiveTab('beranda');
       }
     }
+
+    return () => {
+      unsubQuizzes();
+      unsubSubmissions();
+    };
   }, []);
 
-  // Save quizzes helper
-  const handleSaveQuiz = (quiz: Quiz) => {
+  // Save quizzes helper with real-time Firebase upload
+  const handleSaveQuiz = async (quiz: Quiz) => {
     setQuizzes((prev) => {
       const existsIndex = prev.findIndex((q) => q.id === quiz.id);
       let updated: Quiz[];
@@ -106,6 +131,13 @@ export default function App() {
 
     setEditorOpen(false);
     setEditingQuiz(null);
+
+    // Live push to Firebase Firestore in real-time
+    try {
+      await saveQuizToFirebase(quiz);
+    } catch (err) {
+      console.error('[Firebase] Error saving quiz in real-time:', err);
+    }
   };
 
   const handleAddNewCategory = (newCat: string) => {
@@ -117,12 +149,19 @@ export default function App() {
     });
   };
 
-  const handleDeleteQuiz = (quizId: string) => {
+  const handleDeleteQuiz = async (quizId: string) => {
     setQuizzes((prev) => {
       const updated = prev.filter((q) => q.id !== quizId);
       saveStoredQuizzes(updated);
       return updated;
     });
+
+    // Live delete from Firebase Firestore in real-time
+    try {
+      await deleteQuizFromFirebase(quizId);
+    } catch (err) {
+      console.error('[Firebase] Error deleting quiz in real-time:', err);
+    }
   };
 
   const handleOpenCreateNew = () => {
@@ -146,12 +185,19 @@ export default function App() {
     setActiveTab('ruang-siswa');
   };
 
-  const handleSubmissionComplete = (submission: StudentSubmission) => {
+  const handleSubmissionComplete = async (submission: StudentSubmission) => {
     setSubmissions((prev) => {
       const updated = [submission, ...prev];
       saveStoredSubmissions(updated);
       return updated;
     });
+
+    // Live push student exam submission to Firebase Firestore in real-time
+    try {
+      await saveSubmissionToFirebase(submission);
+    } catch (err) {
+      console.error('[Firebase] Error saving submission in real-time:', err);
+    }
   };
 
   const handleClearSubmissions = (quizId?: string) => {
@@ -204,7 +250,7 @@ export default function App() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6">
         {activeTab === 'beranda' && (
           <AiQuizWorkspace
             onSaveQuiz={handleSaveQuiz}

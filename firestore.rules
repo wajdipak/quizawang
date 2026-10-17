@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    function isValidQuiz(data) {
+      return data.keys().hasAll(['id', 'code', 'title', 'subject', 'questions', 'isActive'])
+        && data.id is string && data.id.size() <= 128
+        && data.code is string && data.code.size() <= 32
+        && data.title is string && data.title.size() <= 256
+        && data.subject is string && data.subject.size() <= 128
+        && data.questions is list && data.questions.size() <= 100
+        && data.isActive is bool;
+    }
+
+    function isValidSubmission(data) {
+      return data.keys().hasAll(['id', 'quizId', 'quizCode', 'studentName', 'studentClass', 'answers', 'score'])
+        && data.id is string && data.id.size() <= 128
+        && data.quizId is string && data.quizId.size() <= 128
+        && data.quizCode is string && data.quizCode.size() <= 32
+        && data.studentName is string && data.studentName.size() <= 128
+        && data.studentClass is string && data.studentClass.size() <= 128
+        && data.score is number;
+    }
+
+    match /quizzes/{quizId} {
+      allow read: if isValidId(quizId);
+      allow create, update: if isValidId(quizId) && isValidQuiz(request.resource.data);
+      allow delete: if isValidId(quizId);
+    }
+
+    match /submissions/{submissionId} {
+      allow read: if isValidId(submissionId);
+      allow create: if isValidId(submissionId) && isValidSubmission(request.resource.data);
+      allow update, delete: if isValidId(submissionId);
+    }
+  }
+}

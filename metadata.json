@@ -1,0 +1,6 @@
+{
+  "name": "Awang Long Quiz",
+  "description": "Platform kuis online interaktif bertenaga AI untuk guru membuat, mengedit, dan membagikan tugas kuis kepada siswa dengan rekap nilai otomatis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

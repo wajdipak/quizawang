@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "Quiz": {
+      "title": "Quiz",
+      "description": "Naskah dan konfigurasi kuis pembelajaran",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 32 },
+        "title": { "type": "string", "maxLength": 256 },
+        "description": { "type": "string", "maxLength": 1000 },
+        "subject": { "type": "string", "maxLength": 128 },
+        "gradeLevel": { "type": "string", "maxLength": 64 },
+        "durationMinutes": { "type": "number" },
+        "passingGrade": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "isActive": { "type": "boolean" },
+        "categories": { "type": "array" },
+        "questions": { "type": "array" }
+      },
+      "required": ["id", "code", "title", "subject", "questions", "isActive"]
+    },
+    "StudentSubmission": {
+      "title": "StudentSubmission",
+      "description": "Hasil pengerjaan dan jawaban kuis siswa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "quizId": { "type": "string", "maxLength": 128 },
+        "quizCode": { "type": "string", "maxLength": 32 },
+        "studentName": { "type": "string", "maxLength": 128 },
+        "studentClass": { "type": "string", "maxLength": 128 },
+        "studentNis": { "type": "string", "maxLength": 64 },
+        "studentNote": { "type": "string", "maxLength": 500 },
+        "answers": { "type": "object" },
+        "score": { "type": "number" },
+        "earnedPoints": { "type": "number" },
+        "totalPoints": { "type": "number" },
+        "correctCount": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "isPassed": { "type": "boolean" },
+        "timeSpentSeconds": { "type": "number" },
+        "submittedAt": { "type": "string" },
+        "categoryScores": { "type": "object" }
+      },
+      "required": ["id", "quizId", "quizCode", "studentName", "studentClass", "answers", "score"]
+    }
+  },
+  "firestore": {
+    "/quizzes/{quizId}": {
+      "schema": "Quiz",
+      "description": "Daftar kuis aktif dan arsip naskah soal"
+    },
+    "/submissions/{submissionId}": {
+      "schema": "StudentSubmission",
+      "description": "Riwayat lembar jawaban siswa realtime"
+    }
+  }
+}

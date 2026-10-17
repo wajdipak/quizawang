@@ -169,7 +169,7 @@ function getFallbackQuestions(topic: string, count: number = 5) {
 app.get('/api/generate-quiz-stream', async (req: Request, res: Response) => {
   const topic = String(req.query.topic || 'Sejarah Awang Long dan Kutai');
   const gradeLevel = String(req.query.gradeLevel || 'SMP');
-  const count = Math.min(Math.max(Number(req.query.count) || 5, 1), 50);
+  const count = Math.max(Number(req.query.count) || 5, 1);
   const difficulty = String(req.query.difficulty || 'Sedang');
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -304,7 +304,7 @@ Contoh skema JSON:
 // JSON Post endpoint for direct AI generation
 app.post('/api/generate-quiz', async (req: Request, res: Response) => {
   const { topic = 'Sejarah Awang Long dan Kutai', gradeLevel = 'SMP', count: rawCount = 5, difficulty = 'Sedang' } = req.body;
-  const count = Math.min(Math.max(Number(rawCount) || 5, 1), 50);
+  const count = Math.max(Number(rawCount) || 5, 1);
   const genAI = getGeminiClient();
 
   if (!genAI) {
@@ -370,41 +370,52 @@ app.post('/api/extract-quiz-from-file', async (req: Request, res: Response) => {
     mimeType = 'text/plain',
     fileName = 'dokumen.txt',
     textContent = '',
-    targetCount = 5,
+    targetCount = 0,
+    isUnlimited = false,
     preferredType = 'campuran',
     gradeLevel = 'SMP'
   } = req.body;
 
-  const count = Math.min(Math.max(Number(targetCount) || 5, 1), 50);
+  const rawNum = Number(targetCount);
+  const unlimitedMode = isUnlimited === true || targetCount === 'all' || targetCount === 0 || rawNum === 0 || isNaN(rawNum);
+  // If not unlimited, allow any positive count requested by user (no 50 ceiling)
+  const count = unlimitedMode ? null : Math.max(rawNum, 1);
   const genAI = getGeminiClient();
 
   if (!genAI) {
     // Intelligent fallback for demo when no API key is provided
     const topicExtracted = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-    const fallback = getFallbackQuestions(topicExtracted, count);
+    const effectiveCount = unlimitedMode ? 10 : count!;
+    const fallback = getFallbackQuestions(topicExtracted, effectiveCount);
 
     return res.json({
       title: `Kuis dari File: ${fileName.replace(/\.[^/.]+$/, '')}`,
-      description: `Kuis hasil analisis dan ekstraksi otomatis dari dokumen "${fileName}" (Jenjang ${gradeLevel}).`,
+      description: `Kuis hasil analisis dan ekstraksi otomatis tanpa batasan dari dokumen "${fileName}" (Jenjang ${gradeLevel}).`,
       subject: topicExtracted || 'Materi Umum',
       gradeLevel,
-      categories: ['Ekstraksi Dokumen', 'Materi Inti'],
+      categories: ['Ekstraksi Dokumen Lengkap', 'Materi Inti'],
       questions: fallback
     });
   }
 
   try {
+    const questionGoal = unlimitedMode
+      ? `TUGAS UTAMA: Analisis file dokumen/gambar yang dilampirkan bernama "${fileName}".
+Ekstrak SELURUH butir soal, latihan evaluasi, dan pertanyaan yang terdapat dalam dokumen tersebut secara lengkap dan tuntas TANPA BATASAN JUMLAH (ekstrak 100% semua soal yang ada dalam file, berapapun jumlahnya).
+Jika dokumen berupa modul/materi ajar bacaan (bukan lembar soal jadi), buatkan butir-butir soal komprehensif yang menguji setiap bab, sub-topik, dan konsep penting secara mendalam tanpa memotong atau membatasi jumlah butir soal.`
+      : `TUGAS UTAMA: Analisis file dokumen/gambar yang dilampirkan bernama "${fileName}".
+Ekstrak butir-butir soal yang terdapat dalam dokumen tersebut, atau rancang kuis sebanyak ${count} butir soal berkualitas tinggi berdasarkan isi materi dokumen ini tanpa batasan artifisial.`;
+
     const prompt = `Anda adalah asisten kurikulum AI "Awang Long Quiz".
-Tugas Anda: Analisis file dokumen/gambar yang dilampirkan bernama "${fileName}".
-Ekstrak butir-butir soal yang terdapat dalam dokumen tersebut, atau rancang kuis sebanyak ${count} butir soal berdasarkan isi materi dokumen ini.
+${questionGoal}
 
 Spesifikasi Kuis:
 - Target Jenjang: ${gradeLevel}
-- Preferensi Tipe Soal: ${preferredType} (Jika 'campuran', sertakan kombinasi seimbang: 'multiple_choice', 'short_answer', dan 'matching').
+- Preferensi Tipe Soal: ${preferredType} (Jika 'campuran', sertakan kombinasi variatif: 'multiple_choice', 'short_answer', dan 'matching').
 - Untuk 'multiple_choice': Wajib 4 pilihan options (A, B, C, D) dan correctOption (indeks 0, 1, 2, atau 3).
 - Untuk 'short_answer': Wajib acceptedAnswers (array kata kunci jawaban benar yang fleksibel).
 - Untuk 'matching': Wajib matchingPairs (array objek { id, left, right } minimal 2-4 pasang).
-- Tetapkan poin yang adil (total ~100 poin).
+- Tetapkan poin yang adil.
 - Berikan kategori materi (category) dan pembahasan edukatif (explanation) untuk setiap soal.
 
 Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
@@ -463,7 +474,7 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
       });
     } else if (textContent) {
       contentsParts.push({
-        text: `Isi teks dokumen:\n\n${textContent.slice(0, 50000)}`
+        text: `Isi teks dokumen:\n\n${textContent.slice(0, 500000)}`
       });
     }
 
@@ -488,7 +499,8 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
   } catch (err: any) {
     console.error('Gemini File Extraction API error:', err);
     const topicExtracted = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-    const fallback = getFallbackQuestions(topicExtracted, count);
+    const effectiveCount = unlimitedMode ? 10 : count!;
+    const fallback = getFallbackQuestions(topicExtracted, effectiveCount);
 
     res.json({
       title: `Kuis dari File: ${fileName.replace(/\.[^/.]+$/, '')}`,

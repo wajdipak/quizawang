@@ -48,7 +48,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
     setCountInput(val);
     const num = parseInt(val, 10);
     if (!isNaN(num) && num > 0) {
-      setQuestionCount(Math.min(Math.max(num, 1), 50));
+      setQuestionCount(num);
     }
   };
 
@@ -58,7 +58,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
   };
 
   const handleCountStep = (delta: number) => {
-    const next = Math.min(Math.max((questionCount || 1) + delta, 1), 50);
+    const next = Math.max((questionCount || 1) + delta, 1);
     setQuestionCount(next);
     setCountInput(next.toString());
   };
@@ -478,7 +478,6 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                           id="custom-question-count-input"
                           type="number"
                           min={1}
-                          max={50}
                           value={countInput}
                           onChange={(e) => handleCountInputChange(e.target.value)}
                           onBlur={() => {
@@ -486,9 +485,9 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                               setCountInput('5');
                               setQuestionCount(5);
                             } else {
-                              const clamped = Math.min(Math.max(Number(countInput), 1), 50);
-                              setCountInput(clamped.toString());
-                              setQuestionCount(clamped);
+                              const val = Math.max(Number(countInput), 1);
+                              setCountInput(val.toString());
+                              setQuestionCount(val);
                             }
                           }}
                           placeholder="Ketik jumlah soal..."
@@ -497,8 +496,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                         <button
                           type="button"
                           onClick={() => handleCountStep(1)}
-                          disabled={questionCount >= 50}
-                          className="px-3 py-2 text-slate-500 hover:text-teal-700 hover:bg-teal-50 active:bg-teal-100 disabled:opacity-40 font-bold text-sm transition-colors cursor-pointer border-l border-slate-200"
+                          className="px-3 py-2 text-slate-500 hover:text-teal-700 hover:bg-teal-50 active:bg-teal-100 font-bold text-sm transition-colors cursor-pointer border-l border-slate-200"
                           title="Tambah 1 soal"
                         >
                           +
@@ -509,7 +507,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                     {/* Quick Preset Buttons */}
                     <div className="flex items-center flex-wrap gap-1.5 pt-1">
                       <span className="text-[10px] text-slate-400 font-medium">Pilihan Cepat:</span>
-                      {[3, 5, 8, 10, 15, 20, 25, 30].map((preset) => (
+                      {[3, 5, 8, 10, 15, 20, 30, 50, 100].map((preset) => (
                         <button
                           key={preset}
                           type="button"
@@ -525,7 +523,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                       ))}
                     </div>
                     <p className="text-[10px] text-slate-400">
-                      💡 Ketik bebas angka berapa pun (1 - 50 soal) sesuai target pembelajaran.
+                      💡 Bebas ketik angka berapa pun tanpa batasan kuantitas sesuai kebutuhan belajar.
                     </p>
                   </div>
 

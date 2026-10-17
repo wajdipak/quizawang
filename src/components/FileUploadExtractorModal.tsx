@@ -34,14 +34,15 @@ export const FileUploadExtractorModal: React.FC<Props> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileBase64, setFileBase64] = useState<string>('');
   const [textContent, setTextContent] = useState<string>('');
-  const [targetCount, setTargetCount] = useState(5);
-  const [targetCountInput, setTargetCountInput] = useState('5');
+  const [extractionMode, setExtractionMode] = useState<'unlimited' | 'custom'>('unlimited');
+  const [targetCount, setTargetCount] = useState(10);
+  const [targetCountInput, setTargetCountInput] = useState('10');
 
   const handleTargetCountChange = (val: string) => {
     setTargetCountInput(val);
     const num = parseInt(val, 10);
     if (!isNaN(num) && num > 0) {
-      setTargetCount(Math.min(Math.max(num, 1), 50));
+      setTargetCount(num);
     }
   };
 
@@ -51,7 +52,7 @@ export const FileUploadExtractorModal: React.FC<Props> = ({
   };
 
   const handleTargetStep = (delta: number) => {
-    const next = Math.min(Math.max((targetCount || 1) + delta, 1), 50);
+    const next = Math.max((targetCount || 1) + delta, 1);
     setTargetCount(next);
     setTargetCountInput(next.toString());
   };
@@ -118,7 +119,12 @@ Keberadaan pesut menjadi indikator penting kelestarian dan kebersihan ekosistem 
 LATIHAN SOAL EVALUASI:
 1. Siapakah pemimpin pasukan rakyat Kutai dalam pertempuran di Sungai Mahakam tahun 1844? (Panglima Awang Long)
 2. Organ pernapasan yang digunakan oleh Pesut Mahakam untuk mengambil oksigen adalah? (Paru-paru)
-3. Apa gelar kehormatan sakti yang disandang oleh Awang Long? (Senapati Sakti)`;
+3. Apa gelar kehormatan sakti yang disandang oleh Awang Long? (Senapati Sakti)
+4. Kapal kompeni Belanda yang memimpin agresi di perairan Tenggarong dipimpin oleh perwira bernama? (Kapten T.C. Bruijn)
+5. Apa peran ekologis lumba-lumba air tawar Pesut Mahakam bagi perairan sungai? (Indikator kebersihan ekosistem)
+6. Nama kerajaan Kesultanan bersejarah di wilayah Sungai Mahakam tempat Awang Long berjuang adalah? (Kesultanan Kutai Kartanegara ing Martadipura)
+7. Apa ancaman utama terhadap kelestarian Pesut Mahakam di era modern? (Pencemaran limbah dan jaring tangkap)
+8. Nilai luhur apa yang dapat diteladani generasi muda dari perjuangan Panglima Awang Long? (Patriotisme dan pengorbanan membela tanah air)`;
 
     const blob = new Blob([sampleText], { type: 'text/plain' });
     const sampleFile = new File([blob], 'Modul_Ajar_Sejarah_Awang_Long_dan_Mahakam.txt', { type: 'text/plain' });
@@ -133,7 +139,11 @@ LATIHAN SOAL EVALUASI:
 
     setIsLoading(true);
     setErrorMessage(null);
-    setStatusStep('Membaca dan memindai dokumen dengan Gemini 3.8 Flash...');
+    setStatusStep(
+      extractionMode === 'unlimited'
+        ? 'Mengekstrak seluruh soal dalam file tanpa batasan dengan Gemini 3.8 Flash...'
+        : `Mengekstrak ${targetCount} butir soal dari dokumen dengan Gemini 3.8 Flash...`
+    );
 
     try {
       const response = await fetch('/api/extract-quiz-from-file', {
@@ -144,7 +154,8 @@ LATIHAN SOAL EVALUASI:
           textContent,
           mimeType: selectedFile.type || 'text/plain',
           fileName: selectedFile.name,
-          targetCount,
+          targetCount: extractionMode === 'unlimited' ? 0 : targetCount,
+          isUnlimited: extractionMode === 'unlimited',
           preferredType,
           gradeLevel,
           additionalNote
@@ -321,82 +332,154 @@ LATIHAN SOAL EVALUASI:
               </div>
 
               {/* Extraction Parameters */}
-              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 space-y-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
-                  Pengaturan Ekstraksi AI:
-                </span>
+              <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+                    Mode & Pengaturan Ekstraksi AI:
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                    {extractionMode === 'unlimited' ? '✨ Mode Tanpa Batasan Aktif' : `🎯 Target: ${targetCount} Soal`}
+                  </span>
+                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="file-target-count-input" className="font-semibold text-slate-700">
-                        Jumlah Soal:
-                      </label>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-teal-100 text-teal-800">
-                        {targetCount} Soal
-                      </span>
+                {/* Mode Selector: Unlimited vs Custom */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setExtractionMode('unlimited')}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                      extractionMode === 'unlimited'
+                        ? 'bg-white border-teal-500 ring-2 ring-teal-400/30 text-teal-950 shadow-xs'
+                        : 'bg-white/60 border-slate-200 hover:border-slate-300 text-slate-700'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-base ${
+                      extractionMode === 'unlimited' ? 'bg-teal-600 text-white shadow-xs' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      ∞
                     </div>
-
-                    {/* Stepper + Direct Typing Input */}
-                    <div className="flex items-center border border-teal-300 focus-within:border-teal-500 rounded-xl bg-white overflow-hidden shadow-xs">
-                      <button
-                        type="button"
-                        onClick={() => handleTargetStep(-1)}
-                        disabled={targetCount <= 1}
-                        className="px-2.5 py-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 disabled:opacity-40 font-bold border-r border-slate-200 cursor-pointer"
-                        title="Kurangi 1"
-                      >
-                        -
-                      </button>
-                      <input
-                        id="file-target-count-input"
-                        type="number"
-                        min={1}
-                        max={50}
-                        value={targetCountInput}
-                        onChange={(e) => handleTargetCountChange(e.target.value)}
-                        onBlur={() => {
-                          if (!targetCountInput || isNaN(Number(targetCountInput)) || Number(targetCountInput) < 1) {
-                            setTargetCountInput('5');
-                            setTargetCount(5);
-                          } else {
-                            const clamped = Math.min(Math.max(Number(targetCountInput), 1), 50);
-                            setTargetCountInput(clamped.toString());
-                            setTargetCount(clamped);
-                          }
-                        }}
-                        placeholder="Ketik..."
-                        className="w-full text-center py-1.5 px-1 font-bold text-slate-800 outline-none text-xs"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleTargetStep(1)}
-                        disabled={targetCount >= 50}
-                        className="px-2.5 py-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 disabled:opacity-40 font-bold border-l border-slate-200 cursor-pointer"
-                        title="Tambah 1"
-                      >
-                        +
-                      </button>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs text-slate-900">Semua Soal dalam File</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800">
+                          Bebas Limit
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                        Ekstrak 100% seluruh butir soal yang ada di lembar/dokumen secara lengkap tanpa batasan.
+                      </p>
                     </div>
+                  </button>
 
-                    {/* Quick Presets */}
-                    <div className="flex items-center flex-wrap gap-1 pt-0.5">
-                      {[3, 5, 8, 10, 15, 20].map((preset) => (
+                  <button
+                    type="button"
+                    onClick={() => setExtractionMode('custom')}
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
+                      extractionMode === 'custom'
+                        ? 'bg-white border-teal-500 ring-2 ring-teal-400/30 text-teal-950 shadow-xs'
+                        : 'bg-white/60 border-slate-200 hover:border-slate-300 text-slate-700'
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-base ${
+                      extractionMode === 'custom' ? 'bg-teal-600 text-white shadow-xs' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      #
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs text-slate-900">Tentukan Jumlah Bebas</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-teal-100 text-teal-800">
+                          Ketik Angka
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                        Tentukan target jumlah (bisa 10, 25, 50, 100+ butir soal) sesuai kebutuhan materi.
+                      </p>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
+                  {/* Question count input if custom mode */}
+                  {extractionMode === 'custom' ? (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label htmlFor="file-target-count-input" className="font-semibold text-slate-700">
+                          Target Soal:
+                        </label>
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-teal-100 text-teal-800">
+                          {targetCount} Soal
+                        </span>
+                      </div>
+
+                      {/* Stepper + Direct Typing Input (No 50 cap) */}
+                      <div className="flex items-center border border-teal-300 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-200 rounded-xl bg-white overflow-hidden shadow-xs">
                         <button
-                          key={preset}
                           type="button"
-                          onClick={() => handleTargetPreset(preset)}
-                          className={`text-[10px] px-1.5 py-0.5 rounded-md border font-semibold cursor-pointer ${
-                            targetCount === preset
-                              ? 'bg-teal-600 text-white border-teal-600'
-                              : 'bg-white text-slate-600 border-slate-200 hover:border-teal-300'
-                          }`}
+                          onClick={() => handleTargetStep(-1)}
+                          disabled={targetCount <= 1}
+                          className="px-2.5 py-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 disabled:opacity-40 font-bold border-r border-slate-200 cursor-pointer"
+                          title="Kurangi 1"
                         >
-                          {preset}
+                          -
                         </button>
-                      ))}
+                        <input
+                          id="file-target-count-input"
+                          type="number"
+                          min={1}
+                          value={targetCountInput}
+                          onChange={(e) => handleTargetCountChange(e.target.value)}
+                          onBlur={() => {
+                            if (!targetCountInput || isNaN(Number(targetCountInput)) || Number(targetCountInput) < 1) {
+                              setTargetCountInput('10');
+                              setTargetCount(10);
+                            } else {
+                              const val = Math.max(Number(targetCountInput), 1);
+                              setTargetCountInput(val.toString());
+                              setTargetCount(val);
+                            }
+                          }}
+                          placeholder="Ketik angka..."
+                          className="w-full text-center py-1.5 px-1 font-bold text-slate-800 outline-none text-xs"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleTargetStep(1)}
+                          className="px-2.5 py-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 font-bold border-l border-slate-200 cursor-pointer"
+                          title="Tambah 1"
+                        >
+                          +
+                        </button>
+                      </div>
+
+                      {/* Quick Presets */}
+                      <div className="flex items-center flex-wrap gap-1 pt-0.5">
+                        {[5, 10, 15, 20, 30, 50, 100].map((preset) => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => handleTargetPreset(preset)}
+                            className={`text-[10px] px-1.5 py-0.5 rounded-md border font-semibold cursor-pointer transition-all ${
+                              targetCount === preset
+                                ? 'bg-teal-600 text-white border-teal-600'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-teal-300'
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-teal-50/80 border border-teal-200 text-teal-900 flex flex-col justify-center gap-1">
+                      <span className="font-bold text-[11px] flex items-center gap-1">
+                        <span>✨ Mode Otomatis</span>
+                      </span>
+                      <p className="text-[10px] text-teal-800 leading-snug">
+                        AI akan memindai dan mengekstrak semua soal yang ditemukan dalam dokumen tanpa batasan maksimal.
+                      </p>
+                    </div>
+                  )}
 
                   <div>
                     <label className="font-semibold text-slate-600 block mb-1">

@@ -44,6 +44,7 @@ export default function App() {
 
   const [studentActiveQuiz, setStudentActiveQuiz] = useState<Quiz | null>(null);
   const [analyticsSelectedQuizId, setAnalyticsSelectedQuizId] = useState<string | null>(null);
+  const [isStudentLinkMode, setIsStudentLinkMode] = useState(false);
 
   // Load persistent storage & subscribe to live Firebase real-time updates
   useEffect(() => {
@@ -56,9 +57,44 @@ export default function App() {
     setSubmissions(loadedSubs);
     setCategories(loadedCats);
 
+    // Check if ?code= or ?exam= is present in URL on initial load
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const examParam = params.get('exam');
+      const urlCode = examParam || params.get('code');
+      const autostart = params.get('autostart');
+
+      if (urlCode) {
+        setIsStudentLinkMode(true);
+        setActiveTab('ruang-siswa');
+        const found = loadedQuizzes.find((q) => q.code.toUpperCase() === urlCode.toUpperCase());
+        if (found) {
+          setStudentActiveQuiz(found);
+        }
+      } else if (autostart) {
+        setActiveTab('beranda');
+      }
+    }
+
     // 2. Real-time Firebase Firestore synchronizer for Quizzes
     const unsubQuizzes = subscribeQuizzesRealtime((syncedQuizzes) => {
       setQuizzes(syncedQuizzes);
+
+      // Check if student link mode is active and we need to match quiz by code
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const examParam = params.get('exam');
+        const urlCode = examParam || params.get('code');
+        if (urlCode) {
+          setIsStudentLinkMode(true);
+          setActiveTab('ruang-siswa');
+          setStudentActiveQuiz((prev) => {
+            if (prev) return prev;
+            return syncedQuizzes.find((q) => q.code.toUpperCase() === urlCode.toUpperCase()) || null;
+          });
+        }
+      }
+
       // Automatically derive and sync categories
       const allCats = new Set(loadedCats);
       syncedQuizzes.forEach((q) => {
@@ -73,24 +109,6 @@ export default function App() {
     const unsubSubmissions = subscribeSubmissionsRealtime((syncedSubs) => {
       setSubmissions(syncedSubs);
     });
-
-    // Check if ?code= or ?exam= is present in URL
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const examParam = params.get('exam');
-      const urlCode = examParam || params.get('code');
-      const autostart = params.get('autostart');
-
-      if (urlCode) {
-        const found = loadedQuizzes.find((q) => q.code.toUpperCase() === urlCode.toUpperCase());
-        if (found) {
-          setStudentActiveQuiz(found);
-          setActiveTab('ruang-siswa');
-        }
-      } else if (autostart) {
-        setActiveTab('beranda');
-      }
-    }
 
     return () => {
       unsubQuizzes();
@@ -207,6 +225,63 @@ export default function App() {
   };
 
   const existingCodes = quizzes.map((q) => q.code);
+
+  // If accessed via student exam link (e.g. ?exam=CODE), render standalone student portal strictly without teacher navigation/tools
+  if (isStudentLinkMode) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-teal-200 dark:selection:bg-teal-900 transition-colors duration-200">
+        
+        {/* Dedicated Student Header */}
+        <header className="sticky top-0 z-40 backdrop-blur-md bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-xs px-4 sm:px-8 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 text-white flex items-center justify-center font-bold shadow-xs">
+              🎓
+            </div>
+            <div>
+              <span className="font-extrabold text-base sm:text-lg text-slate-800 dark:text-slate-100 block leading-tight">
+                Awang Long Quiz
+              </span>
+              <span className="text-[11px] text-teal-700 dark:text-teal-300 font-semibold">
+                Portal Ujian Online Resmi Siswa
+              </span>
+            </div>
+          </div>
+          <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+            🔒 Mode Ujian Siswa Terisolasi
+          </div>
+        </header>
+
+        {/* Standalone Student Main Content */}
+        <main className="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 pb-16">
+          <StudentQuizRoom
+            initialQuiz={studentActiveQuiz}
+            availableQuizzes={quizzes.filter((q) => q.isActive)}
+            onSubmissionComplete={handleSubmissionComplete}
+            isStandaloneExam={true}
+            onBackToHome={() => {}}
+          />
+        </main>
+
+        {/* Floating Accessibility Widget (Dark Mode & Font Scaler) */}
+        <AccessibilityFloatingWidget />
+
+        {/* Dedicated Student Footer */}
+        <footer className="py-6 border-t border-teal-100/60 dark:border-slate-800 bg-white/40 dark:bg-slate-900/60 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-teal-800 dark:text-teal-400">Awang Long Quiz Siswa</span>
+              <span>•</span>
+              <span>Evaluasi & Tugas Online Terpadu</span>
+            </div>
+            <div className="text-[11px] text-slate-400 dark:text-slate-500">
+              Siswa wajib mengisi keterangan diri (Sesi 1) dan menyelesaikan seluruh soal sebelum mengirim jawaban.
+            </div>
+          </div>
+        </footer>
+
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-teal-200 dark:selection:bg-teal-900 transition-colors duration-200">

@@ -124,7 +124,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
   };
 
   return (
-    <aside aria-label="Menu Aksesibilitas dan Tampilan" className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-50">
+    <aside aria-label="Menu Aksesibilitas dan Tampilan" className="fixed bottom-28 right-4 sm:bottom-6 sm:right-6 z-50">
       {/* Floating Trigger Button */}
       <button
         ref={triggerRef}

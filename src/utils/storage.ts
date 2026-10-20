@@ -63,7 +63,7 @@ export const INITIAL_QUIZZES: Quiz[] = [
         text: 'Jodohkan entitas sejarah berikut dengan peran atau keterangannya yang tepat!',
         matchingPairs: [
           { id: 'p1', left: 'Awang Long', right: 'Senapati Sakti Kutai Kartanegara' },
-          { id: 'p2', left: 'Pesut Mahakam', right: 'Mamalia air tawar langka endemik' },
+          { id: 'p2', left: 'Benteng Mahakam', right: 'Pertahanan laskar rakyat di tepian sungai' },
           { id: 'p3', left: 'Tenggarong', right: 'Pusat pemerintahan Kesultanan Kutai' },
           { id: 'p4', left: 'Tahun 1844', right: 'Waktu berkobarnya pertempuran Mahakam' }
         ],
@@ -116,25 +116,25 @@ export const INITIAL_QUIZZES: Quiz[] = [
         type: 'multiple_choice',
         category: 'Biologi & Satwa',
         points: 25,
-        text: 'Pesut Mahakam termasuk kelompok hewan mamalia, sehingga bernapas menggunakan organ apa?',
+        text: 'Burung Enggang (Rangkong Badak) yang menjadi lambang kesetiaan di hutan tropis bernapas menggunakan organ apa?',
         options: [
-          'Paru-paru (sehingga perlu berkala muncul ke permukaan air)',
-          'Insang seperti kebanyakan ikan bersisik',
-          'Kulit basah seperti katak amfibi',
-          'Trakea seperti serangga capung'
+          'Paru-paru dengan pundi-pundi udara saat terbang',
+          'Insang seperti ikan air tawar',
+          'Trakea seperti serangga capung',
+          'Kulit tipis seperti cacing tanah'
         ],
         correctOption: 0,
-        explanation: 'Pesut Mahakam adalah mamalia akuatik (ordo Cetacea), bernapas menggunakan paru-paru dan melahirkan anak.'
+        explanation: 'Burung Enggang adalah kelompok unggas (Aves), bernapas dengan paru-paru yang dibantu oleh kantung atau pundi udara.'
       },
       {
         id: 'q2-2',
         type: 'short_answer',
         category: 'Biologi & Satwa',
         points: 25,
-        text: 'Sebutkan organ tubuh yang digunakan Pesut Mahakam untuk bernapas di permukaan air:',
+        text: 'Sebutkan organ pernapasan utama pada burung yang dibantu oleh kantung udara:',
         acceptedAnswers: ['Paru-paru', 'Paru paru', 'Paru'],
         caseSensitive: false,
-        explanation: 'Pesut Mahakam menyembul ke permukaan Sungai Mahakam untuk menghirup udara menggunakan paru-parunya.'
+        explanation: 'Burung menggunakan paru-paru sebagai organ pertukaran gas pernapasan utama.'
       },
       {
         id: 'q2-3',
@@ -144,7 +144,7 @@ export const INITIAL_QUIZZES: Quiz[] = [
         text: 'Jodohkan komponen ekosistem sungai dengan fungsi utamanya!',
         matchingPairs: [
           { id: 'p2-1', left: 'Hutan Bakau / Mangrove', right: 'Mencegah erosi & tempat pembibitan ikan' },
-          { id: 'p2-2', left: 'Pesut Mahakam', right: 'Indikator hayati kesehatan air tawar' },
+          { id: 'p2-2', left: 'Vegetasi Riparian', right: 'Penyaring alami aliran air sungai' },
           { id: 'p2-3', left: 'Limbah Plastik', right: 'Ancaman polutan mematikan bagi biota' }
         ],
         explanation: 'Keseimbangan ekosistem Mahakam sangat bergantung pada kebersihan air dan keutuhan vegetasi tepian sungai.'
@@ -165,7 +165,7 @@ export const INITIAL_SUBMISSIONS: StudentSubmission[] = [
       'q1-2': 'Sungai Mahakam',
       'q1-3': {
         'Awang Long': 'Senapati Sakti Kutai Kartanegara',
-        'Pesut Mahakam': 'Mamalia air tawar langka endemik',
+        'Benteng Mahakam': 'Pertahanan laskar rakyat di tepian sungai',
         'Tenggarong': 'Pusat pemerintahan Kesultanan Kutai',
         'Tahun 1844': 'Waktu berkobarnya pertempuran Mahakam'
       },
@@ -197,7 +197,7 @@ export const INITIAL_SUBMISSIONS: StudentSubmission[] = [
       'q1-2': 'Mahakam',
       'q1-3': {
         'Awang Long': 'Senapati Sakti Kutai Kartanegara',
-        'Pesut Mahakam': 'Mamalia air tawar langka endemik',
+        'Benteng Mahakam': 'Pertahanan laskar rakyat di tepian sungai',
         'Tenggarong': 'Pusat pemerintahan Kesultanan Kutai',
         'Tahun 1844': 'Waktu berkobarnya pertempuran Mahakam'
       },

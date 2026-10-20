@@ -47,10 +47,10 @@ test('calculateQuizScore grades short answer and matching correctly', () => {
     {
       id: 'q1',
       type: 'short_answer',
-      text: 'Sebutkan mamalia endemik Sungai Mahakam!',
-      category: 'Biologi',
+      text: 'Sebutkan gelar sakti Panglima Awang Long!',
+      category: 'Sejarah',
       points: 10,
-      acceptedAnswers: ['Pesut Mahakam', 'Pesut']
+      acceptedAnswers: ['Senapati Sakti', 'Sakti']
     },
     {
       id: 'q2',
@@ -67,7 +67,7 @@ test('calculateQuizScore grades short answer and matching correctly', () => {
 
   // 1 correct short answer + 1 fully matched pair question = 30 / 30 points (100%)
   const answers = {
-    q1: 'pesut mahakam',
+    q1: 'senapati sakti',
     q2: {
       'Awang Long': 'Senapati Sakti',
       'Kapten Bruijn': 'Komandan Belanda'

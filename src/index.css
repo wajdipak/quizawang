@@ -1,1 +1,26 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --app-font-scale: 100%;
+}
+
+html {
+  font-size: var(--app-font-scale, 100%);
+  transition: font-size 0.15s ease-out;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #0b1120;
+  color: #f1f5f9;
+}
+
+/* High contrast accessibility mode */
+html.high-contrast {
+  filter: contrast(115%);
+}

@@ -38,20 +38,20 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 space-y-4 sm:space-y-6 my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 space-y-4 sm:space-y-6 my-auto transition-colors">
         
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
           <div className="flex items-center gap-2 sm:gap-2.5">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-teal-500 to-cyan-500 text-white flex items-center justify-center font-bold shadow-xs shrink-0">
               <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <h2 className="font-extrabold text-sm sm:text-base text-slate-800 leading-snug">
+              <h2 className="font-extrabold text-sm sm:text-base text-slate-800 dark:text-slate-100 leading-snug">
                 Link & Halaman Ujian Siswa
               </h2>
-              <p className="text-[11px] sm:text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                 Otomatis disiapkan untuk Sesi 1 (Data Diri) & Sesi 2 (Pengerjaan Soal)
               </p>
             </div>
@@ -59,19 +59,19 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
           <button
             type="button"
             onClick={onClose}
-            className="p-1 sm:p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-1 sm:p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Big PIN Code Box (Classroom Display) */}
-        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 border-2 border-teal-200 text-center space-y-2.5 sm:space-y-3 shadow-inner">
-          <div className="flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-teal-800">
-            <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+        <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-950/70 dark:via-cyan-950/50 dark:to-slate-900 border-2 border-teal-200 dark:border-teal-800 text-center space-y-2.5 sm:space-y-3 shadow-inner transition-colors">
+          <div className="flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-teal-800 dark:text-teal-300">
+            <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
             <span>Kode PIN Ujian Siswa</span>
           </div>
-          <div className="text-3xl sm:text-5xl font-black font-mono tracking-widest text-teal-900 bg-white/90 py-2 sm:py-3 px-4 sm:px-6 rounded-xl sm:rounded-2xl inline-block shadow-sm border border-teal-200">
+          <div className="text-3xl sm:text-5xl font-black font-mono tracking-widest text-teal-900 dark:text-teal-200 bg-white/90 dark:bg-slate-900/90 py-2 sm:py-3 px-4 sm:px-6 rounded-xl sm:rounded-2xl inline-block shadow-sm border border-teal-200 dark:border-teal-700">
             {quiz.code}
           </div>
           <div className="flex items-center justify-center gap-2 pt-1">
@@ -87,25 +87,25 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
         </div>
 
         {/* Quiz Info Brief */}
-        <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-xs space-y-2">
+        <div className="bg-slate-50 dark:bg-slate-800/70 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 text-xs space-y-2 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="font-bold text-slate-800 text-sm truncate">{quiz.title}</span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-100 text-teal-800">
+            <span className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{quiz.title}</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
               {quiz.subject}
             </span>
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-slate-500 text-[11px]">
+          <div className="flex flex-wrap items-center gap-3 text-slate-500 dark:text-slate-400 text-[11px]">
             <span>📝 {quiz.questions.length} Butir Soal</span>
             <span>•</span>
             <span>⏱️ {quiz.durationMinutes > 0 ? `${quiz.durationMinutes} Menit` : 'Tanpa Batas Waktu'}</span>
             <span>•</span>
             <span>🎯 KKM Kelulusan: {quiz.passingGrade}</span>
           </div>
-          <div className="p-2.5 rounded-xl bg-teal-50/70 border border-teal-100 text-[11px] text-teal-800 space-y-1">
-            <div className="font-bold flex items-center gap-1">
+          <div className="p-2.5 rounded-xl bg-teal-50/70 dark:bg-teal-950/60 border border-teal-100 dark:border-teal-800/80 text-[11px] text-teal-800 dark:text-teal-300 space-y-1">
+            <div className="font-bold flex items-center gap-1 text-teal-900 dark:text-teal-200">
               <span>✨ Alur Pengerjaan Siswa:</span>
             </div>
-            <p className="text-teal-900/90 leading-relaxed">
+            <p className="text-teal-900/90 dark:text-teal-300/90 leading-relaxed">
               • <strong>Sesi 1:</strong> Siswa mengisi Nama, No. Absen/NIS, dan Kelas.<br />
               • <strong>Sesi 2:</strong> Hanya menampilkan <strong>1 soal per halaman</strong> dengan nomor soal klikable & tombol submit di akhir saat siswa merasa yakin.
             </p>
@@ -114,16 +114,16 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
 
         {/* Share Direct Link */}
         <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+          <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
             <span>Tautan Langsung Pengerjaan Siswa:</span>
-            <span className="text-[11px] font-normal text-teal-600">Otomatis langsung ke Sesi 1</span>
+            <span className="text-[11px] font-semibold text-teal-600 dark:text-teal-400">Otomatis langsung ke Sesi 1</span>
           </label>
           <div className="flex items-center gap-2">
             <input
               type="text"
               readOnly
               value={shareUrl}
-              className="flex-1 text-xs p-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-700 font-mono select-all focus:outline-none"
+              className="flex-1 text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono select-all focus:outline-none"
             />
             <button
               type="button"
@@ -142,9 +142,9 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
           <button
             type="button"
             onClick={handleCopyWhatsapp}
-            className="w-full sm:flex-1 py-3 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs border border-emerald-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full sm:flex-1 py-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 dark:hover:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-200 dark:border-emerald-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            {copiedWhatsapp ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4" />}
+            {copiedWhatsapp ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Share2 className="w-4 h-4" />}
             <span>{copiedWhatsapp ? 'Format Pesan Disalin!' : 'Salin Pesan WhatsApp Kelas'}</span>
           </button>
 

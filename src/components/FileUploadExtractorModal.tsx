@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Quiz, Question, QuestionType } from '../types/quiz.js';
 import { generateQuizCode } from '../utils/quizLogic.js';
-import { PesutMahakamMascot } from './PesutMahakamMascot.js';
 
 interface Props {
   isOpen: boolean;
@@ -111,23 +110,22 @@ Pada pertengahan abad ke-19, armada kompeni Belanda yang dipimpin oleh Kapten T.
 Panglima Awang Long bersama ribuan laskar rakyat Kutai membangun benteng pertahanan kuat di tepi Sungai Mahakam dan bertempur habis-habisan demi mempertahankan kehormatan tanah air.
 Beliau gugur sebagai pahlawan bangsa dalam peristiwa bersejarah tahun 1844.
 
-BAB II: SATWA ENDEMIK & EKOSISTEM SUNGAI MAHAKAM
-Sungai Mahakam adalah habitat alami bagi Pesut Mahakam (Orcaella brevirostris), salah satu mamalia air tawar langka di dunia.
-Sebagai mamalia akuatik, Pesut Mahakam bernapas dengan paru-paru sehingga harus secara berkala muncul ke permukaan air untuk bernapas.
-Keberadaan pesut menjadi indikator penting kelestarian dan kebersihan ekosistem perairan sungai dari polusi limbah plastik dan zat kimia.
+BAB II: STRATEGI PERTAHANAN & KEARIFAN LOKAL
+Masyarakat Kutai memanfaatkan perahu dayung lincah dan benteng rakit bambu berduri untuk menghalau kapal-kapal meriam kompeni di perairan dangkal Sungai Mahakam.
+Semangat pantang menyerah rakyat Kutai menjadi bukti nyata bahwa persatuan dan cinta tanah air mampu menghadang persenjataan modern penjajah.
 
 LATIHAN SOAL EVALUASI:
 1. Siapakah pemimpin pasukan rakyat Kutai dalam pertempuran di Sungai Mahakam tahun 1844? (Panglima Awang Long)
-2. Organ pernapasan yang digunakan oleh Pesut Mahakam untuk mengambil oksigen adalah? (Paru-paru)
-3. Apa gelar kehormatan sakti yang disandang oleh Awang Long? (Senapati Sakti)
-4. Kapal kompeni Belanda yang memimpin agresi di perairan Tenggarong dipimpin oleh perwira bernama? (Kapten T.C. Bruijn)
-5. Apa peran ekologis lumba-lumba air tawar Pesut Mahakam bagi perairan sungai? (Indikator kebersihan ekosistem)
-6. Nama kerajaan Kesultanan bersejarah di wilayah Sungai Mahakam tempat Awang Long berjuang adalah? (Kesultanan Kutai Kartanegara ing Martadipura)
-7. Apa ancaman utama terhadap kelestarian Pesut Mahakam di era modern? (Pencemaran limbah dan jaring tangkap)
-8. Nilai luhur apa yang dapat diteladani generasi muda dari perjuangan Panglima Awang Long? (Patriotisme dan pengorbanan membela tanah air)`;
+2. Apa gelar kehormatan sakti yang disandang oleh Awang Long atas ketangkasannya? (Senapati Sakti)
+3. Kapal kompeni Belanda yang memimpin agresi di perairan Tenggarong dipimpin oleh perwira bernama? (Kapten T.C. Bruijn)
+4. Nama kerajaan Kesultanan bersejarah tempat Panglima Awang Long berjuang mengabdi adalah? (Kesultanan Kutai Kartanegara ing Martadipura)
+5. Strategi apa yang digunakan laskar rakyat untuk menghalau kapal meriam di muara sungai? (Rakit bambu berduri dan perangkap perairan dangkal)
+6. Nilai luhur apa yang dapat diteladani generasi penerus dari perjuangan Panglima Awang Long? (Patriotisme, ketabahan, dan cinta tanah air)
+7. Di kota manakah pusat Kesultanan Kutai Kartanegara berada pada masa perlawanan Awang Long? (Tenggarong)
+8. Mengapa semangat persatuan menjadi kunci utama pertahanan rakyat Nusantara? (Karena persatuan melipatgandakan kekuatan melawan penjajah)`;
 
     const blob = new Blob([sampleText], { type: 'text/plain' });
-    const sampleFile = new File([blob], 'Modul_Ajar_Sejarah_Awang_Long_dan_Mahakam.txt', { type: 'text/plain' });
+    const sampleFile = new File([blob], 'Modul_Ajar_Sejarah_Pahlawan_Awang_Long.txt', { type: 'text/plain' });
     processFile(sampleFile);
   };
 
@@ -215,23 +213,23 @@ LATIHAN SOAL EVALUASI:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-2 sm:p-4 md:p-6 overflow-y-auto">
-      <div className="bg-white rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 my-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 md:p-6 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl max-w-2xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 my-auto transition-colors">
         
         {/* Header */}
-        <div className="p-4 sm:p-6 border-b border-slate-100 flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-cyan-400 to-teal-500 text-white flex items-center justify-center font-bold text-base sm:text-lg shadow-sm shrink-0">
               📄
             </div>
             <div>
-              <h2 className="font-bold text-base sm:text-lg text-slate-800 flex items-center gap-1.5 leading-snug">
+              <h2 className="font-bold text-base sm:text-lg text-slate-800 dark:text-slate-100 flex items-center gap-1.5 leading-snug">
                 <span>Ekstrak Soal dari File (AI Gemini)</span>
-                <span className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full bg-teal-100 text-teal-800 font-bold shrink-0">
+                <span className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 font-bold shrink-0">
                   Dokumen ➔ Kuis
                 </span>
               </h2>
-              <p className="text-[11px] sm:text-xs text-slate-500">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
                 Unggah file dokumen soal, modul ajar, atau foto lembar ujian (PDF, TXT, Gambar).
               </p>
             </div>
@@ -240,7 +238,7 @@ LATIHAN SOAL EVALUASI:
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+            className="p-1.5 sm:p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -270,34 +268,34 @@ LATIHAN SOAL EVALUASI:
                 {!selectedFile ? (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-teal-300 hover:border-teal-500 bg-teal-50/30 hover:bg-teal-50/60 rounded-3xl p-8 text-center cursor-pointer transition-all space-y-3"
+                    className="border-2 border-dashed border-teal-300 dark:border-teal-700/80 hover:border-teal-500 dark:hover:border-teal-500 bg-teal-50/30 dark:bg-slate-800/50 hover:bg-teal-50/60 dark:hover:bg-slate-800/80 rounded-3xl p-8 text-center cursor-pointer transition-all space-y-3"
                   >
-                    <div className="w-14 h-14 rounded-2xl bg-white shadow-xs text-teal-600 flex items-center justify-center mx-auto text-2xl border border-teal-100">
+                    <div className="w-14 h-14 rounded-2xl bg-white dark:bg-slate-900 shadow-xs text-teal-600 dark:text-teal-400 flex items-center justify-center mx-auto text-2xl border border-teal-100 dark:border-teal-800">
                       <Upload className="w-7 h-7" />
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-slate-800">
+                      <p className="font-bold text-sm text-slate-800 dark:text-slate-100">
                         Klik untuk Memilih File atau Tarik File ke Sini
                       </p>
-                      <p className="text-xs text-slate-500 mt-1">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                         Mendukung dokumen <strong>PDF</strong>, teks <strong>TXT</strong>, serta foto lembar soal <strong>PNG/JPG</strong>
                       </p>
                     </div>
-                    <span className="inline-block text-[11px] text-teal-700 font-semibold px-3 py-1 rounded-full bg-white border border-teal-200 shadow-xs">
+                    <span className="inline-block text-[11px] text-teal-700 dark:text-teal-300 font-semibold px-3 py-1 rounded-full bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800 shadow-xs">
                       Maksimal 25MB
                     </span>
                   </div>
                 ) : (
-                  <div className="p-4 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-between gap-3">
+                  <div className="p-4 rounded-2xl bg-teal-50 dark:bg-slate-800/70 border border-teal-200 dark:border-slate-700 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white text-teal-700 flex items-center justify-center border border-teal-200 font-bold">
-                        <FileCheck className="w-5 h-5 text-emerald-600" />
+                      <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-900 text-teal-700 dark:text-teal-400 flex items-center justify-center border border-teal-200 dark:border-teal-800 font-bold">
+                        <FileCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div className="space-y-0.5">
-                        <span className="font-bold text-xs text-slate-800 block truncate max-w-xs sm:max-w-md">
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-100 block truncate max-w-xs sm:max-w-md">
                           {selectedFile.name}
                         </span>
-                        <span className="text-[11px] text-slate-500 block">
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
                           {(selectedFile.size / 1024).toFixed(1)} KB • {selectedFile.type || 'Dokumen'}
                         </span>
                       </div>
@@ -310,7 +308,7 @@ LATIHAN SOAL EVALUASI:
                         setFileBase64('');
                         setTextContent('');
                       }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-white"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-white dark:hover:bg-slate-800 transition-colors"
                       title="Ganti file"
                     >
                       <X className="w-4 h-4" />
@@ -320,11 +318,11 @@ LATIHAN SOAL EVALUASI:
 
                 {/* Quick Sample File Button */}
                 <div className="flex items-center justify-between text-xs pt-1">
-                  <span className="text-slate-400">Belum punya file contoh?</span>
+                  <span className="text-slate-400 dark:text-slate-500">Belum punya file contoh?</span>
                   <button
                     type="button"
                     onClick={handleLoadSampleDocument}
-                    className="text-teal-700 hover:text-teal-900 font-bold flex items-center gap-1 hover:underline"
+                    className="text-teal-700 dark:text-teal-400 hover:text-teal-900 dark:hover:text-teal-300 font-bold flex items-center gap-1 hover:underline cursor-pointer"
                   >
                     <span>💡 Gunakan Contoh Modul Awang Long (.txt)</span>
                   </button>
@@ -332,12 +330,12 @@ LATIHAN SOAL EVALUASI:
               </div>
 
               {/* Extraction Parameters */}
-              <div className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200/80 space-y-4">
+              <div className="bg-slate-50 dark:bg-slate-800/70 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-700/80 space-y-4 transition-colors">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 block">
                     Mode & Pengaturan Ekstraksi AI:
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                     {extractionMode === 'unlimited' ? '✨ Mode Tanpa Batasan Aktif' : `🎯 Target: ${targetCount} Soal`}
                   </span>
                 </div>
@@ -349,23 +347,23 @@ LATIHAN SOAL EVALUASI:
                     onClick={() => setExtractionMode('unlimited')}
                     className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
                       extractionMode === 'unlimited'
-                        ? 'bg-white border-teal-500 ring-2 ring-teal-400/30 text-teal-950 shadow-xs'
-                        : 'bg-white/60 border-slate-200 hover:border-slate-300 text-slate-700'
+                        ? 'bg-white dark:bg-slate-900 border-teal-500 dark:border-teal-400 ring-2 ring-teal-400/30 text-teal-950 dark:text-teal-100 shadow-xs'
+                        : 'bg-white/60 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
                     }`}
                   >
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-base ${
-                      extractionMode === 'unlimited' ? 'bg-teal-600 text-white shadow-xs' : 'bg-slate-100 text-slate-500'
+                      extractionMode === 'unlimited' ? 'bg-teal-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                     }`}>
                       ∞
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-xs text-slate-900">Semua Soal dalam File</span>
-                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-800">
+                        <span className="font-bold text-xs text-slate-900 dark:text-slate-100">Semua Soal dalam File</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                           Bebas Limit
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
                         Ekstrak 100% seluruh butir soal yang ada di lembar/dokumen secara lengkap tanpa batasan.
                       </p>
                     </div>
@@ -376,23 +374,23 @@ LATIHAN SOAL EVALUASI:
                     onClick={() => setExtractionMode('custom')}
                     className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-start gap-3 ${
                       extractionMode === 'custom'
-                        ? 'bg-white border-teal-500 ring-2 ring-teal-400/30 text-teal-950 shadow-xs'
-                        : 'bg-white/60 border-slate-200 hover:border-slate-300 text-slate-700'
+                        ? 'bg-white dark:bg-slate-900 border-teal-500 dark:border-teal-400 ring-2 ring-teal-400/30 text-teal-950 dark:text-teal-100 shadow-xs'
+                        : 'bg-white/60 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
                     }`}
                   >
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 font-bold text-base ${
-                      extractionMode === 'custom' ? 'bg-teal-600 text-white shadow-xs' : 'bg-slate-100 text-slate-500'
+                      extractionMode === 'custom' ? 'bg-teal-600 text-white shadow-xs' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                     }`}>
                       #
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-xs text-slate-900">Tentukan Jumlah Bebas</span>
-                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-teal-100 text-teal-800">
+                        <span className="font-bold text-xs text-slate-900 dark:text-slate-100">Tentukan Jumlah Bebas</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                           Ketik Angka
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug mt-0.5">
                         Tentukan target jumlah (bisa 10, 25, 50, 100+ butir soal) sesuai kebutuhan materi.
                       </p>
                     </div>
@@ -404,21 +402,21 @@ LATIHAN SOAL EVALUASI:
                   {extractionMode === 'custom' ? (
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
-                        <label htmlFor="file-target-count-input" className="font-semibold text-slate-700">
+                        <label htmlFor="file-target-count-input" className="font-semibold text-slate-700 dark:text-slate-300">
                           Target Soal:
                         </label>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-teal-100 text-teal-800">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                           {targetCount} Soal
                         </span>
                       </div>
 
                       {/* Stepper + Direct Typing Input (No 50 cap) */}
-                      <div className="flex items-center border border-teal-300 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-200 rounded-xl bg-white overflow-hidden shadow-xs">
+                      <div className="flex items-center border border-teal-300 dark:border-teal-700 focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-200 rounded-xl bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
                         <button
                           type="button"
                           onClick={() => handleTargetStep(-1)}
                           disabled={targetCount <= 1}
-                          className="px-2.5 py-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 disabled:opacity-40 font-bold border-r border-slate-200 cursor-pointer"
+                          className="px-2.5 py-1.5 text-slate-500 dark:text-slate-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-800 disabled:opacity-40 font-bold border-r border-slate-200 dark:border-slate-700 cursor-pointer"
                           title="Kurangi 1"
                         >
                           -
@@ -440,12 +438,12 @@ LATIHAN SOAL EVALUASI:
                             }
                           }}
                           placeholder="Ketik angka..."
-                          className="w-full text-center py-1.5 px-1 font-bold text-slate-800 outline-none text-xs"
+                          className="w-full text-center py-1.5 px-1 font-bold text-slate-800 dark:text-slate-100 bg-transparent outline-none text-xs"
                         />
                         <button
                           type="button"
                           onClick={() => handleTargetStep(1)}
-                          className="px-2.5 py-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 font-bold border-l border-slate-200 cursor-pointer"
+                          className="px-2.5 py-1.5 text-slate-500 dark:text-slate-400 hover:text-teal-700 dark:hover:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-800 font-bold border-l border-slate-200 dark:border-slate-700 cursor-pointer"
                           title="Tambah 1"
                         >
                           +
@@ -461,8 +459,8 @@ LATIHAN SOAL EVALUASI:
                             onClick={() => handleTargetPreset(preset)}
                             className={`text-[10px] px-1.5 py-0.5 rounded-md border font-semibold cursor-pointer transition-all ${
                               targetCount === preset
-                                ? 'bg-teal-600 text-white border-teal-600'
-                                : 'bg-white text-slate-600 border-slate-200 hover:border-teal-300'
+                                ? 'bg-teal-600 text-white border-teal-600 shadow-xs'
+                                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-teal-300'
                             }`}
                           >
                             {preset}
@@ -471,24 +469,24 @@ LATIHAN SOAL EVALUASI:
                       </div>
                     </div>
                   ) : (
-                    <div className="p-3 rounded-xl bg-teal-50/80 border border-teal-200 text-teal-900 flex flex-col justify-center gap-1">
+                    <div className="p-3 rounded-xl bg-teal-50/80 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-900 dark:text-teal-200 flex flex-col justify-center gap-1">
                       <span className="font-bold text-[11px] flex items-center gap-1">
                         <span>✨ Mode Otomatis</span>
                       </span>
-                      <p className="text-[10px] text-teal-800 leading-snug">
+                      <p className="text-[10px] text-teal-800 dark:text-teal-300 leading-snug">
                         AI akan memindai dan mengekstrak semua soal yang ditemukan dalam dokumen tanpa batasan maksimal.
                       </p>
                     </div>
                   )}
 
                   <div>
-                    <label className="font-semibold text-slate-600 block mb-1">
+                    <label className="font-semibold text-slate-600 dark:text-slate-300 block mb-1">
                       Preferensi Tipe Soal:
                     </label>
                     <select
                       value={preferredType}
                       onChange={(e) => setPreferredType(e.target.value)}
-                      className="w-full p-2 rounded-xl border border-slate-300 bg-white"
+                      className="w-full p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none"
                     >
                       <option value="campuran">Campuran (PG, Isian, Jodoh)</option>
                       <option value="multiple_choice">Pilihan Ganda Saja</option>
@@ -498,13 +496,13 @@ LATIHAN SOAL EVALUASI:
                   </div>
 
                   <div>
-                    <label className="font-semibold text-slate-600 block mb-1">
+                    <label className="font-semibold text-slate-600 dark:text-slate-300 block mb-1">
                       Target Jenjang:
                     </label>
                     <select
                       value={gradeLevel}
                       onChange={(e) => setGradeLevel(e.target.value)}
-                      className="w-full p-2 rounded-xl border border-slate-300 bg-white"
+                      className="w-full p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none"
                     >
                       <option value="SD">SD / MI</option>
                       <option value="SMP">SMP / MTs</option>
@@ -517,13 +515,20 @@ LATIHAN SOAL EVALUASI:
 
               {/* Loading State during AI processing */}
               {isLoading && (
-                <div className="p-6 rounded-2xl bg-teal-50 border border-teal-200 text-center space-y-3">
-                  <PesutMahakamMascot className="w-20 h-20 mx-auto" isProcessing={true} />
+                <div className="p-6 rounded-2xl bg-teal-50 dark:bg-slate-800/80 border border-teal-200 dark:border-slate-700 text-center space-y-3">
+                  <div className="relative flex items-center justify-center w-20 h-20 mx-auto">
+                    <div className="absolute inset-0 rounded-2xl bg-teal-500/20 dark:bg-teal-400/10 animate-ping" />
+                    <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-tr from-teal-600 via-cyan-500 to-indigo-600 p-[2px] shadow-lg">
+                      <div className="w-full h-full rounded-[14px] bg-white dark:bg-slate-900 flex items-center justify-center text-teal-600 dark:text-teal-400">
+                        <Sparkles className="w-8 h-8 animate-spin-slow text-teal-500" />
+                      </div>
+                    </div>
+                  </div>
                   <div className="space-y-1">
-                    <span className="font-bold text-sm text-teal-900 block">
+                    <span className="font-bold text-sm text-teal-900 dark:text-teal-200 block">
                       AI Sedang Memproses Dokumen Anda...
                     </span>
-                    <p className="text-xs text-teal-700">{statusStep}</p>
+                    <p className="text-xs text-teal-700 dark:text-teal-300">{statusStep}</p>
                   </div>
                 </div>
               )}
@@ -531,25 +536,25 @@ LATIHAN SOAL EVALUASI:
           ) : (
             /* Result Preview of Extracted Quiz */
             <div className="space-y-4">
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 space-y-2">
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-50 to-emerald-50 dark:from-teal-950/70 dark:to-emerald-950/60 border border-teal-200 dark:border-teal-800 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-200 text-teal-800">
+                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-200 dark:bg-teal-900 text-teal-800 dark:text-teal-200">
                     Ekstraksi Berhasil ✨
                   </span>
-                  <span className="font-mono text-xs font-bold text-slate-700 bg-white px-2 py-0.5 rounded-md border border-teal-200">
+                  <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800">
                     PIN: {extractedQuiz.code}
                   </span>
                 </div>
 
-                <h3 className="font-bold text-base text-slate-900">{extractedQuiz.title}</h3>
-                <p className="text-xs text-slate-600">{extractedQuiz.description}</p>
+                <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">{extractedQuiz.title}</h3>
+                <p className="text-xs text-slate-600 dark:text-slate-300">{extractedQuiz.description}</p>
 
-                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-500">
-                  <span className="bg-white px-2 py-0.5 rounded-md border border-teal-200 font-semibold text-teal-800">
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                  <span className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-teal-200 dark:border-teal-800 font-semibold text-teal-800 dark:text-teal-200">
                     📝 {extractedQuiz.questions.length} Soal
                   </span>
                   {extractedQuiz.categories?.map((cat) => (
-                    <span key={cat} className="bg-white px-2 py-0.5 rounded-md border border-slate-200">
+                    <span key={cat} className="bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                       🏷️ {cat}
                     </span>
                   ))}
@@ -558,20 +563,20 @@ LATIHAN SOAL EVALUASI:
 
               {/* List of extracted questions */}
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
                   Daftar Soal yang Terdeteksi:
                 </span>
 
                 {extractedQuiz.questions.map((q, qIdx) => (
-                  <div key={q.id || qIdx} className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+                  <div key={q.id || qIdx} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-xs space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-2">
-                        <span className="w-5 h-5 rounded-md bg-teal-100 text-teal-800 font-bold text-[10px] flex items-center justify-center shrink-0">
+                        <span className="w-5 h-5 rounded-md bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 font-bold text-[10px] flex items-center justify-center shrink-0">
                           {qIdx + 1}
                         </span>
-                        <span className="font-bold text-slate-800 leading-snug">{q.text}</span>
+                        <span className="font-bold text-slate-800 dark:text-slate-100 leading-snug">{q.text}</span>
                       </div>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600 shrink-0">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 shrink-0">
                         {q.type === 'multiple_choice' ? 'Pilihan Ganda' : q.type === 'short_answer' ? 'Isian Singkat' : 'Menjodohkan'}
                       </span>
                     </div>
@@ -582,7 +587,7 @@ LATIHAN SOAL EVALUASI:
                           <div
                             key={oIdx}
                             className={`p-1.5 rounded-lg truncate ${
-                              oIdx === q.correctOption ? 'bg-emerald-100 text-emerald-900 font-bold' : 'bg-white text-slate-600 border'
+                              oIdx === q.correctOption ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-200 font-bold border border-emerald-200 dark:border-emerald-700' : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                             }`}
                           >
                             {String.fromCharCode(65 + oIdx)}. {opt}
@@ -592,25 +597,25 @@ LATIHAN SOAL EVALUASI:
                     )}
 
                     {q.type === 'short_answer' && (
-                      <div className="pl-7 text-[11px] text-slate-600">
-                        Kunci: <strong className="text-emerald-800">{(q.acceptedAnswers || []).join(' / ')}</strong>
+                      <div className="pl-7 text-[11px] text-slate-600 dark:text-slate-300">
+                        Kunci: <strong className="text-emerald-800 dark:text-emerald-300">{(q.acceptedAnswers || []).join(' / ')}</strong>
                       </div>
                     )}
 
                     {q.type === 'matching' && (
                       <div className="pl-7 space-y-0.5 text-[11px]">
                         {(q.matchingPairs || []).map((p, pIdx) => (
-                          <div key={pIdx} className="flex items-center gap-1.5 text-slate-700">
+                          <div key={pIdx} className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
                             <span>{p.left}</span>
                             <span className="text-slate-400">➔</span>
-                            <strong className="text-indigo-800">{p.right}</strong>
+                            <strong className="text-indigo-800 dark:text-indigo-300">{p.right}</strong>
                           </div>
                         ))}
                       </div>
                     )}
 
                     {q.explanation && (
-                      <p className="pl-7 text-[11px] text-slate-500 italic">
+                      <p className="pl-7 text-[11px] text-slate-500 dark:text-slate-400 italic">
                         💡 {q.explanation}
                       </p>
                     )}
@@ -622,11 +627,11 @@ LATIHAN SOAL EVALUASI:
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-slate-100 flex items-center justify-end gap-3">
+        <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3 transition-colors">
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-semibold text-xs hover:bg-slate-50"
+            className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-semibold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
           >
             Batal
           </button>

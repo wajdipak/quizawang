@@ -9,8 +9,7 @@ import {
   Eye, 
   Minus, 
   Plus,
-  Sliders,
-  Sparkles
+  Sliders
 } from 'lucide-react';
 
 export const AccessibilityFloatingWidget: React.FC = () => {
@@ -44,10 +43,33 @@ export const AccessibilityFloatingWidget: React.FC = () => {
     return false;
   });
 
+  // Drag and Docking states
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDocked, setIsDocked] = useState(true); // Default docked in corner for clean look
+  const [dockCorner, setDockCorner] = useState<'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'>('bottom-right');
+  
+  const dragStartRef = useRef<{ x: number; y: number; posX: number; posY: number }>({ x: 0, y: 0, posX: 0, posY: 0 });
+  const hasDraggedRef = useRef(false);
+  const autoHideTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const panelRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  // Apply theme to document
+  // Auto hide back to corner after 3 seconds if undocked and panel closed
+  useEffect(() => {
+    if (!isDocked && !isOpen && !isDragging) {
+      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
+      autoHideTimerRef.current = setTimeout(() => {
+        setIsDocked(true);
+      }, 3000);
+    }
+    return () => {
+      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
+    };
+  }, [isDocked, isOpen, isDragging]);
+
+  // Apply theme
   useEffect(() => {
     const root = document.documentElement;
     if (isDark) {
@@ -59,7 +81,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
     }
   }, [isDark]);
 
-  // Apply font scale to root HTML
+  // Apply font scale
   useEffect(() => {
     const root = document.documentElement;
     root.style.fontSize = `${fontScale}%`;
@@ -107,6 +129,113 @@ export const AccessibilityFloatingWidget: React.FC = () => {
     };
   }, [isOpen]);
 
+  // Drag handlers
+  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    hasDraggedRef.current = false;
+    setIsDragging(true);
+    if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
+
+    dragStartRef.current = {
+      x: clientX,
+      y: clientY,
+      posX: pos?.x ?? rect.left,
+      posY: pos?.y ?? rect.top
+    };
+  };
+
+  useEffect(() => {
+    const handlePointerMove = (e: MouseEvent | TouchEvent) => {
+      if (!isDragging) return;
+      const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+
+      const dx = clientX - dragStartRef.current.x;
+      const dy = clientY - dragStartRef.current.y;
+
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        hasDraggedRef.current = true;
+        if (isDocked) setIsDocked(false);
+      }
+
+      const newX = Math.max(10, Math.min(window.innerWidth - 60, dragStartRef.current.posX + dx));
+      const newY = Math.max(10, Math.min(window.innerHeight - 60, dragStartRef.current.posY + dy));
+
+      setPos({ x: newX, y: newY });
+    };
+
+    const handlePointerUp = () => {
+      if (!isDragging) return;
+      setIsDragging(false);
+
+      if (pos) {
+        const threshold = 120;
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+
+        let corner: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' = 'bottom-right';
+        let shouldDock = false;
+
+        if (pos.x < threshold && pos.y < threshold) {
+          corner = 'top-left';
+          shouldDock = true;
+        } else if (pos.x > screenW - threshold - 60 && pos.y < threshold) {
+          corner = 'top-right';
+          shouldDock = true;
+        } else if (pos.x < threshold && pos.y > screenH - threshold - 60) {
+          corner = 'bottom-left';
+          shouldDock = true;
+        } else if (pos.x > screenW - threshold - 60 && pos.y > screenH - threshold - 60) {
+          corner = 'bottom-right';
+          shouldDock = true;
+        }
+
+        if (shouldDock) {
+          setIsDocked(true);
+          setDockCorner(corner);
+          setPos(null);
+          setIsOpen(false);
+        }
+      }
+    };
+
+    if (isDragging) {
+      window.addEventListener('mousemove', handlePointerMove);
+      window.addEventListener('mouseup', handlePointerUp);
+      window.addEventListener('touchmove', handlePointerMove);
+      window.addEventListener('touchend', handlePointerUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handlePointerMove);
+      window.removeEventListener('mouseup', handlePointerUp);
+      window.removeEventListener('touchmove', handlePointerMove);
+      window.removeEventListener('touchend', handlePointerUp);
+    };
+  }, [isDragging, pos, isDocked]);
+
+  const handleButtonClick = () => {
+    if (hasDraggedRef.current) return; // Ignore click if we just finished dragging
+
+    if (isDocked) {
+      setIsDocked(false);
+      // Un-tuck and float near the corner
+      if (dockCorner === 'bottom-right') setPos({ x: window.innerWidth - 80, y: window.innerHeight - 150 });
+      else if (dockCorner === 'bottom-left') setPos({ x: 20, y: window.innerHeight - 150 });
+      else if (dockCorner === 'top-right') setPos({ x: window.innerWidth - 80, y: 20 });
+      else setPos({ x: 20, y: 20 });
+      setIsOpen(true);
+    } else {
+      setIsOpen((prev) => !prev);
+      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current);
+    }
+  };
+
   const handleReset = () => {
     setIsDark(false);
     setFontScale(100);
@@ -123,53 +252,71 @@ export const AccessibilityFloatingWidget: React.FC = () => {
     return 'Maksimal (140%)';
   };
 
+  // Determine container positioning classes / styles
+  let containerClassName = "fixed z-50 transition-all duration-300";
+  let style: React.CSSProperties = {};
+
+  if (isDocked) {
+    switch (dockCorner) {
+      case 'bottom-right':
+        containerClassName += " bottom-4 right-4 translate-x-2 translate-y-2 opacity-50 hover:opacity-100";
+        break;
+      case 'bottom-left':
+        containerClassName += " bottom-4 left-4 -translate-x-2 translate-y-2 opacity-50 hover:opacity-100";
+        break;
+      case 'top-right':
+        containerClassName += " top-4 right-4 translate-x-2 -translate-y-2 opacity-50 hover:opacity-100";
+        break;
+      case 'top-left':
+        containerClassName += " top-4 left-4 -translate-x-2 -translate-y-2 opacity-50 hover:opacity-100";
+        break;
+    }
+  } else if (pos) {
+    style = { left: `${pos.x}px`, top: `${pos.y}px` };
+  } else {
+    // Default floating position (above bottom navbar on mobile)
+    containerClassName += " bottom-28 right-4 sm:bottom-6 sm:right-6";
+  }
+
   return (
-    <aside aria-label="Menu Aksesibilitas dan Tampilan" className="fixed bottom-28 right-4 sm:bottom-6 sm:right-6 z-50">
-      {/* Floating Trigger Button */}
+    <aside aria-label="Menu Aksesibilitas dan Tampilan" className={containerClassName} style={style}>
+      {/* Floating & Draggable Trigger Button - Icon Only */}
       <button
         ref={triggerRef}
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onMouseDown={handlePointerDown}
+        onTouchStart={handlePointerDown}
+        onClick={handleButtonClick}
         aria-expanded={isOpen}
         aria-controls="accessibility-panel"
         aria-label="Buka Pengaturan Aksesibilitas dan Ukuran Font"
-        className="group relative flex items-center gap-2 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-full bg-gradient-to-r from-teal-700 via-teal-800 to-cyan-900 text-white shadow-xl hover:shadow-teal-500/25 hover:scale-105 active:scale-95 transition-all duration-200 border border-teal-400/40 focus:outline-none focus:ring-4 focus:ring-teal-400/40 cursor-pointer"
+        className="group relative flex items-center justify-center p-3.5 rounded-full bg-gradient-to-r from-teal-700 via-teal-800 to-cyan-900 text-white shadow-xl hover:shadow-teal-500/25 hover:scale-110 active:scale-95 transition-transform duration-200 border border-teal-400/40 focus:outline-none focus:ring-4 focus:ring-teal-400/40 cursor-grab active:cursor-grabbing select-none"
+        title="Geser atau Klik untuk Aksesibilitas"
       >
-        <span className="relative flex items-center justify-center w-5 h-5">
+        <span className="relative flex items-center justify-center w-5 h-5 pointer-events-none">
           {isDark ? (
-            <Moon className="w-4 h-4 text-amber-300 transition-transform group-hover:rotate-12" />
+            <Moon className="w-5 h-5 text-amber-300 transition-transform group-hover:rotate-12" />
           ) : (
-            <Sliders className="w-4 h-4 text-emerald-300 transition-transform group-hover:rotate-45" />
+            <Sliders className="w-5 h-5 text-emerald-300 transition-transform group-hover:rotate-45" />
+          )}
+          {/* Active indicator dot */}
+          {(isDark || fontScale !== 100 || highContrast) && (
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-teal-900" title="Pengaturan Aktif" />
           )}
         </span>
-
-        <span className="font-semibold text-xs sm:text-sm tracking-tight hidden sm:inline">
-          Aksesibilitas
-        </span>
-
-        {/* Status indicators */}
-        <div className="flex items-center gap-1 pl-1">
-          {isDark && (
-            <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-teal-900" title="Mode Gelap Aktif" />
-          )}
-          {fontScale !== 100 && (
-            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-teal-400/20 text-teal-200 border border-teal-400/30">
-              {fontScale}%
-            </span>
-          )}
-        </div>
       </button>
 
-      {/* Floating Popover Panel */}
+      {/* Centered Modal Popover Panel */}
       {isOpen && (
-        <div
-          ref={panelRef}
-          id="accessibility-panel"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="acc-panel-title"
-          className="absolute bottom-14 right-0 w-[calc(100vw-2rem)] sm:w-96 max-w-sm bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 space-y-4 animate-in fade-in slide-in-from-bottom-3 duration-200 backdrop-blur-xl"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+          <div
+            ref={panelRef}
+            id="accessibility-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="acc-panel-title"
+            className="w-full max-w-lg bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-200"
+          >
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
             <div className="flex items-center gap-2">
@@ -359,6 +506,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
             >
               Terapkan
             </button>
+          </div>
           </div>
         </div>
       )}

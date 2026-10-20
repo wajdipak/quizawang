@@ -22,6 +22,7 @@ import {
   saveQuizToFirebase,
   deleteQuizFromFirebase,
   saveSubmissionToFirebase,
+  deleteSubmissionFromFirebase,
   subscribeQuizzesRealtime,
   subscribeSubmissionsRealtime
 } from './services/firebaseSync.js';
@@ -211,12 +212,21 @@ export default function App() {
     }
   };
 
-  const handleClearSubmissions = (quizId?: string) => {
+  const handleDeleteSubmission = async (submissionId: string) => {
     setSubmissions((prev) => {
-      const updated = quizId ? prev.filter((s) => s.quizId !== quizId) : [];
+      const updated = prev.filter((s) => {
+        const sId = s.id || `${s.quizId}-${s.studentName}-${s.submittedAt}`;
+        return sId !== submissionId && s.id !== submissionId;
+      });
       saveStoredSubmissions(updated);
       return updated;
     });
+
+    try {
+      await deleteSubmissionFromFirebase(submissionId);
+    } catch (err) {
+      console.error('[Firebase] Error deleting submission:', err);
+    }
   };
 
   const handleViewAnalyticsForQuiz = (quizId: string) => {
@@ -368,7 +378,7 @@ export default function App() {
             quizzes={quizzes}
             submissions={submissions}
             selectedQuizId={analyticsSelectedQuizId}
-            onClearSubmissions={handleClearSubmissions}
+            onDeleteSubmission={handleDeleteSubmission}
           />
         )}
       </main>

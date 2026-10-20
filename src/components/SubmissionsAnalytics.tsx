@@ -22,14 +22,14 @@ interface Props {
   quizzes: Quiz[];
   submissions: StudentSubmission[];
   selectedQuizId?: string | null;
-  onClearSubmissions: (quizId?: string) => void;
+  onDeleteSubmission: (submissionId: string) => void;
 }
 
 export const SubmissionsAnalytics: React.FC<Props> = ({
   quizzes,
   submissions,
   selectedQuizId: initialSelectedQuizId,
-  onClearSubmissions
+  onDeleteSubmission
 }) => {
   const [filterQuizId, setFilterQuizId] = useState<string>(initialSelectedQuizId || 'ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -249,17 +249,6 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
             />
           </div>
         </div>
-
-        {filtered.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onClearSubmissions(filterQuizId === 'ALL' ? undefined : filterQuizId)}
-            className="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-rose-50 transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Reset Riwayat</span>
-          </button>
-        )}
       </div>
 
       {/* Submissions Table */}
@@ -358,15 +347,32 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
                           {formatTimeRemaining(sub.timeSpentSeconds)}
                         </td>
                         <td className="py-3 px-4">
-                          <button
-                            type="button"
-                            onClick={() => setInspectSubmission(sub)}
-                            className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/70 hover:bg-teal-100 dark:hover:bg-teal-900 text-teal-700 dark:text-teal-300 transition-colors flex items-center gap-1 text-[11px] font-semibold cursor-pointer"
-                            title="Lihat Lembar Jawaban Siswa"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Rincian</span>
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setInspectSubmission(sub)}
+                              className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/70 hover:bg-teal-100 dark:hover:bg-teal-900 text-teal-700 dark:text-teal-300 transition-colors flex items-center gap-1 text-[11px] font-semibold cursor-pointer"
+                              title="Lihat Lembar Jawaban Siswa"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Rincian</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const subId = sub.id || `${sub.quizId}-${sub.studentName}-${sub.submittedAt}`;
+                                if (window.confirm(`Hapus data nilai siswa ${sub.studentName}?`)) {
+                                  onDeleteSubmission(subId);
+                                }
+                              }}
+                              className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/70 hover:bg-rose-100 dark:hover:bg-rose-900 text-rose-700 dark:text-rose-300 transition-colors flex items-center gap-1 text-[11px] font-semibold cursor-pointer relative z-10"
+                              title="Hapus Nilai Siswa Ini"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Hapus</span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

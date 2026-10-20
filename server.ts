@@ -218,7 +218,8 @@ Instruksi Khusus:
 2. Setiap soal memiliki tepat 4 opsi pilihan jawaban (A, B, C, D).
 3. Berikan 'correctOption' berupa indeks angka (0 = A, 1 = B, 2 = C, 3 = D).
 4. Berikan 'explanation' singkat dan mendidik yang menjelaskan mengapa jawaban tersebut benar.
-5. Format output WAJIB HANYA berupa JSON valid tanpa markdown pembungkus (tanpa \`\`\`json).
+5. TENTUKAN POIN: Tentukan poin untuk setiap soal berdasarkan tingkat kesulitan yang dipilih (${difficulty}), sehingga TOTAL POIN dari seluruh soal tepat berjumlah 100.
+6. Format output WAJIB HANYA berupa JSON valid tanpa markdown pembungkus (tanpa \`\`\`json).
 
 Contoh skema JSON:
 {
@@ -231,7 +232,8 @@ Contoh skema JSON:
       "text": "Pertanyaan...",
       "options": ["Opsi A", "Opsi B", "Opsi C", "Opsi D"],
       "correctOption": 0,
-      "explanation": "Penjelasan..."
+      "explanation": "Penjelasan...",
+      "points": 20
     }
   ]
 }`;
@@ -322,7 +324,10 @@ app.post('/api/generate-quiz', async (req: Request, res: Response) => {
     const prompt = `Anda adalah asisten kurikulum cerdas "Awang Long Quiz".
 Buat kuis sebanyak ${count} soal pilihan ganda tentang topik: "${topic}".
 Tingkat pendidikan: ${gradeLevel}. Tingkat kesulitan: ${difficulty}.
-Keluarkan HANYA JSON valid dengan skema:
+
+Instruksi Khusus:
+- TENTUKAN POIN: Tentukan poin untuk setiap soal berdasarkan tingkat kesulitan yang dipilih (${difficulty}), sehingga TOTAL POIN dari seluruh soal tepat berjumlah 100.
+- Keluarkan HANYA JSON valid dengan skema:
 {
   "title": "string",
   "description": "string",
@@ -333,7 +338,8 @@ Keluarkan HANYA JSON valid dengan skema:
       "text": "pertanyaan",
       "options": ["A", "B", "C", "D"],
       "correctOption": 0,
-      "explanation": "alasan jawaban benar"
+      "explanation": "alasan jawaban benar",
+      "points": 20
     }
   ]
 }`;

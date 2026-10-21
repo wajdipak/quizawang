@@ -59,7 +59,7 @@ export const StudentExamPortal: React.FC<Props> = ({
   // Sesi 1: Student Information State
   const [studentName, setStudentName] = useState('');
   const [studentNis, setStudentNis] = useState('');
-  const [studentClass, setStudentClass] = useState('8-A SMP Awang Long');
+  const [studentClass, setStudentClass] = useState('IV-C');
   const [studentNote, setStudentNote] = useState('');
   const [infoError, setInfoError] = useState<string | null>(null);
 

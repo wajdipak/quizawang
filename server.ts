@@ -22,6 +22,14 @@ function getGeminiClient(): GoogleGenAI | null {
   return new GoogleGenAI({ apiKey: key });
 }
 
+function getFallbackMaterial(topic: string): string {
+  const isAwangLong = /awang|kutai|mahakam|tenggarong|kalimantan/i.test(topic);
+  if (isAwangLong) {
+    return `BAHAN BACAAN MATERI: SEJARAH PERJUANGAN AWANG LONG & KUTAI KARTANEGARA\n\n1. Mengenal Panglima Awang Long\nAwang Long bergelar Senapati Pahlawan Sakti adalah seorang panglima perang yang memimpin perlawanan heroik rakyat Kesultanan Kutai Kartanegara ing Martadipura menentang agresi kolonial Belanda pada tahun 1844.\n\n2. Pertempuran di Sungai Mahakam\nMedan laga utama berpusat di perairan Sungai Mahakam dan benteng pertahanan Tenggarong, di mana armada rakyat berjuang mempertahankan kedaulatan tanah leluhur.\n\n3. Nilai Kepahlawanan\nKeteladanan Awang Long meliputi keberanian tanpa gentar, jiwa patriotisme membela tanah air, serta komitmen menjaga persatuan dan kelestarian budaya Kalimantan Timur.`;
+  }
+  return `BAHAN BACAAN & RINGKASAN MATERI: ${topic}\n\n1. Konsep Utama\nTopik mengenai "${topic}" membahas prinsip-prinsip fundamental, definisi esensial, serta analisis kontekstual yang mendalam.\n\n2. Poin Pembelajaran\n- Memahami terminologi dan ruang lingkup ${topic}.\n- Menelaah penerapan nyata serta studi kasus terkait.\n- Menguji pemahaman melalui evaluasi butir-butir soal latihan.\n\nSilakan baca ringkasan materi di atas dengan cermat sebelum mulai mengerjakan ujian kuis.`;
+}
+
 // Fallback high-quality question generator if API key is unconfigured or rate limited
 function getFallbackQuestions(topic: string, count: number = 5) {
   const isAwangLong = /awang|kutai|mahakam|tenggarong|kalimantan/i.test(topic);
@@ -199,6 +207,7 @@ app.get('/api/generate-quiz-stream', async (req: Request, res: Response) => {
       description: `Kuis online interaktif materi ${topic} untuk tingkat ${gradeLevel} (${difficulty}).`,
       subject: topic,
       gradeLevel,
+      materialContent: getFallbackMaterial(topic),
       questions
     });
     res.end();
@@ -218,14 +227,16 @@ Instruksi Khusus:
 2. Setiap soal memiliki tepat 4 opsi pilihan jawaban (A, B, C, D).
 3. Berikan 'correctOption' berupa indeks angka (0 = A, 1 = B, 2 = C, 3 = D).
 4. Berikan 'explanation' singkat dan mendidik yang menjelaskan mengapa jawaban tersebut benar.
-5. TENTUKAN POIN: Tentukan poin untuk setiap soal berdasarkan tingkat kesulitan yang dipilih (${difficulty}), sehingga TOTAL POIN dari seluruh soal tepat berjumlah 100.
-6. Format output WAJIB HANYA berupa JSON valid tanpa markdown pembungkus (tanpa \`\`\`json).
+5. Berikan 'materialContent' berupa teks bahan bacaan atau ringkasan materi pembelajaran yang komprehensif untuk dibaca siswa di awal kuis.
+6. TENTUKAN POIN: Tentukan poin untuk setiap soal berdasarkan tingkat kesulitan yang dipilih (${difficulty}), sehingga TOTAL POIN dari seluruh soal tepat berjumlah 100.
+7. Format output WAJIB HANYA berupa JSON valid tanpa markdown pembungkus (tanpa \`\`\`json).
 
 Contoh skema JSON:
 {
   "title": "Kuis: ...",
   "description": "Deskripsi singkat kuis...",
   "subject": "${topic}",
+  "materialContent": "Bahan bacaan ringkasan materi...",
   "questions": [
     {
       "id": "q1",
@@ -263,6 +274,7 @@ Contoh skema JSON:
         description: parsed.description || `Kuis edukasi ${topic}`,
         subject: parsed.subject || topic,
         gradeLevel,
+        materialContent: parsed.materialContent || getFallbackMaterial(topic),
         questions: (parsed.questions || []).map((q: any, idx: number) => ({
           id: q.id || `ai-q-${idx + 1}`,
           type: q.type || 'multiple_choice',
@@ -284,6 +296,7 @@ Contoh skema JSON:
         description: `Kuis online interaktif ${topic}`,
         subject: topic,
         gradeLevel,
+        materialContent: getFallbackMaterial(topic),
         questions: fallback
       });
     }
@@ -400,6 +413,7 @@ app.post('/api/extract-quiz-from-file', async (req: Request, res: Response) => {
       subject: topicExtracted || 'Materi Umum',
       gradeLevel,
       categories: ['Ekstraksi Dokumen Lengkap', 'Materi Inti'],
+      materialContent: textContent || getFallbackMaterial(topicExtracted),
       questions: fallback
     });
   }
@@ -423,6 +437,7 @@ Spesifikasi Kuis:
 - Untuk 'matching': Wajib matchingPairs (array objek { id, left, right } minimal 2-4 pasang).
 - Tetapkan poin yang adil.
 - Berikan kategori materi (category) dan pembahasan edukatif (explanation) untuk setiap soal.
+- Berikan 'materialContent' berupa ringkasan bahan bacaan atau teks materi lengkap dari dokumen untuk dibaca siswa di awal kuis.
 
 Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
 {
@@ -431,6 +446,7 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
   "subject": "string (Mata pelajaran terdeteksi)",
   "gradeLevel": "${gradeLevel}",
   "categories": ["Kategori 1", "Kategori 2"],
+  "materialContent": "string (Bahan bacaan / teks materi lengkap)",
   "questions": [
     {
       "id": "q1",

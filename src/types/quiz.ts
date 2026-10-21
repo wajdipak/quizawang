@@ -40,6 +40,11 @@ export interface Quiz {
   createdBy: string;
   isActive: boolean;
   categories: string[];
+  materialContent?: string; // Learning material / reading text at the beginning of the quiz
+  materialType?: 'text' | 'pdf' | 'ppt' | 'youtube';
+  materialFileUrl?: string;
+  materialFileName?: string;
+  materialYoutubeUrl?: string;
   questions: Question[];
 }
 

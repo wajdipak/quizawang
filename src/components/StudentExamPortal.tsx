@@ -53,8 +53,8 @@ export const StudentExamPortal: React.FC<Props> = ({
   onBackToHome,
   isStandaloneExam = false
 }) => {
-  // Session Step: 1 = Student Information, 2 = Question Answering, 3 = Instant Results
-  const [currentSession, setCurrentSession] = useState<1 | 2 | 3>(1);
+  // Session Step: 1 = Student Information, 'material' = Reading Material, 2 = Question Answering, 3 = Instant Results
+  const [currentSession, setCurrentSession] = useState<1 | 'material' | 2 | 3>(1);
 
   // Sesi 1: Student Information State
   const [studentName, setStudentName] = useState('');
@@ -153,7 +153,15 @@ export const StudentExamPortal: React.FC<Props> = ({
       return;
     }
 
-    // Reset session 2 timer and start
+    // Proceed to Reading Material session first
+    setCurrentSession('material');
+
+    if (soundEnabled) {
+      playSuccessSound();
+    }
+  };
+
+  const handleStartExamFromMaterial = () => {
     const initialSeconds = quiz.durationMinutes > 0 ? quiz.durationMinutes * 60 : 0;
     setSecondsRemaining(initialSeconds);
     startTimeRef.current = Date.now();
@@ -419,7 +427,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                     type="text"
                     value={studentNote}
                     onChange={(e) => setStudentNote(e.target.value)}
-                    placeholder="Contoh: SMP Negeri Awang Long / Siap mengerjakan"
+                    placeholder="Contoh: SD Negeri 008 Samarinda Kota / Siap mengerjakan"
                     className="w-full text-xs p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400/50 transition-colors"
                   />
                 </div>
@@ -444,13 +452,145 @@ export const StudentExamPortal: React.FC<Props> = ({
               type="submit"
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-teal-500 via-cyan-500 to-sky-500 hover:from-teal-600 hover:to-sky-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Lanjut ke Sesi 2: Mulai Kerjakan Soal</span>
+              <span>Lanjut ke Bahan Bacaan & Materi Pembelajaran</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
 
         </div>
 
+      </div>
+    );
+  }
+
+  // ==========================================
+  // SESI 1.5: BAHAN BACAAN & MATERI PEMBELAJARAN
+  // ==========================================
+  if (currentSession === 'material') {
+    const readingMaterialText = quiz.materialContent && quiz.materialContent.trim().length > 0
+      ? quiz.materialContent
+      : `Ringkasan Materi & Bahan Bacaan: ${quiz.title}\n\n${quiz.description || 'Pelajari materi dan konsep dasar dari topik ini dengan seksama sebelum mulai mengerjakan butir-butir soal evaluasi kuis.'}\n\nMata Pelajaran: ${quiz.subject} (${quiz.gradeLevel})`;
+
+    const getYouTubeEmbedUrl = (url?: string) => {
+      if (!url) return '';
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const match = url.match(regExp);
+      return match && match[2].length === 11 ? `https://www.youtube.com/embed/${match[2]}` : null;
+    };
+
+    const ytEmbedUrl = quiz.materialType === 'youtube' ? getYouTubeEmbedUrl(quiz.materialYoutubeUrl) : null;
+
+    return (
+      <div className="max-w-3xl mx-auto space-y-5 animate-in fade-in duration-300">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 transition-colors">
+          
+          <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
+            <div className="w-12 h-12 rounded-2xl bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-400 flex items-center justify-center font-bold text-xl shadow-xs shrink-0">
+              📖
+            </div>
+            <div>
+              <span className="px-2.5 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 font-bold text-xs border border-teal-200 dark:border-teal-800">
+                Bahan Bacaan & Materi Pembelajaran Awal
+              </span>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-slate-100 mt-1">
+                {quiz.title}
+              </h1>
+            </div>
+          </div>
+
+          {/* YouTube Video Preview */}
+          {ytEmbedUrl && (
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                ▶️ Video Pembelajaran YouTube:
+              </span>
+              <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800 bg-black">
+                <iframe
+                  src={ytEmbedUrl}
+                  title="YouTube video player"
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          )}
+
+          {/* PDF / PPT Document File Preview */}
+          {(quiz.materialType === 'pdf' || quiz.materialType === 'ppt') && quiz.materialFileUrl && (
+            <div className="space-y-3">
+              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                📄 Dokumen Materi Terlampir:
+              </span>
+              <div className="p-4 rounded-2xl bg-teal-50/70 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="text-3xl shrink-0">📁</span>
+                  <div className="min-w-0">
+                    <span className="font-bold text-xs sm:text-sm text-teal-900 dark:text-teal-100 block truncate">
+                      {quiz.materialFileName || 'Dokumen Materi Pembelajaran'}
+                    </span>
+                    <span className="text-[10px] text-teal-700 dark:text-teal-300 font-semibold uppercase">
+                      {quiz.materialType === 'pdf' ? 'Format Dokumen PDF' : 'Format Presentasi PowerPoint'}
+                    </span>
+                  </div>
+                </div>
+                <a
+                  href={quiz.materialFileUrl}
+                  download={quiz.materialFileName || 'materi'}
+                  className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0 flex items-center gap-1.5"
+                >
+                  <span>Unduh / Lihat File</span>
+                </a>
+              </div>
+
+              {quiz.materialType === 'pdf' && (
+                <div className="w-full h-96 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-100 dark:bg-slate-900">
+                  <iframe
+                    src={quiz.materialFileUrl}
+                    title="PDF Viewer"
+                    className="w-full h-full"
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Text Content */}
+          {(!ytEmbedUrl && !(quiz.materialFileUrl)) && (
+            <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed bg-slate-50/80 dark:bg-slate-800/60 p-5 sm:p-7 rounded-2xl border border-slate-200 dark:border-slate-700/80 whitespace-pre-wrap font-sans">
+              {readingMaterialText}
+            </div>
+          )}
+
+          <div className="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs text-teal-900 dark:text-teal-200 flex items-center gap-3">
+            <span className="text-xl">💡</span>
+            <div>
+              <span className="font-bold block">Tips Belajar:</span>
+              <span>Pastikan Anda membaca dan menyimak materi di atas dengan baik. Setelah siap, klik tombol di bawah untuk mulai mengerjakan butir soal ujian.</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={() => setCurrentSession(1)}
+              className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center gap-2 transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Kembali ke Identitas</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleStartExamFromMaterial}
+              className="px-6 py-3 rounded-2xl bg-gradient-to-r from-teal-500 via-cyan-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+            >
+              <span>Mulai Mengerjakan Soal</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+
+        </div>
       </div>
     );
   }

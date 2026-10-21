@@ -130,6 +130,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
             createdBy: 'Guru Pembuat (AI Assisted)',
             isActive: true,
             categories: [data.subject || promptText, 'Kuis AI'],
+            materialContent: data.materialContent,
             questions: (data.questions || []).map((q: any, idx: number) => ({
               id: q.id || `q-${idx + 1}`,
               type: q.type || 'multiple_choice',
@@ -187,6 +188,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
             createdBy: 'Guru Pembuat (AI Assisted)',
             isActive: true,
             categories: [data.subject || promptText, 'Kuis AI'],
+            materialContent: data.materialContent,
             questions: (data.questions || []).map((q: any, idx: number) => ({
               id: q.id || `q-${idx + 1}`,
               type: q.type || 'multiple_choice',

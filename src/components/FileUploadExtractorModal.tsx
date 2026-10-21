@@ -182,6 +182,7 @@ LATIHAN SOAL EVALUASI:
         createdBy: 'Guru (AI Document Extractor)',
         isActive: true,
         categories: data.categories && data.categories.length > 0 ? data.categories : ['Hasil Ekstraksi'],
+        materialContent: data.materialContent || textContent || `Bahan bacaan dan materi ringkasan dari dokumen ${selectedFile.name}.`,
         questions: (data.questions || []).map((q: any, idx: number) => ({
           id: q.id || `q-ext-${idx + 1}`,
           type: q.type || (idx % 3 === 0 ? 'multiple_choice' : idx % 3 === 1 ? 'short_answer' : 'matching'),

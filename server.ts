@@ -530,6 +530,7 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
       subject: topicExtracted,
       gradeLevel,
       categories: ['Hasil Ekstraksi', topicExtracted],
+      materialContent: textContent || getFallbackMaterial(topicExtracted),
       questions: fallback
     });
   }

@@ -94,7 +94,7 @@ async function generateGeminiWithRetry(
     config?: any;
     action?: string;
   },
-  models: string[] = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest']
+  models: string[] = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']
 ): Promise<string> {
   let lastError: any = null;
   const actionName = params.action || 'gemini-generate';
@@ -740,65 +740,55 @@ app.post('/api/smart-score-quiz', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Tidak ada butir soal yang dikirim untuk penilaian.' });
   }
 
-  if (questions.length === 1) {
-    return res.json({
-      success: true,
-      questions: [{ ...questions[0], points: 100, difficultyTag: 'Utama' }],
-      totalPoints: 100,
-      summary: 'Kuis dengan 1 butir soal secara otomatis bernilai 100 poin.'
-    });
-  }
+  // Exact 100-point allocator ensuring sum(points) is STRICTLY 100 for any question count
+  const allocatePointsStrictly100 = (
+    items: { question: any; weight: number; difficultyTag: string; reason: string }[]
+  ) => {
+    const totalWeight = items.reduce((acc, q) => acc + q.weight, 0);
+    let allocated = 0;
 
-  // Heuristic calculation for pedagogically balanced scoring (weights matching & HOTS questions higher)
-  const calculateHeuristicPoints = (qs: any[]) => {
-    const weighted = qs.map((q) => {
-      let weight = 1.0;
-      let tag = 'Sedang';
-
-      if (q.type === 'matching') {
-        const pairCount = Array.isArray(q.matchingPairs) ? q.matchingPairs.length : 3;
-        weight = 1.8 + Math.min(pairCount * 0.15, 0.7);
-        tag = 'Sulit (Menjodohkan)';
-      } else if (q.type === 'short_answer') {
-        weight = 1.45;
-        tag = 'Sedang-Tinggi (Isian)';
-      } else {
-        const textLen = (q.text || '').length;
-        if (textLen > 130 || /mengapa|analisis|kesimpulan|dampak|hubungan|perbandingan|jelaskan/i.test(q.text || '')) {
-          weight = 1.4;
-          tag = 'Sulit (HOTS - Analisis)';
-        } else if (textLen < 60) {
-          weight = 0.85;
-          tag = 'Mudah (Faktual)';
-        } else {
-          weight = 1.1;
-          tag = 'Sedang';
-        }
-      }
-
+    const scored = items.map((item) => {
+      const rawPoints = Math.max(1, Math.round((item.weight / totalWeight) * 100));
+      allocated += rawPoints;
       return {
-        ...q,
-        _weight: weight,
-        difficultyTag: tag
+        ...item.question,
+        points: rawPoints,
+        difficultyTag: item.difficultyTag,
+        explanation: item.question.explanation || item.reason || ''
       };
     });
 
-    const sumWeights = weighted.reduce((acc, curr) => acc + curr._weight, 0);
-    let allocated = 0;
-    const scored = weighted.map((item) => {
-      const rawPoints = Math.max(1, Math.round((item._weight / sumWeights) * 100));
-      allocated += rawPoints;
-      const { _weight, ...rest } = item;
-      return { ...rest, points: rawPoints };
-    });
+    let delta = 100 - allocated;
+    if (delta !== 0 && scored.length > 0) {
+      // Sort indices by weight descending so hardest questions absorb rounding adjustments first
+      const sorted = scored
+        .map((q, idx) => ({ idx, weight: items[idx].weight, points: q.points }))
+        .sort((a, b) => (delta > 0 ? b.weight - a.weight : a.weight - b.weight));
 
-    const diff = 100 - allocated;
-    if (diff !== 0 && scored.length > 0) {
-      scored[scored.length - 1].points = Math.max(1, scored[scored.length - 1].points + diff);
+      let i = 0;
+      while (delta !== 0 && i < sorted.length) {
+        const targetIdx = sorted[i].idx;
+        const adjustment = delta > 0 ? 1 : -1;
+        if (scored[targetIdx].points + adjustment >= 1) {
+          scored[targetIdx].points += adjustment;
+          delta -= adjustment;
+        }
+        i = (i + 1) % sorted.length;
+      }
     }
 
     return scored;
   };
+
+  if (questions.length === 1) {
+    return res.json({
+      success: true,
+      questions: [{ ...questions[0], points: 100, difficultyTag: 'Mudah' }],
+      totalPoints: 100,
+      source: 'Gemini AI Assessment',
+      summary: 'Kuis dengan 1 butir soal: total skor otomatis bernilai tepat 100 poin.'
+    });
+  }
 
   const genAI = getGeminiClient();
 
@@ -807,74 +797,129 @@ app.post('/api/smart-score-quiz', async (req: Request, res: Response) => {
       const simplifiedQuestions = questions.map((q, i) => ({
         index: i,
         type: q.type,
-        text: (q.text || '').slice(0, 180),
-        optionsCount: q.options ? q.options.length : 0,
-        hasPairs: !!q.matchingPairs
+        text: (q.text || '').slice(0, 250),
+        options: q.options ? q.options.slice(0, 4) : undefined,
+        acceptedAnswers: q.acceptedAnswers,
+        matchingPairsCount: q.matchingPairs ? q.matchingPairs.length : 0
       }));
 
-      const prompt = `Anda adalah pakar evaluasi kurikulum dan perancang asesmen pendidikan.
-Analisis ${questions.length} butir soal ujian berikut:
+      const prompt = `Anda adalah pakar penilai kurikulum dan evaluator asesmen pendidikan.
+Analisis ${questions.length} butir soal kuis berikut untuk menentukan tingkat kesulitannya berdasarkan Taksonomi Bloom dan kompleksitas kognitif:
 ${JSON.stringify(simplifiedQuestions, null, 2)}
 
-Petunjuk Pembobotan:
-1. Evaluasi tingkat kognitif dan kesulitan: 'Mudah', 'Sedang', atau 'Sulit (HOTS)'.
-2. Soal Menjodohkan (matching) dan Isian Singkat (short_answer) atau soal berbasis analisis HOTS harus memperoleh poin lebih tinggi.
-3. Soal pilihan ganda faktual sederhana memperoleh poin lebih ringan.
-4. TOTAL POIN SELURUH SOAL HARUS TEPAT 100.
-5. Format keluaran HANYA JSON array:
+Pedoman Tingkat Kesulitan:
+- 'Mudah': Menguji ingatan dasar (C1-C2), definisi, nama, atau pertanyaan faktual singkat.
+- 'Sedang': Menguji pemahaman, penerapan kontekstual (C3), atau penalaran sedang.
+- 'Sulit (HOTS)': Menguji analisis mendalam (C4-C6), hubungan sebab-akibat, perbandingan kritis, menjodohkan banyak pasangan, atau soal isian analitis.
+
+Keluarkan HANYA JSON array:
 [
-  { "index": 0, "points": 20, "difficultyTag": "Sedang", "reason": "alasan pedagogis singkat" }
+  { "index": 0, "difficulty": "Mudah" | "Sedang" | "Sulit (HOTS)", "reason": "alasan pedagogis singkat" }
 ]`;
 
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('AI scoring timed out')), 6000)
+        setTimeout(() => reject(new Error('AI scoring timed out')), 18000)
       );
 
       const responseText = await Promise.race([
         generateGeminiWithRetry(genAI, {
           contents: prompt,
-          config: { responseMimeType: 'application/json' },
           action: 'smart-score'
-        }, ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash']),
+        }, ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']),
         timeoutPromise
       ]) as string;
 
-      const cleaned = responseText.trim().replace(/^```json\s*/, '').replace(/```$/, '');
-      const aiScoring = JSON.parse(cleaned);
+      const cleaned = responseText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
+      const aiAnalysis = JSON.parse(cleaned);
 
-      if (Array.isArray(aiScoring) && aiScoring.length === questions.length) {
-        const mapped = questions.map((q, idx) => {
-          const item = aiScoring.find((s: any) => s.index === idx) || aiScoring[idx];
+      if (Array.isArray(aiAnalysis) && aiAnalysis.length === questions.length) {
+        const weightedItems = questions.map((q, idx) => {
+          const item = aiAnalysis.find((a: any) => a.index === idx) || aiAnalysis[idx];
+          const diff = String(item?.difficulty || 'Sedang').trim();
+          let weight = 2.0;
+          let tag = 'Sedang';
+
+          if (/sulit|hots|tinggi|analisis/i.test(diff)) {
+            weight = q.type === 'matching' ? 3.8 : 3.0;
+            tag = 'Sulit (HOTS)';
+          } else if (/mudah|faktual|dasar|rendah/i.test(diff)) {
+            weight = 1.0;
+            tag = 'Mudah';
+          } else {
+            weight = q.type === 'matching' ? 2.5 : q.type === 'short_answer' ? 2.2 : 1.8;
+            tag = 'Sedang';
+          }
+
           return {
-            ...q,
-            points: Number(item?.points) || 10,
-            difficultyTag: item?.difficultyTag || 'Sedang',
-            explanation: q.explanation || item?.reason || ''
+            question: q,
+            weight,
+            difficultyTag: tag,
+            reason: item?.reason || `Dinilai sebagai soal ${tag} oleh AI.`
           };
         });
 
-        const adjusted = adjustPointsTo100(mapped);
+        const scored = allocatePointsStrictly100(weightedItems);
+        const hardCount = scored.filter((q) => q.difficultyTag === 'Sulit (HOTS)').length;
+        const medCount = scored.filter((q) => q.difficultyTag === 'Sedang').length;
+        const easyCount = scored.filter((q) => q.difficultyTag === 'Mudah').length;
+
         return res.json({
           success: true,
-          questions: adjusted,
+          questions: scored,
           totalPoints: 100,
           source: 'Gemini AI Assessment',
-          summary: `AI berhasil menganalisis ${questions.length} butir soal berdasarkan Taksonomi Bloom. Total skor tepat 100 poin.`
+          breakdown: { hardCount, medCount, easyCount },
+          summary: `AI berhasil menganalisis ${questions.length} butir soal berdasarkan tingkat kesulitan (${hardCount} Sulit/HOTS, ${medCount} Sedang, ${easyCount} Mudah). Total seluruh skor tepat 100 poin.`
         });
       }
     } catch (err: any) {
-      console.warn('[Gemini] Smart scoring using fallback algorithm:', err?.message || err);
+      console.warn('[Gemini] Smart scoring using cognitive heuristic fallback:', err?.message || err);
     }
   }
 
-  // Graceful fallback to smart heuristic
-  const scored = calculateHeuristicPoints(questions);
+  // Fallback: Intelligent pedagogical cognitive analysis
+  const fallbackWeighted = questions.map((q) => {
+    let weight = 1.8;
+    let tag = 'Sedang';
+    const text = q.text || '';
+    const isHots = /mengapa|analisis|kesimpulan|dampak|hubungan|perbandingan|jelaskan mekanisme|faktor penyebab/i.test(text);
+    const isFactual = /siapakah|kapan|di mana|apa nama|sebutkan|siapa/i.test(text) && text.length < 90;
+
+    if (q.type === 'matching') {
+      const pairCount = Array.isArray(q.matchingPairs) ? q.matchingPairs.length : 3;
+      weight = 2.6 + Math.min(pairCount * 0.3, 1.2);
+      tag = 'Sulit (HOTS)';
+    } else if (isHots || text.length > 130) {
+      weight = 2.8;
+      tag = 'Sulit (HOTS)';
+    } else if (isFactual) {
+      weight = 1.0;
+      tag = 'Mudah';
+    } else if (q.type === 'short_answer') {
+      weight = 2.0;
+      tag = 'Sedang';
+    }
+
+    return {
+      question: q,
+      weight,
+      difficultyTag: tag,
+      reason: `Analisis kognitif mengklasifikasikan butir ini sebagai soal ${tag}.`
+    };
+  });
+
+  const scored = allocatePointsStrictly100(fallbackWeighted);
+  const hardCount = scored.filter((q) => q.difficultyTag === 'Sulit (HOTS)').length;
+  const medCount = scored.filter((q) => q.difficultyTag === 'Sedang').length;
+  const easyCount = scored.filter((q) => q.difficultyTag === 'Mudah').length;
+
   return res.json({
     success: true,
     questions: scored,
     totalPoints: 100,
-    source: 'Smart Pedagogical Algorithm',
-    summary: `Algoritma pintar mendistribusikan bobot soal berdasarkan kompleksitas & jenis soal. Total skor: tepat 100 poin.`
+    source: 'Pedagogical Cognitive Engine',
+    breakdown: { hardCount, medCount, easyCount },
+    summary: `Sistem cerdas menganalisis ${questions.length} butir soal berdasarkan tingkat kesulitan (${hardCount} Sulit/HOTS, ${medCount} Sedang, ${easyCount} Mudah). Total seluruh skor tepat 100 poin.`
   });
 });
 

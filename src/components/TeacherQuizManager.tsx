@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Quiz, StudentSubmission } from '../types/quiz.js';
 import { GeminiUsageWidget } from './GeminiUsageWidget.js';
+import { PWAInstallButton } from './PWAInstallButton.js';
 
 interface Props {
   quizzes: Quiz[];
@@ -99,6 +100,8 @@ export const TeacherQuizManager: React.FC<Props> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <PWAInstallButton />
+          
           <button
             type="button"
             onClick={() => setShowQuotaMonitor(!showQuotaMonitor)}

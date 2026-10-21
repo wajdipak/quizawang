@@ -228,7 +228,7 @@ Instruksi Khusus:
 3. Berikan 'correctOption' berupa indeks angka (0 = A, 1 = B, 2 = C, 3 = D).
 4. Berikan 'explanation' singkat dan mendidik yang menjelaskan mengapa jawaban tersebut benar.
 5. Berikan 'materialContent' berupa teks bahan bacaan atau ringkasan materi pembelajaran yang komprehensif untuk dibaca siswa di awal kuis.
-6. TENTUKAN POIN: Tentukan poin untuk setiap soal berdasarkan tingkat kesulitan yang dipilih (${difficulty}), sehingga TOTAL POIN dari seluruh soal tepat berjumlah 100.
+6. TENTUKAN POIN: Tentukan poin untuk setiap soal secara otomatis dengan membagi 100 dengan total jumlah soal yang dibuat (${count}). Berikan variasi poin kecil berdasarkan tingkat kesulitan (${difficulty}) pada soal-soal tertentu (misal: soal sulit lebih besar, mudah lebih kecil), namun PASTIKAN TOTAL POIN dari seluruh soal tepat berjumlah 100.
 7. Format output WAJIB HANYA berupa JSON valid tanpa markdown pembungkus (tanpa \`\`\`json).
 
 Contoh skema JSON:
@@ -339,7 +339,7 @@ Buat kuis sebanyak ${count} soal pilihan ganda tentang topik: "${topic}".
 Tingkat pendidikan: ${gradeLevel}. Tingkat kesulitan: ${difficulty}.
 
 Instruksi Khusus:
-- TENTUKAN POIN: Tentukan poin untuk setiap soal berdasarkan tingkat kesulitan yang dipilih (${difficulty}), sehingga TOTAL POIN dari seluruh soal tepat berjumlah 100.
+- TENTUKAN POIN: Tentukan poin untuk setiap soal secara otomatis dengan membagi 100 dengan total jumlah soal yang dibuat (${count}). Berikan variasi poin kecil berdasarkan tingkat kesulitan (${difficulty}) pada soal-soal tertentu (misal: soal sulit lebih besar, mudah lebih kecil), namun PASTIKAN TOTAL POIN dari seluruh soal tepat berjumlah 100.
 - Keluarkan HANYA JSON valid dengan skema:
 {
   "title": "string",
@@ -435,7 +435,7 @@ Spesifikasi Kuis:
 - Untuk 'multiple_choice': Wajib 4 pilihan options (A, B, C, D) dan correctOption (indeks 0, 1, 2, atau 3).
 - Untuk 'short_answer': Wajib acceptedAnswers (array kata kunci jawaban benar yang fleksibel).
 - Untuk 'matching': Wajib matchingPairs (array objek { id, left, right } minimal 2-4 pasang).
-- Tetapkan poin yang adil.
+- Tetapkan poin yang adil. Pastikan total poin dari seluruh soal berjumlah tepat 100 dengan membagi 100 dengan total soal dan menyesuaikan berdasarkan tingkat kompleksitas soal.
 - Berikan kategori materi (category) dan pembahasan edukatif (explanation) untuk setiap soal.
 - Berikan 'materialContent' berupa ringkasan bahan bacaan atau teks materi lengkap dari dokumen untuk dibaca siswa di awal kuis.
 

@@ -539,17 +539,21 @@ export const StudentExamPortal: React.FC<Props> = ({
                   download={quiz.materialFileName || 'materi'}
                   className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0 flex items-center gap-1.5"
                 >
-                  <span>Unduh / Lihat File</span>
+                  <span>Unduh File</span>
                 </a>
               </div>
 
-              {quiz.materialType === 'pdf' && (
+              {quiz.materialType === 'pdf' ? (
                 <div className="w-full h-96 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-100 dark:bg-slate-900">
                   <iframe
                     src={quiz.materialFileUrl}
                     title="PDF Viewer"
                     className="w-full h-full"
                   />
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
+                  ℹ️ File presentasi (PPT/PPTX) tidak dapat ditampilkan pratinjau langsung di sini. Silakan klik tombol "Unduh File" di atas untuk membukanya di perangkat Anda.
                 </div>
               )}
             </div>

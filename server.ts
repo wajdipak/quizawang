@@ -30,6 +30,79 @@ function getFallbackMaterial(topic: string): string {
   return `BAHAN BACAAN & RINGKASAN MATERI: ${topic}\n\n1. Konsep Utama\nTopik mengenai "${topic}" membahas prinsip-prinsip fundamental, definisi esensial, serta analisis kontekstual yang mendalam.\n\n2. Poin Pembelajaran\n- Memahami terminologi dan ruang lingkup ${topic}.\n- Menelaah penerapan nyata serta studi kasus terkait.\n- Menguji pemahaman melalui evaluasi butir-butir soal latihan.\n\nSilakan baca ringkasan materi di atas dengan cermat sebelum mulai mengerjakan ujian kuis.`;
 }
 
+function adjustPointsTo100(questions: any[]): any[] {
+  if (!questions || questions.length === 0) return [];
+  const n = questions.length;
+  const currentTotal = questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0);
+
+  if (currentTotal === 100) {
+    return questions;
+  }
+
+  if (currentTotal > 0) {
+    let allocated = 0;
+    const result = questions.map((q) => {
+      const orig = Number(q.points) || 1;
+      const pts = Math.max(1, Math.round((orig / currentTotal) * 100));
+      allocated += pts;
+      return { ...q, points: pts };
+    });
+
+    const diff = 100 - allocated;
+    if (diff !== 0 && result.length > 0) {
+      result[result.length - 1].points = Math.max(1, result[result.length - 1].points + diff);
+    }
+    return result;
+  }
+
+  const basePoint = Math.floor(100 / n);
+  const remainder = 100 - basePoint * n;
+  return questions.map((q, idx) => ({
+    ...q,
+    points: basePoint + (idx < remainder ? 1 : 0)
+  }));
+}
+
+// Helper to call Gemini with retry and fallback model on 503 / 429
+async function generateGeminiWithRetry(
+  genAI: GoogleGenAI,
+  params: {
+    contents: any;
+    config?: any;
+  },
+  models: string[] = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest']
+): Promise<string> {
+  let lastError: any = null;
+
+  for (const model of models) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (attempt > 0) {
+          console.log(`[Gemini] Retrying model ${model} (attempt ${attempt + 1})...`);
+          await new Promise((r) => setTimeout(r, 1200));
+        }
+        const response = await genAI.models.generateContent({
+          model,
+          contents: params.contents,
+          config: params.config
+        });
+        const text = response.text || '';
+        if (text) return text;
+      } catch (err: any) {
+        lastError = err;
+        const msg = err?.message || String(err);
+        console.warn(`[Gemini] Model ${model} attempt ${attempt + 1} error:`, msg);
+        const isTransient = msg.includes('503') || msg.includes('high demand') || msg.includes('UNAVAILABLE') || msg.includes('429');
+        if (!isTransient) {
+          break;
+        }
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 // Fallback high-quality question generator if API key is unconfigured or rate limited
 function getFallbackQuestions(topic: string, count: number = 5) {
   const isAwangLong = /awang|kutai|mahakam|tenggarong|kalimantan/i.test(topic);
@@ -101,7 +174,7 @@ function getFallbackQuestions(topic: string, count: number = 5) {
       }
     ];
     if (count <= list.length) {
-      return list.slice(0, count);
+      return adjustPointsTo100(list.slice(0, count));
     }
     // If requested more than sample list, generate additional contextual questions
     const extra = Array.from({ length: count - list.length }, (_, idx) => {
@@ -124,11 +197,11 @@ function getFallbackQuestions(topic: string, count: number = 5) {
         explanation: 'Nilai perjuangan pahlawan dan ekosistem Sungai Mahakam menjadi warisan luhur masyarakat Kutai yang terus dijaga.'
       };
     });
-    return [...list, ...extra];
+    return adjustPointsTo100([...list, ...extra]);
   }
 
   // Generic fallback generator based on topic
-  return Array.from({ length: count }, (_, i) => {
+  const generic = Array.from({ length: count }, (_, i) => {
     if (i % 3 === 1) {
       return {
         id: `q-gen-${Date.now()}-${i}`,
@@ -171,6 +244,7 @@ function getFallbackQuestions(topic: string, count: number = 5) {
       explanation: `Penjelasan edukatif: Konsep dasar ${topic} sangat esensial untuk dipahami siswa.`
     };
   });
+  return adjustPointsTo100(generic);
 }
 
 // SSE Streaming AI Quiz Generator Endpoint
@@ -357,17 +431,18 @@ Instruksi Khusus:
   ]
 }`;
 
-    const response = await genAI.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const text = await generateGeminiWithRetry(genAI, {
       contents: prompt,
       config: {
         responseMimeType: 'application/json'
       }
     });
 
-    const text = response.text || '';
     const cleaned = text.trim().replace(/^```json\s*/, '').replace(/```$/, '');
     const data = JSON.parse(cleaned);
+    if (Array.isArray(data.questions)) {
+      data.questions = adjustPointsTo100(data.questions);
+    }
     res.json(data);
   } catch (err: any) {
     console.error('Gemini API error in POST:', err);
@@ -500,8 +575,7 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
       });
     }
 
-    const response = await genAI.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const text = await generateGeminiWithRetry(genAI, {
       contents: [
         {
           role: 'user',
@@ -513,13 +587,16 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
       }
     });
 
-    const text = response.text || '';
     const cleaned = text.trim().replace(/^```json\s*/, '').replace(/```$/, '');
     const data = JSON.parse(cleaned);
 
+    if (Array.isArray(data.questions)) {
+      data.questions = adjustPointsTo100(data.questions);
+    }
+
     res.json(data);
   } catch (err: any) {
-    console.error('Gemini File Extraction API error:', err);
+    console.warn('[Gemini] File Extraction using fallback due to API high demand / error:', err?.message || err);
     const topicExtracted = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
     const effectiveCount = unlimitedMode ? 10 : count!;
     const fallback = getFallbackQuestions(topicExtracted, effectiveCount);

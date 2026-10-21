@@ -24,6 +24,37 @@ interface Props {
   existingCodes: string[];
 }
 
+function adjustPointsTo100(questions: Question[]): Question[] {
+  if (!questions || questions.length === 0) return [];
+  const n = questions.length;
+  const currentTotal = questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0);
+
+  if (currentTotal === 100) return questions;
+
+  if (currentTotal > 0) {
+    let allocated = 0;
+    const result = questions.map((q) => {
+      const orig = Number(q.points) || 1;
+      const pts = Math.max(1, Math.round((orig / currentTotal) * 100));
+      allocated += pts;
+      return { ...q, points: pts };
+    });
+
+    const diff = 100 - allocated;
+    if (diff !== 0 && result.length > 0) {
+      result[result.length - 1].points = Math.max(1, result[result.length - 1].points + diff);
+    }
+    return result;
+  }
+
+  const basePoint = Math.floor(100 / n);
+  const remainder = 100 - basePoint * n;
+  return questions.map((q, idx) => ({
+    ...q,
+    points: basePoint + (idx < remainder ? 1 : 0)
+  }));
+}
+
 export const FileUploadExtractorModal: React.FC<Props> = ({
   isOpen,
   onClose,
@@ -161,7 +192,16 @@ LATIHAN SOAL EVALUASI:
       });
 
       if (!response.ok) {
-        throw new Error(`Server returned status: ${response.status}`);
+        let errMessage = `Server returned status: ${response.status}`;
+        try {
+          const errData = await response.json();
+          if (errData?.error || errData?.message) {
+            errMessage = errData.error || errData.message;
+          }
+        } catch {
+          // ignore json parse error
+        }
+        throw new Error(errMessage);
       }
 
       setStatusStep('Menyusun format kuis multi-tipe dan kategori...');
@@ -183,25 +223,31 @@ LATIHAN SOAL EVALUASI:
         isActive: true,
         categories: data.categories && data.categories.length > 0 ? data.categories : ['Hasil Ekstraksi'],
         materialContent: data.materialContent || textContent || `Bahan bacaan dan materi ringkasan dari dokumen ${selectedFile.name}.`,
-        questions: (data.questions || []).map((q: any, idx: number) => ({
-          id: q.id || `q-ext-${idx + 1}`,
-          type: q.type || (idx % 3 === 0 ? 'multiple_choice' : idx % 3 === 1 ? 'short_answer' : 'matching'),
-          category: q.category || 'Materi Dokumen',
-          points: q.points || 20,
-          text: q.text,
-          options: q.options || (q.type === 'multiple_choice' ? ['A', 'B', 'C', 'D'] : undefined),
-          correctOption: typeof q.correctOption === 'number' ? q.correctOption : 0,
-          acceptedAnswers: q.acceptedAnswers,
-          matchingPairs: q.matchingPairs,
-          explanation: q.explanation || 'Pembahasan materi dari dokumen.'
-        }))
+        questions: adjustPointsTo100(
+          (data.questions || []).map((q: any, idx: number) => ({
+            id: q.id || `q-ext-${idx + 1}`,
+            type: q.type || (idx % 3 === 0 ? 'multiple_choice' : idx % 3 === 1 ? 'short_answer' : 'matching'),
+            category: q.category || 'Materi Dokumen',
+            points: q.points || 20,
+            text: q.text,
+            options: q.options || (q.type === 'multiple_choice' ? ['A', 'B', 'C', 'D'] : undefined),
+            correctOption: typeof q.correctOption === 'number' ? q.correctOption : 0,
+            acceptedAnswers: q.acceptedAnswers,
+            matchingPairs: q.matchingPairs,
+            explanation: q.explanation || 'Pembahasan materi dari dokumen.'
+          }))
+        )
       };
 
       setExtractedQuiz(quiz);
       setStatusStep('Ekstraksi berhasil!');
     } catch (err: any) {
       console.error('Extraction error:', err);
-      setErrorMessage('Terjadi kendala saat mengekstrak soal dari file. Silakan periksa format file.');
+      setErrorMessage(
+        err?.message?.includes('503') || err?.message?.includes('high demand')
+          ? 'Server model AI sedang mengalami lonjakan trafik (503). Sistem telah mencoba kembali, silakan coba klik Ekstrak sekali lagi.'
+          : 'Terjadi kendala saat mengekstrak soal dari file. Silakan periksa ukuran file dan coba kembali.'
+      );
     } finally {
       setIsLoading(false);
     }

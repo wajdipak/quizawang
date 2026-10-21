@@ -119,32 +119,33 @@ export const GeminiUsageWidget: React.FC<Props> = ({
   const isLimited = data.status === 'rate_limited';
 
   const statusColor = isLimited
-    ? 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800'
+    ? 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/70 border-rose-200 dark:border-rose-800'
     : isWarning
-    ? 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 border-amber-200 dark:border-amber-800'
-    : 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800';
+    ? 'text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/70 border-amber-200 dark:border-amber-800'
+    : 'text-teal-800 dark:text-teal-200 bg-teal-100/80 dark:bg-teal-900/50 border-teal-300 dark:border-teal-700';
 
   if (variant === 'banner') {
     return (
-      <div className="rounded-xl sm:rounded-2xl border border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-850 shadow-xs overflow-hidden transition-all text-slate-800 dark:text-slate-100">
+      <div className="rounded-2xl border border-teal-200/80 dark:border-teal-900/60 bg-gradient-to-r from-teal-50/90 via-cyan-50/50 to-emerald-50/80 dark:from-slate-900 dark:via-teal-950/30 dark:to-slate-900 shadow-xs overflow-hidden transition-all text-slate-800 dark:text-slate-100">
         {/* Banner Top Row */}
         <div
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-slate-50/70 dark:hover:bg-slate-800/60 transition-colors"
+          className="p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-teal-100/40 dark:hover:bg-teal-950/40 transition-colors"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isLimited ? 'bg-rose-500 animate-ping' : isWarning ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+            <div className="w-8 h-8 rounded-xl bg-teal-500/15 dark:bg-teal-400/15 text-teal-700 dark:text-teal-300 flex items-center justify-center font-bold shrink-0 border border-teal-300/40 dark:border-teal-700/40 shadow-2xs">
+              <Zap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+            </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-xs flex items-center gap-1 text-slate-800 dark:text-slate-200">
-                  <Zap className="w-3.5 h-3.5 text-amber-500" />
-                  Status Kuota Gemini API:
+                <span className="font-bold text-xs flex items-center gap-1.5 text-teal-950 dark:text-teal-100">
+                  Status Kuota Gemini AI:
                 </span>
                 <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${statusColor}`}>
                   {isLimited ? 'Batas Tercapai (Jeda Menit)' : isWarning ? 'Mendekati Batas' : 'Siap & Prima'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              <p className="text-[11px] text-teal-900/70 dark:text-slate-300 truncate">
                 {countdown > 0
                   ? `Jeda pulih dalam ${countdown} dtk • Sisa menit ini: ${data.usage.remainingMinute}/${data.limits.rpm} req`
                   : `Tersedia ${data.usage.remainingMinute}/${data.limits.rpm} req/mnt • Sisa kuota hari ini: ${data.usage.remainingDaily.toLocaleString('id-ID')} kuis`}
@@ -157,13 +158,13 @@ export const GeminiUsageWidget: React.FC<Props> = ({
               type="button"
               onClick={handleManualRefresh}
               title="Perbarui status kuota"
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              className="p-1.5 rounded-lg text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:hover:text-teal-100 hover:bg-teal-100/70 dark:hover:bg-teal-900/60 transition-colors cursor-pointer"
             >
               <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-teal-500' : ''}`} />
             </button>
             <button
               type="button"
-              className="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              className="p-1.5 rounded-lg text-teal-700 dark:text-teal-300 hover:text-teal-900 dark:hover:text-teal-100 transition-colors"
             >
               {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
@@ -172,13 +173,13 @@ export const GeminiUsageWidget: React.FC<Props> = ({
 
         {/* Expandable Details */}
         {isExpanded && (
-          <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-1 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 space-y-3">
+          <div className="px-3 pb-3 sm:px-4 sm:pb-4 pt-1 border-t border-teal-100/80 dark:border-teal-900/50 bg-teal-50/30 dark:bg-slate-950/40 space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
               {/* RPM Bar */}
-              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <div className="p-2.5 rounded-xl bg-white/90 dark:bg-slate-800/90 border border-teal-100 dark:border-teal-900/50 shadow-2xs">
                 <div className="flex items-center justify-between text-[11px] font-semibold mb-1">
-                  <span className="text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-cyan-500" />
+                  <span className="text-teal-900 dark:text-teal-200 flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
                     Batas Menit (RPM):
                   </span>
                   <span className="font-bold text-slate-800 dark:text-slate-100">
@@ -200,10 +201,10 @@ export const GeminiUsageWidget: React.FC<Props> = ({
               </div>
 
               {/* RPD Bar */}
-              <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+              <div className="p-2.5 rounded-xl bg-white/90 dark:bg-slate-800/90 border border-teal-100 dark:border-teal-900/50 shadow-2xs">
                 <div className="flex items-center justify-between text-[11px] font-semibold mb-1">
-                  <span className="text-slate-600 dark:text-slate-300 flex items-center gap-1">
-                    <BarChart3 className="w-3 h-3 text-emerald-500" />
+                  <span className="text-teal-900 dark:text-teal-200 flex items-center gap-1">
+                    <BarChart3 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                     Batas Harian (RPD):
                   </span>
                   <span className="font-bold text-slate-800 dark:text-slate-100">
@@ -226,12 +227,12 @@ export const GeminiUsageWidget: React.FC<Props> = ({
             </div>
 
             {/* Model & Failover Info */}
-            <div className="p-2.5 rounded-xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/80 text-[11px] space-y-1.5">
-              <div className="flex items-center gap-1.5 font-bold text-teal-900 dark:text-teal-200">
+            <div className="p-2.5 rounded-xl bg-teal-100/50 dark:bg-teal-950/60 border border-teal-200/80 dark:border-teal-800/80 text-[11px] space-y-1.5">
+              <div className="flex items-center gap-1.5 font-bold text-teal-950 dark:text-teal-200">
                 <ShieldCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
                 <span>Ketahanan AI & Multi-Model Failover Aktif</span>
               </div>
-              <p className="text-teal-800 dark:text-teal-300 text-[10px] leading-relaxed">
+              <p className="text-teal-900/80 dark:text-teal-300 text-[10px] leading-relaxed">
                 Aplikasi menggunakan model <strong>{data.models.primary}</strong>. Apabila server Gemini pusat mengalami antrean (error 503 high demand), sistem otomatis beralih mulus ke <strong>{data.models.fallbacks.join(' & ')}</strong> sehingga kuis tetap dapat dibuat tanpa terputus.
               </p>
             </div>
@@ -243,17 +244,17 @@ export const GeminiUsageWidget: React.FC<Props> = ({
 
   // Card Variant
   return (
-    <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm space-y-4 transition-colors">
-      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+    <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl border border-teal-200/80 dark:border-teal-900/60 bg-white dark:bg-slate-900 shadow-sm space-y-4 transition-colors">
+      <div className="flex items-center justify-between border-b border-teal-100/70 dark:border-slate-800 pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-400 flex items-center justify-center font-bold">
-            <Zap className="w-4 h-4" />
+          <div className="w-8 h-8 rounded-xl bg-teal-500/15 dark:bg-teal-400/15 text-teal-700 dark:text-teal-300 flex items-center justify-center font-bold border border-teal-300/40 dark:border-teal-700/40 shadow-2xs">
+            <Zap className="w-4 h-4 text-teal-600 dark:text-teal-400" />
           </div>
           <div>
-            <h3 className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100">
+            <h3 className="font-bold text-xs sm:text-sm text-teal-950 dark:text-teal-100">
               Penggunaan & Batas API Key Gemini
             </h3>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] text-teal-900/70 dark:text-slate-400">
               Pemantauan kuota real-time untuk ekstraksi dokumen dan pembuatan kuis.
             </p>
           </div>

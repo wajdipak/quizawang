@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Quiz, Question, QuestionType } from '../types/quiz.js';
 import { generateQuizCode } from '../utils/quizLogic.js';
+import { GeminiUsageWidget } from './GeminiUsageWidget.js';
 
 interface Props {
   isOpen: boolean;
@@ -293,6 +294,9 @@ LATIHAN SOAL EVALUASI:
 
         {/* Body */}
         <div className="overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex-1">
+          {/* Live Gemini API Quota & Usage Monitor */}
+          <GeminiUsageWidget variant="banner" />
+
           {errorMessage && (
             <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />

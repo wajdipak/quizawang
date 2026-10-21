@@ -73,6 +73,72 @@ export const QuizEditorModal: React.FC<Props> = ({
   );
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isAiScoring, setIsAiScoring] = useState(false);
+  const [aiScoringFeedback, setAiScoringFeedback] = useState<string | null>(null);
+
+  const totalPoints = questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0);
+
+  // AI Smart Point Allocation (proportional by difficulty & types, strictly 100 pts)
+  const handleAiSmartScoring = async () => {
+    if (questions.length === 0) return;
+    setIsAiScoring(true);
+    setAiScoringFeedback(null);
+    setErrorMessage(null);
+
+    try {
+      const res = await fetch('/api/smart-score-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questions })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.questions && Array.isArray(data.questions)) {
+          setQuestions(data.questions);
+          setAiScoringFeedback(
+            data.summary || 'AI berhasil mendistribusikan poin secara pintar! Total skor tepat 100 poin.'
+          );
+          setTimeout(() => setAiScoringFeedback(null), 8000);
+          return;
+        }
+      }
+      throw new Error('Fallback local smart calculation');
+    } catch {
+      // Local pedagogical fallback
+      const sumWeights = questions.reduce(
+        (acc, q) => acc + (q.type === 'matching' ? 2.0 : q.type === 'short_answer' ? 1.5 : 1.0),
+        0
+      );
+      let allocated = 0;
+      const scored = questions.map((q) => {
+        const weight = q.type === 'matching' ? 2.0 : q.type === 'short_answer' ? 1.5 : 1.0;
+        const pts = Math.max(1, Math.round((weight / sumWeights) * 100));
+        allocated += pts;
+        return {
+          ...q,
+          points: pts,
+          difficultyTag:
+            q.type === 'matching'
+              ? 'Sulit (Menjodohkan)'
+              : q.type === 'short_answer'
+              ? 'Sedang-Tinggi (Isian)'
+              : 'Standar'
+        };
+      });
+
+      const diff = 100 - allocated;
+      if (diff !== 0 && scored.length > 0) {
+        scored[scored.length - 1].points = Math.max(1, scored[scored.length - 1].points + diff);
+      }
+
+      setQuestions(scored);
+      setAiScoringFeedback('Poin berhasil diselaraskan otomatis berdasarkan bobot tipe soal. Total tepat 100 poin.');
+      setTimeout(() => setAiScoringFeedback(null), 8000);
+    } finally {
+      setIsAiScoring(false);
+    }
+  };
 
   // Category addition
   const handleCreateCategory = () => {
@@ -584,17 +650,72 @@ export const QuizEditorModal: React.FC<Props> = ({
 
           {/* Section 2: Questions Editor */}
           <div className="space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-              <div>
-                <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  2. Butir Soal ({questions.length} Soal)
-                </h3>
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  Pilih tipe soal: Pilihan Ganda, Isian Singkat, atau Menjodohkan.
-                </span>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 sm:p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                    2. Butir Soal ({questions.length} Soal)
+                  </h3>
+                  <div
+                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold flex items-center gap-1 border transition-all ${
+                      totalPoints === 100
+                        ? 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 shadow-xs'
+                        : 'bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-800 animate-pulse'
+                    }`}
+                  >
+                    <span>{totalPoints === 100 ? '🎯' : '⚠️'}</span>
+                    <span>Total Skor: {totalPoints} / 100 Poin</span>
+                    {totalPoints === 100 ? (
+                      <span className="text-[10px] opacity-80">(Ideal)</span>
+                    ) : (
+                      <span className="text-[10px] opacity-80">
+                        ({totalPoints < 100 ? `Kurang ${100 - totalPoints}` : `Lebih ${totalPoints - 100}`})
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Total skor seluruh soal disarankan tepat 100 poin untuk mempermudah evaluasi nilai siswa.
+                </p>
               </div>
 
-              {/* Quick Add Buttons by Type */}
+              {/* Action Buttons: Smart AI Scoring + Quick Add */}
+              <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto justify-end">
+                <button
+                  type="button"
+                  onClick={handleAiSmartScoring}
+                  disabled={isAiScoring || questions.length === 0}
+                  title="Analisis tingkat kognitif dan kesulitan soal secara otomatis agar total skor tepat 100 poin"
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-teal-500 via-cyan-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 text-white font-bold text-xs shadow-sm hover:shadow-md flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${isAiScoring ? 'animate-spin' : ''}`} />
+                  <span>{isAiScoring ? 'AI Menganalisis Soal...' : 'Atur Poin Pintar (AI)'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* AI Scoring Feedback Alert */}
+            {aiScoringFeedback && (
+              <div className="p-3 sm:p-3.5 rounded-xl bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 text-xs flex items-center justify-between gap-2 animate-in fade-in slide-in-from-top-1">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
+                  <span className="font-medium">{aiScoringFeedback}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAiScoringFeedback(null)}
+                  className="text-teal-600 hover:text-teal-900 dark:hover:text-teal-100 p-0.5 rounded cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Quick Add Buttons by Type */}
+            <div className="flex items-center justify-between gap-2 flex-wrap pb-1">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Tambah jenis soal baru:
+              </span>
               <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   type="button"
@@ -691,6 +812,13 @@ export const QuizEditorModal: React.FC<Props> = ({
                           ))}
                         </select>
                       </div>
+
+                      {/* Difficulty Tag if present */}
+                      {q.difficultyTag && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                          {q.difficultyTag}
+                        </span>
+                      )}
 
                       {/* Points */}
                       <div className="flex items-center gap-1 text-xs">

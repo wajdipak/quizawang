@@ -63,16 +63,41 @@ function adjustPointsTo100(questions: any[]): any[] {
   }));
 }
 
+interface GeminiCallRecord {
+  timestamp: number;
+  model: string;
+  action: string;
+  status: 'success' | 'retry' | 'failed';
+  errorMessage?: string;
+}
+
+const geminiCallHistory: GeminiCallRecord[] = [];
+
+function recordGeminiCall(model: string, action: string, status: 'success' | 'retry' | 'failed', errorMessage?: string) {
+  geminiCallHistory.push({
+    timestamp: Date.now(),
+    model,
+    action,
+    status,
+    errorMessage
+  });
+  if (geminiCallHistory.length > 2000) {
+    geminiCallHistory.splice(0, geminiCallHistory.length - 2000);
+  }
+}
+
 // Helper to call Gemini with retry and fallback model on 503 / 429
 async function generateGeminiWithRetry(
   genAI: GoogleGenAI,
   params: {
     contents: any;
     config?: any;
+    action?: string;
   },
   models: string[] = ['gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest']
 ): Promise<string> {
   let lastError: any = null;
+  const actionName = params.action || 'gemini-generate';
 
   for (const model of models) {
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -87,10 +112,14 @@ async function generateGeminiWithRetry(
           config: params.config
         });
         const text = response.text || '';
-        if (text) return text;
+        if (text) {
+          recordGeminiCall(model, actionName, attempt > 0 ? 'retry' : 'success');
+          return text;
+        }
       } catch (err: any) {
         lastError = err;
         const msg = err?.message || String(err);
+        recordGeminiCall(model, actionName, 'failed', msg);
         console.warn(`[Gemini] Model ${model} attempt ${attempt + 1} error:`, msg);
         const isTransient = msg.includes('503') || msg.includes('high demand') || msg.includes('UNAVAILABLE') || msg.includes('429');
         if (!isTransient) {
@@ -584,7 +613,8 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
       ],
       config: {
         responseMimeType: 'application/json'
-      }
+      },
+      action: 'extract-quiz-from-file'
     });
 
     const cleaned = text.trim().replace(/^```json\s*/, '').replace(/```$/, '');
@@ -611,6 +641,241 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
       questions: fallback
     });
   }
+});
+
+// Endpoint to monitor Gemini API usage, rate limit quota (RPM & RPD), and operational health
+app.get('/api/gemini-usage', (_req: Request, res: Response) => {
+  const genAI = getGeminiClient();
+  const configured = !!genAI;
+  const now = Date.now();
+
+  const oneMinuteAgo = now - 60 * 1000;
+  const oneDayAgo = now - 24 * 60 * 60 * 1000;
+
+  const callsInMinute = geminiCallHistory.filter(c => c.timestamp >= oneMinuteAgo);
+  const callsInDay = geminiCallHistory.filter(c => c.timestamp >= oneDayAgo);
+
+  const requestsThisMinute = callsInMinute.length;
+  const requestsToday = callsInDay.length;
+
+  // AI Studio standard tier limits (RPM: 15, RPD: 1500)
+  const minuteLimit = 15;
+  const dailyLimit = 1500;
+
+  // Seconds until the oldest request in the current 60s sliding window expires
+  let secondsToMinuteReset = 0;
+  if (callsInMinute.length > 0) {
+    const oldestInMinute = Math.min(...callsInMinute.map(c => c.timestamp));
+    secondsToMinuteReset = Math.max(0, Math.ceil((oldestInMinute + 60 * 1000 - now) / 1000));
+  }
+
+  // Calculate time remaining until next UTC midnight daily reset
+  const nowUtc = new Date();
+  const nextUtcMidnight = new Date(Date.UTC(
+    nowUtc.getUTCFullYear(),
+    nowUtc.getUTCMonth(),
+    nowUtc.getUTCDate() + 1,
+    0, 0, 0, 0
+  ));
+  const msToUtcMidnight = nextUtcMidnight.getTime() - nowUtc.getTime();
+  const hoursToDailyReset = Math.floor(msToUtcMidnight / (1000 * 60 * 60));
+  const minsToDailyReset = Math.floor((msToUtcMidnight % (1000 * 60 * 60)) / (1000 * 60));
+
+  let status: 'healthy' | 'warning' | 'rate_limited' = 'healthy';
+  let statusMessage = 'API Gemini siap & beroperasi dengan prima';
+
+  if (!configured) {
+    status = 'warning';
+    statusMessage = 'API Key Gemini belum diset. Mode simulasi cerdas lokal aktif.';
+  } else if (requestsThisMinute >= minuteLimit) {
+    status = 'rate_limited';
+    statusMessage = `Batas permintaan per-menit (${minuteLimit} RPM) tercapai. Silakan tunggu ${secondsToMinuteReset} detik.`;
+  } else if (requestsThisMinute >= 11) {
+    status = 'warning';
+    statusMessage = `Mendekati batas menit (${requestsThisMinute}/${minuteLimit} RPM). Jeda singkat beberapa detik disarankan.`;
+  } else if (requestsToday >= dailyLimit) {
+    status = 'rate_limited';
+    statusMessage = `Batas harian (${dailyLimit} RPD) tercapai. Reset pada pukul 00:00 UTC.`;
+  }
+
+  const remainingDaily = Math.max(0, dailyLimit - requestsToday);
+  const remainingMinute = Math.max(0, minuteLimit - requestsThisMinute);
+  const lastCall = geminiCallHistory[geminiCallHistory.length - 1];
+
+  res.json({
+    configured,
+    status,
+    statusMessage,
+    limits: {
+      rpm: minuteLimit,
+      rpd: dailyLimit,
+      tpm: 1000000
+    },
+    usage: {
+      requestsThisMinute,
+      remainingMinute,
+      secondsToMinuteReset,
+      requestsToday,
+      remainingDaily,
+      dailyResetCountdown: `${hoursToDailyReset} jam ${minsToDailyReset} mnt (00:00 UTC)`
+    },
+    models: {
+      primary: 'gemini-3.8-flash',
+      fallbacks: ['gemini-3.1-flash-lite', 'gemini-flash-latest'],
+      strategy: 'Failover otomatis jika terjadi lonjakan beban server 503 / 429'
+    },
+    lastCall: lastCall ? {
+      model: lastCall.model,
+      action: lastCall.action,
+      status: lastCall.status,
+      time: new Date(lastCall.timestamp).toLocaleTimeString('id-ID')
+    } : null
+  });
+});
+
+// Endpoint: AI Smart Point Allocation across all quiz questions (Total strictly 100 pts)
+app.post('/api/smart-score-quiz', async (req: Request, res: Response) => {
+  const { questions = [] } = req.body;
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: 'Tidak ada butir soal yang dikirim untuk penilaian.' });
+  }
+
+  if (questions.length === 1) {
+    return res.json({
+      success: true,
+      questions: [{ ...questions[0], points: 100, difficultyTag: 'Utama' }],
+      totalPoints: 100,
+      summary: 'Kuis dengan 1 butir soal secara otomatis bernilai 100 poin.'
+    });
+  }
+
+  // Heuristic calculation for pedagogically balanced scoring (weights matching & HOTS questions higher)
+  const calculateHeuristicPoints = (qs: any[]) => {
+    const weighted = qs.map((q) => {
+      let weight = 1.0;
+      let tag = 'Sedang';
+
+      if (q.type === 'matching') {
+        const pairCount = Array.isArray(q.matchingPairs) ? q.matchingPairs.length : 3;
+        weight = 1.8 + Math.min(pairCount * 0.15, 0.7);
+        tag = 'Sulit (Menjodohkan)';
+      } else if (q.type === 'short_answer') {
+        weight = 1.45;
+        tag = 'Sedang-Tinggi (Isian)';
+      } else {
+        const textLen = (q.text || '').length;
+        if (textLen > 130 || /mengapa|analisis|kesimpulan|dampak|hubungan|perbandingan|jelaskan/i.test(q.text || '')) {
+          weight = 1.4;
+          tag = 'Sulit (HOTS - Analisis)';
+        } else if (textLen < 60) {
+          weight = 0.85;
+          tag = 'Mudah (Faktual)';
+        } else {
+          weight = 1.1;
+          tag = 'Sedang';
+        }
+      }
+
+      return {
+        ...q,
+        _weight: weight,
+        difficultyTag: tag
+      };
+    });
+
+    const sumWeights = weighted.reduce((acc, curr) => acc + curr._weight, 0);
+    let allocated = 0;
+    const scored = weighted.map((item) => {
+      const rawPoints = Math.max(1, Math.round((item._weight / sumWeights) * 100));
+      allocated += rawPoints;
+      const { _weight, ...rest } = item;
+      return { ...rest, points: rawPoints };
+    });
+
+    const diff = 100 - allocated;
+    if (diff !== 0 && scored.length > 0) {
+      scored[scored.length - 1].points = Math.max(1, scored[scored.length - 1].points + diff);
+    }
+
+    return scored;
+  };
+
+  const genAI = getGeminiClient();
+
+  if (genAI) {
+    try {
+      const simplifiedQuestions = questions.map((q, i) => ({
+        index: i,
+        type: q.type,
+        text: (q.text || '').slice(0, 180),
+        optionsCount: q.options ? q.options.length : 0,
+        hasPairs: !!q.matchingPairs
+      }));
+
+      const prompt = `Anda adalah pakar evaluasi kurikulum dan perancang asesmen pendidikan.
+Analisis ${questions.length} butir soal ujian berikut:
+${JSON.stringify(simplifiedQuestions, null, 2)}
+
+Petunjuk Pembobotan:
+1. Evaluasi tingkat kognitif dan kesulitan: 'Mudah', 'Sedang', atau 'Sulit (HOTS)'.
+2. Soal Menjodohkan (matching) dan Isian Singkat (short_answer) atau soal berbasis analisis HOTS harus memperoleh poin lebih tinggi.
+3. Soal pilihan ganda faktual sederhana memperoleh poin lebih ringan.
+4. TOTAL POIN SELURUH SOAL HARUS TEPAT 100.
+5. Format keluaran HANYA JSON array:
+[
+  { "index": 0, "points": 20, "difficultyTag": "Sedang", "reason": "alasan pedagogis singkat" }
+]`;
+
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('AI scoring timed out')), 6000)
+      );
+
+      const responseText = await Promise.race([
+        generateGeminiWithRetry(genAI, {
+          contents: prompt,
+          config: { responseMimeType: 'application/json' },
+          action: 'smart-score'
+        }, ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash']),
+        timeoutPromise
+      ]) as string;
+
+      const cleaned = responseText.trim().replace(/^```json\s*/, '').replace(/```$/, '');
+      const aiScoring = JSON.parse(cleaned);
+
+      if (Array.isArray(aiScoring) && aiScoring.length === questions.length) {
+        const mapped = questions.map((q, idx) => {
+          const item = aiScoring.find((s: any) => s.index === idx) || aiScoring[idx];
+          return {
+            ...q,
+            points: Number(item?.points) || 10,
+            difficultyTag: item?.difficultyTag || 'Sedang',
+            explanation: q.explanation || item?.reason || ''
+          };
+        });
+
+        const adjusted = adjustPointsTo100(mapped);
+        return res.json({
+          success: true,
+          questions: adjusted,
+          totalPoints: 100,
+          source: 'Gemini AI Assessment',
+          summary: `AI berhasil menganalisis ${questions.length} butir soal berdasarkan Taksonomi Bloom. Total skor tepat 100 poin.`
+        });
+      }
+    } catch (err: any) {
+      console.warn('[Gemini] Smart scoring using fallback algorithm:', err?.message || err);
+    }
+  }
+
+  // Graceful fallback to smart heuristic
+  const scored = calculateHeuristicPoints(questions);
+  return res.json({
+    success: true,
+    questions: scored,
+    totalPoints: 100,
+    source: 'Smart Pedagogical Algorithm',
+    summary: `Algoritma pintar mendistribusikan bobot soal berdasarkan kompleksitas & jenis soal. Total skor: tepat 100 poin.`
+  });
 });
 
 // Setup Vite middleware in dev or static files in production

@@ -13,6 +13,7 @@ export interface Question {
   category: string;
   points: number; // default e.g. 10
   explanation?: string;
+  difficultyTag?: string; // e.g. 'Mudah', 'Sedang', 'Sulit (HOTS)'
 
   // For multiple_choice
   options?: string[];

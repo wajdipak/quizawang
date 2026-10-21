@@ -21,10 +21,13 @@ import {
   SlidersHorizontal,
   ChevronDown,
   ArrowRight,
-  GraduationCap
+  GraduationCap,
+  Zap,
+  X
 } from 'lucide-react';
 import { Quiz, Question } from '../types/quiz.js';
 import { generateQuizCode } from '../utils/quizLogic.js';
+import { GeminiUsageWidget } from './GeminiUsageWidget.js';
 
 interface Props {
   onSaveQuiz: (quiz: Quiz) => void;
@@ -75,6 +78,48 @@ export const AiQuizWorkspace: React.FC<Props> = ({
   const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [isSmartScoring, setIsSmartScoring] = useState(false);
+  const [smartScoreNote, setSmartScoreNote] = useState<string | null>(null);
+
+  const handleSmartScoreInWorkspace = async () => {
+    if (!generatedQuiz || !generatedQuiz.questions || generatedQuiz.questions.length === 0) return;
+    setIsSmartScoring(true);
+    setSmartScoreNote(null);
+    try {
+      const res = await fetch('/api/smart-score-quiz', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questions: generatedQuiz.questions })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.questions && Array.isArray(data.questions)) {
+          setGeneratedQuiz({
+            ...generatedQuiz,
+            questions: data.questions
+          });
+          setSmartScoreNote(data.summary || 'Poin diselaraskan cerdas ke total 100 poin!');
+          setTimeout(() => setSmartScoreNote(null), 6000);
+          return;
+        }
+      }
+      throw new Error('Local fallback');
+    } catch {
+      const qs = generatedQuiz.questions;
+      const basePt = Math.floor(100 / qs.length);
+      const rem = 100 - basePt * qs.length;
+      const balanced = qs.map((q, i) => ({
+        ...q,
+        points: basePt + (i < rem ? 1 : 0),
+        difficultyTag: 'Seimbang'
+      }));
+      setGeneratedQuiz({ ...generatedQuiz, questions: balanced });
+      setSmartScoreNote('Poin diselaraskan seimbang ke total 100 poin!');
+      setTimeout(() => setSmartScoreNote(null), 6000);
+    } finally {
+      setIsSmartScoring(false);
+    }
+  };
 
   const quickPresets = [
     { label: '🏛️ Sejarah Awang Long Kutai', text: 'Bikin kuis tentang sejarah perjuangan kepahlawanan Panglima Awang Long di Kutai Kartanegara' },
@@ -376,6 +421,9 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           </button>
         </div>
       </div>
+
+      {/* Live Gemini API Quota Monitor */}
+      <GeminiUsageWidget variant="banner" />
 
       {/* Main Workspace 2-Column Split */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
@@ -711,18 +759,65 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Preview Soal */}
+                {/* Preview Soal with AI Smart Scoring */}
                 <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-                  <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Daftar Kisi-kisi Soal:
+                  <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-xs font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                        Kisi-kisi:
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                        🎯 Total {generatedQuiz.questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0)} / 100 Poin
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleSmartScoreInWorkspace}
+                      disabled={isSmartScoring}
+                      title="AI menganalisis tingkat kesulitan dan jenis soal agar total tepat 100 poin"
+                      className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-teal-500 via-cyan-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 text-white font-bold text-[10px] flex items-center gap-1 shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <Sparkles className={`w-3 h-3 ${isSmartScoring ? 'animate-spin' : ''}`} />
+                      <span>{isSmartScoring ? 'Menilai...' : 'Atur Poin Pintar (AI)'}</span>
+                    </button>
                   </div>
+
+                  {smartScoreNote && (
+                    <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-950/60 border border-teal-200 dark:border-teal-800 text-teal-800 dark:text-teal-300 text-[11px] flex items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+                        <span>{smartScoreNote}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSmartScoreNote(null)}
+                        className="text-teal-600 p-0.5 cursor-pointer"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  )}
+
                   {generatedQuiz.questions.map((q, qIndex) => (
                     <div key={q.id || qIndex} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-xs space-y-1.5">
-                      <div className="font-semibold text-slate-800 dark:text-slate-100 flex items-start gap-1.5">
-                        <span className="w-5 h-5 rounded-full bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 text-[10px] flex items-center justify-center shrink-0">
-                          {qIndex + 1}
-                        </span>
-                        <span>{q.text}</span>
+                      <div className="font-semibold text-slate-800 dark:text-slate-100 flex items-start justify-between gap-1.5">
+                        <div className="flex items-start gap-1.5 min-w-0">
+                          <span className="w-5 h-5 rounded-full bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 text-[10px] flex items-center justify-center shrink-0">
+                            {qIndex + 1}
+                          </span>
+                          <span className="truncate">{q.text}</span>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {q.difficultyTag && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-medium">
+                              {q.difficultyTag}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                            {q.points || 10}p
+                          </span>
+                        </div>
                       </div>
                       {q.options && q.options.length > 0 && (
                         <div className="grid grid-cols-2 gap-1 pl-6 pt-1">

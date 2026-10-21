@@ -15,9 +15,11 @@ import {
   Clock,
   Sparkles,
   Link,
-  GraduationCap
+  GraduationCap,
+  Zap
 } from 'lucide-react';
 import { Quiz, StudentSubmission } from '../types/quiz.js';
+import { GeminiUsageWidget } from './GeminiUsageWidget.js';
 
 interface Props {
   quizzes: Quiz[];
@@ -46,6 +48,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showQuotaMonitor, setShowQuotaMonitor] = useState(false);
 
   const filteredQuizzes = quizzes.filter((q) => {
     const qLower = searchQuery.toLowerCase();
@@ -98,6 +101,20 @@ export const TeacherQuizManager: React.FC<Props> = ({
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             type="button"
+            onClick={() => setShowQuotaMonitor(!showQuotaMonitor)}
+            className={`px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+              showQuotaMonitor
+                ? 'bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 border-amber-300 dark:border-amber-700'
+                : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+            }`}
+            title="Lihat status penggunaan limit kuota API Gemini saat ini"
+          >
+            <Zap className="w-3.5 h-3.5 text-amber-500" />
+            <span>Kuota AI Gemini</span>
+          </button>
+
+          <button
+            type="button"
             onClick={onOpenFileUpload}
             className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all"
           >
@@ -114,6 +131,13 @@ export const TeacherQuizManager: React.FC<Props> = ({
           </button>
         </div>
       </div>
+
+      {/* Conditionally Expanded Gemini API Quota Monitor */}
+      {showQuotaMonitor && (
+        <div className="animate-in fade-in slide-in-from-top-2">
+          <GeminiUsageWidget variant="card" />
+        </div>
+      )}
 
       {/* Student Link Workflow Info Banner */}
       <div className="p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-950/50 dark:via-cyan-950/40 dark:to-slate-900 border border-teal-200 dark:border-teal-900 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shadow-xs transition-colors">

@@ -33,8 +33,8 @@ export const Navbar: React.FC<Props> = ({
               aria-label="Kembali ke Beranda Awang Long Quiz"
             >
               <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-xl p-[2px] bg-gradient-to-tr from-teal-600 via-cyan-500 to-indigo-600 shadow-sm hover:scale-105 transition-transform flex items-center justify-center shrink-0">
-                <div className="w-full h-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center text-teal-600 dark:text-teal-400">
-                  <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5" />
+                <div className="w-full h-full rounded-[10px] bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+                  <img src="/assets/aistudio/Quiz_20261022_002215_0000_6561aa37.png" alt="Logo" className="w-4 h-4 sm:w-5 sm:h-5 object-contain" />
                 </div>
               </div>
               <div>

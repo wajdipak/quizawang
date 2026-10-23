@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { auth } from './firebase.js';
+import { LoginPage } from './components/LoginPage.js';
 import { Navbar, NavTab } from './components/Navbar.js';
 import { AiQuizWorkspace } from './components/AiQuizWorkspace.js';
 import { TeacherQuizManager } from './components/TeacherQuizManager.js';
@@ -27,9 +30,12 @@ import {
   subscribeQuizzesRealtime,
   subscribeSubmissionsRealtime
 } from './services/firebaseSync.js';
-import { ArrowLeft, BookOpen } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 export default function App() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(true);
+
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [submissions, setSubmissions] = useState<StudentSubmission[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
@@ -48,8 +54,17 @@ export default function App() {
   const [analyticsSelectedQuizId, setAnalyticsSelectedQuizId] = useState<string | null>(null);
   const [isStudentLinkMode, setIsStudentLinkMode] = useState(false);
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoadingAuth(false);
+    });
+    return unsubscribe;
+  }, []);
+
   // Load persistent storage & subscribe to live Firebase real-time updates
   useEffect(() => {
+    if (!user) return; // Only load data if user is logged in
     // 1. Initial immediate load from local cache for instant zero-latency UI
     const loadedQuizzes = loadStoredQuizzes();
     const loadedSubs = loadStoredSubmissions();
@@ -116,7 +131,7 @@ export default function App() {
       unsubQuizzes();
       unsubSubmissions();
     };
-  }, []);
+  }, [user]);
 
   // Save quizzes helper with real-time Firebase upload
   const handleSaveQuiz = async (quiz: Quiz) => {
@@ -237,9 +252,15 @@ export default function App() {
 
   const existingCodes = quizzes.map((q) => q.code);
 
+  if (loadingAuth) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+
   // If accessed via student exam link (e.g. ?exam=CODE), render standalone student portal strictly without teacher navigation/tools
   if (window.location.pathname === '/siswa') {
     return <StudentPortalPWA />;
+  }
+
+  if (!user) {
+    return <LoginPage />;
   }
 
   if (isStudentLinkMode) {
@@ -445,3 +466,4 @@ export default function App() {
     </div>
   );
 }
+

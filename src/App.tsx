@@ -263,6 +263,30 @@ export default function App() {
     return <LoginPage />;
   }
 
+  const ADMIN_UID = 'yQNuogQOmVOrLv6YPkUwaAWIfAn1';
+  if (user.uid !== ADMIN_UID) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-xl text-center border border-slate-200 dark:border-slate-800">
+          <div className="text-4xl mb-4">🔒</div>
+          <h1 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Akses Admin Ditolak</h1>
+          <p className="text-slate-600 dark:text-slate-400 mb-4 text-sm">
+            Akun Anda tidak memiliki hak akses sebagai admin pengajar. UID Anda:
+          </p>
+          <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg font-mono text-xs text-slate-700 dark:text-slate-300 mb-6 break-all">
+            {user.uid}
+          </div>
+          <button
+            onClick={() => auth.signOut()}
+            className="w-full px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-semibold transition"
+          >
+            Keluar (Logout)
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (isStudentLinkMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-teal-200 dark:selection:bg-teal-900 transition-colors duration-200">

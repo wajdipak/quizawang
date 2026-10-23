@@ -296,12 +296,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-teal-100 dark:border-teal-900/60 shadow-sm w-full md:w-auto justify-center md:justify-start shrink-0">
-            <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-teal-600 via-cyan-500 to-indigo-600 p-[2px] shadow-sm flex items-center justify-center shrink-0">
-              <div className="w-full h-full rounded-[14px] bg-white dark:bg-slate-900 flex items-center justify-center text-teal-600 dark:text-teal-400">
-                <img src="/assets/aistudio/Quiz_20261022_002215_0000_6561aa37.png" alt="Logo" className={`w-7 h-7 ${isLoading ? 'animate-bounce' : ''} object-contain`} />
-              </div>
-              <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-amber-500 animate-spin-slow" />
-            </div>
+            <img src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png" alt="Logo" className={`w-14 h-14 sm:w-16 sm:h-16 ${isLoading ? 'animate-bounce' : ''} object-contain hover:scale-105 transition-transform`} />
             <div className="text-xs space-y-1">
               <span className="font-bold text-slate-800 dark:text-slate-100 block">Awang Long AI Engine</span>
               <span className="text-slate-500 dark:text-slate-400 block">Asisten Kuis Guru Cerdas</span>

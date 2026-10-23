@@ -9,6 +9,7 @@ import { FileUploadExtractorModal } from './components/FileUploadExtractorModal.
 import { StudentQuizRoom } from './components/StudentQuizRoom.js';
 import { SubmissionsAnalytics } from './components/SubmissionsAnalytics.js';
 import { AccessibilityFloatingWidget } from './components/AccessibilityFloatingWidget.js';
+import { StudentPortalPWA } from './components/StudentPortalPWA.js';
 import { Quiz, StudentSubmission } from './types/quiz.js';
 import {
   loadStoredQuizzes,
@@ -237,6 +238,10 @@ export default function App() {
   const existingCodes = quizzes.map((q) => q.code);
 
   // If accessed via student exam link (e.g. ?exam=CODE), render standalone student portal strictly without teacher navigation/tools
+  if (window.location.pathname === '/siswa') {
+    return <StudentPortalPWA />;
+  }
+
   if (isStudentLinkMode) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-teal-200 dark:selection:bg-teal-900 transition-colors duration-200">

@@ -27,6 +27,16 @@ export interface Question {
   matchingPairs?: MatchingPair[]; // left items matched to right items
 }
 
+export interface QuizMaterial {
+  id: string;
+  type: 'text' | 'pdf' | 'ppt' | 'youtube';
+  title: string;
+  content?: string; // for text
+  fileUrl?: string; // for pdf/ppt data url
+  fileName?: string; // for pdf/ppt filename
+  youtubeUrl?: string; // for youtube video url
+}
+
 export interface Quiz {
   id: string;
   code: string; // 6-digit PIN code (e.g. "AWG101")
@@ -41,7 +51,8 @@ export interface Quiz {
   createdBy: string;
   isActive: boolean;
   categories: string[];
-  materialContent?: string; // Learning material / reading text at the beginning of the quiz
+  materials?: QuizMaterial[]; // Multiple learning materials (text, pdfs, videos)
+  materialContent?: string; // Legacy fallback
   materialType?: 'text' | 'pdf' | 'ppt' | 'youtube';
   materialFileUrl?: string;
   materialFileName?: string;

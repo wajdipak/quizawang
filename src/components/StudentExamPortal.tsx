@@ -467,21 +467,31 @@ export const StudentExamPortal: React.FC<Props> = ({
   // SESI 1.5: BAHAN BACAAN & MATERI PEMBELAJARAN
   // ==========================================
   if (currentSession === 'material') {
-    const readingMaterialText = quiz.materialContent && quiz.materialContent.trim().length > 0
-      ? quiz.materialContent
-      : `Ringkasan Materi & Bahan Bacaan: ${quiz.title}\n\n${quiz.description || 'Pelajari materi dan konsep dasar dari topik ini dengan seksama sebelum mulai mengerjakan butir-butir soal evaluasi kuis.'}\n\nMata Pelajaran: ${quiz.subject} (${quiz.gradeLevel})`;
-
     const getYouTubeEmbedUrl = (url?: string) => {
-      if (!url) return '';
+      if (!url) return null;
       const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
       const match = url.match(regExp);
       return match && match[2].length === 11 ? `https://www.youtube.com/embed/${match[2]}` : null;
     };
 
-    const ytEmbedUrl = quiz.materialType === 'youtube' ? getYouTubeEmbedUrl(quiz.materialYoutubeUrl) : null;
+    const materialsList = quiz.materials && quiz.materials.length > 0
+      ? quiz.materials
+      : [
+          {
+            id: 'legacy-mat',
+            type: quiz.materialType || 'text',
+            title: 'Materi Utama & Bahan Bacaan',
+            content: quiz.materialContent && quiz.materialContent.trim().length > 0
+              ? quiz.materialContent
+              : `Ringkasan Materi: ${quiz.title}\n\n${quiz.description || 'Pelajari materi dan konsep dasar dari topik ini dengan seksama sebelum mulai mengerjakan butir-butir soal evaluasi kuis.'}\n\nMata Pelajaran: ${quiz.subject} (${quiz.gradeLevel})`,
+            fileUrl: quiz.materialFileUrl || '',
+            fileName: quiz.materialFileName || '',
+            youtubeUrl: quiz.materialYoutubeUrl || ''
+          }
+        ];
 
     return (
-      <div className="max-w-3xl mx-auto space-y-5 animate-in fade-in duration-300">
+      <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-300">
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 transition-colors">
           
           <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -490,7 +500,7 @@ export const StudentExamPortal: React.FC<Props> = ({
             </div>
             <div>
               <span className="px-2.5 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 font-bold text-xs border border-teal-200 dark:border-teal-800">
-                Bahan Bacaan & Materi Pembelajaran Awal
+                Bahan Bacaan & Materi Pembelajaran ({materialsList.length} Materi)
               </span>
               <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-slate-100 mt-1">
                 {quiz.title}
@@ -498,79 +508,89 @@ export const StudentExamPortal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* YouTube Video Preview */}
-          {ytEmbedUrl && (
-            <div className="space-y-2">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                ▶️ Video Pembelajaran YouTube:
-              </span>
-              <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800 bg-black">
-                <iframe
-                  src={ytEmbedUrl}
-                  title="YouTube video player"
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-          )}
-
-          {/* PDF / PPT Document File Preview */}
-          {(quiz.materialType === 'pdf' || quiz.materialType === 'ppt') && quiz.materialFileUrl && (
-            <div className="space-y-3">
-              <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                📄 Dokumen Materi Terlampir:
-              </span>
-              <div className="p-4 rounded-2xl bg-teal-50/70 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-3xl shrink-0">📁</span>
-                  <div className="min-w-0">
-                    <span className="font-bold text-xs sm:text-sm text-teal-900 dark:text-teal-100 block truncate">
-                      {quiz.materialFileName || 'Dokumen Materi Pembelajaran'}
-                    </span>
-                    <span className="text-[10px] text-teal-700 dark:text-teal-300 font-semibold uppercase">
-                      {quiz.materialType === 'pdf' ? 'Format Dokumen PDF' : 'Format Presentasi PowerPoint'}
+          <div className="space-y-6">
+            {materialsList.map((mat, idx) => {
+              const ytEmbed = mat.type === 'youtube' ? getYouTubeEmbedUrl(mat.youtubeUrl) : null;
+              return (
+                <div key={mat.id || idx} className="p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-4">
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-700 pb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-xl bg-teal-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                        {idx + 1}
+                      </span>
+                      <h3 className="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100">
+                        {mat.title || `Materi ${idx + 1}`}
+                      </h3>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                      {mat.type === 'text' ? '📝 Teks Ringkasan' : mat.type === 'pdf' ? '📄 Dokumen PDF' : mat.type === 'ppt' ? '📊 Presentasi PPT' : '▶️ Video YouTube'}
                     </span>
                   </div>
-                </div>
-                <a
-                  href={quiz.materialFileUrl}
-                  download={quiz.materialFileName || 'materi'}
-                  className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0 flex items-center gap-1.5"
-                >
-                  <span>Unduh File</span>
-                </a>
-              </div>
 
-              {quiz.materialType === 'pdf' ? (
-                <div className="w-full h-96 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-100 dark:bg-slate-900">
-                  <iframe
-                    src={quiz.materialFileUrl}
-                    title="PDF Viewer"
-                    className="w-full h-full"
-                  />
-                </div>
-              ) : (
-                <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
-                  ℹ️ File presentasi (PPT/PPTX) tidak dapat ditampilkan pratinjau langsung di sini. Silakan klik tombol "Unduh File" di atas untuk membukanya di perangkat Anda.
-                </div>
-              )}
-            </div>
-          )}
+                  {mat.type === 'text' && (
+                    <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed whitespace-pre-wrap font-sans">
+                      {mat.content}
+                    </div>
+                  )}
 
-          {/* Text Content */}
-          {(!ytEmbedUrl && !(quiz.materialFileUrl)) && (
-            <div className="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 text-sm sm:text-base leading-relaxed bg-slate-50/80 dark:bg-slate-800/60 p-5 sm:p-7 rounded-2xl border border-slate-200 dark:border-slate-700/80 whitespace-pre-wrap font-sans">
-              {readingMaterialText}
-            </div>
-          )}
+                  {mat.type === 'youtube' && ytEmbed && (
+                    <div className="space-y-2">
+                      <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 dark:border-slate-800 bg-black">
+                        <iframe
+                          src={ytEmbed}
+                          title={mat.title}
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {(mat.type === 'pdf' || mat.type === 'ppt') && mat.fileUrl && (
+                    <div className="space-y-3">
+                      <div className="p-4 rounded-2xl bg-teal-50/70 dark:bg-teal-950/50 border border-teal-200 dark:border-teal-800 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="text-3xl shrink-0">📁</span>
+                          <div className="min-w-0">
+                            <span className="font-bold text-xs sm:text-sm text-teal-900 dark:text-teal-100 block truncate">
+                              {mat.fileName || mat.title || 'Dokumen Materi Pembelajaran'}
+                            </span>
+                            <span className="text-[10px] text-teal-700 dark:text-teal-300 font-semibold uppercase">
+                              {mat.type === 'pdf' ? 'Format Dokumen PDF' : 'Format Presentasi PowerPoint'}
+                            </span>
+                          </div>
+                        </div>
+                        <a
+                          href={mat.fileUrl}
+                          download={mat.fileName || 'materi'}
+                          className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-colors shrink-0 flex items-center gap-1.5"
+                        >
+                          <span>Unduh File</span>
+                        </a>
+                      </div>
+
+                      {mat.type === 'pdf' && (
+                        <div className="w-full h-96 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-100 dark:bg-slate-900">
+                          <iframe
+                            src={mat.fileUrl}
+                            title="PDF Viewer"
+                            className="w-full h-full"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
           <div className="p-4 rounded-2xl bg-teal-50/60 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 text-xs text-teal-900 dark:text-teal-200 flex items-center gap-3">
             <span className="text-xl">💡</span>
             <div>
               <span className="font-bold block">Tips Belajar:</span>
-              <span>Pastikan Anda membaca dan menyimak materi di atas dengan baik. Setelah siap, klik tombol di bawah untuk mulai mengerjakan butir soal ujian.</span>
+              <span>Pastikan Anda membaca dan menyimak seluruh bahan bacaan di atas dengan baik. Setelah siap, klik tombol di bawah untuk mulai mengerjakan butir soal ujian.</span>
             </div>
           </div>
 

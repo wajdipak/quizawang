@@ -14,7 +14,7 @@ import {
   Type,
   Shuffle
 } from 'lucide-react';
-import { Quiz, Question, QuestionType, MatchingPair } from '../types/quiz.js';
+import { Quiz, Question, QuestionType, MatchingPair, QuizMaterial } from '../types/quiz.js';
 import { validateQuizData, generateQuizCode } from '../utils/quizLogic.js';
 
 interface Props {
@@ -36,11 +36,23 @@ export const QuizEditorModal: React.FC<Props> = ({
 }) => {
   const [title, setTitle] = useState(initialQuiz?.title || '');
   const [description, setDescription] = useState(initialQuiz?.description || '');
-  const [materialContent, setMaterialContent] = useState(initialQuiz?.materialContent || '');
-  const [materialType, setMaterialType] = useState<'text' | 'pdf' | 'ppt' | 'youtube'>(initialQuiz?.materialType || 'text');
-  const [materialFileUrl, setMaterialFileUrl] = useState(initialQuiz?.materialFileUrl || '');
-  const [materialFileName, setMaterialFileName] = useState(initialQuiz?.materialFileName || '');
-  const [materialYoutubeUrl, setMaterialYoutubeUrl] = useState(initialQuiz?.materialYoutubeUrl || '');
+  const [materials, setMaterials] = useState<QuizMaterial[]>(
+    initialQuiz?.materials && initialQuiz.materials.length > 0
+      ? initialQuiz.materials
+      : initialQuiz?.materialContent || initialQuiz?.materialFileUrl || initialQuiz?.materialYoutubeUrl
+      ? [
+          {
+            id: `mat-${Date.now()}-1`,
+            type: initialQuiz.materialType || 'text',
+            title: 'Materi Utama 1',
+            content: initialQuiz.materialContent || '',
+            fileUrl: initialQuiz.materialFileUrl || '',
+            fileName: initialQuiz.materialFileName || '',
+            youtubeUrl: initialQuiz.materialYoutubeUrl || ''
+          }
+        ]
+      : []
+  );
   const [subject, setSubject] = useState(initialQuiz?.subject || 'Sejarah Nusantara');
   const [gradeLevel, setGradeLevel] = useState(initialQuiz?.gradeLevel || 'SMP');
   const [durationMinutes, setDurationMinutes] = useState(initialQuiz?.durationMinutes ?? 10);
@@ -365,18 +377,46 @@ export const QuizEditorModal: React.FC<Props> = ({
     setQuestions(next);
   };
 
-  const handleMaterialFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddMaterial = (type: 'text' | 'pdf' | 'ppt' | 'youtube') => {
+    const newMat: QuizMaterial = {
+      id: `mat-${Date.now()}-${materials.length + 1}`,
+      type,
+      title: type === 'text' ? `Materi Teks ${materials.length + 1}` : type === 'pdf' || type === 'ppt' ? `Dokumen Materi ${materials.length + 1}` : `Video YouTube ${materials.length + 1}`,
+      content: '',
+      fileUrl: '',
+      fileName: '',
+      youtubeUrl: ''
+    };
+    setMaterials([...materials, newMat]);
+  };
+
+  const handleUpdateMaterial = (id: string, updates: Partial<QuizMaterial>) => {
+    setMaterials(materials.map((m) => (m.id === id ? { ...m, ...updates } : m)));
+  };
+
+  const handleRemoveMaterial = (id: string) => {
+    setMaterials(materials.filter((m) => m.id !== id));
+  };
+
+  const handleMaterialFileUploadMulti = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setMaterialFileName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
-      setMaterialFileUrl(reader.result as string);
-      if (file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf')) {
-        setMaterialType('pdf');
-      } else {
-        setMaterialType('ppt');
-      }
+      const fileType = file.type.includes('pdf') || file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'ppt';
+      setMaterials(
+        materials.map((m) =>
+          m.id === id
+            ? {
+                ...m,
+                type: fileType,
+                fileUrl: reader.result as string,
+                fileName: file.name,
+                title: m.title && m.title.trim() ? m.title : file.name
+              }
+            : m
+        )
+      );
     };
     reader.readAsDataURL(file);
   };
@@ -424,11 +464,12 @@ export const QuizEditorModal: React.FC<Props> = ({
       createdBy: initialQuiz?.createdBy || 'Guru Awang Long',
       isActive: initialQuiz?.isActive !== undefined ? initialQuiz.isActive : true,
       categories: categories.length > 0 ? categories : ['Umum'],
-      materialContent: materialContent.trim(),
-      materialType,
-      materialFileUrl,
-      materialFileName,
-      materialYoutubeUrl: materialYoutubeUrl.trim(),
+      materials,
+      materialContent: materials.find((m) => m.type === 'text')?.content || '',
+      materialType: materials[0]?.type || 'text',
+      materialFileUrl: materials.find((m) => m.type === 'pdf' || m.type === 'ppt')?.fileUrl || '',
+      materialFileName: materials.find((m) => m.type === 'pdf' || m.type === 'ppt')?.fileName || '',
+      materialYoutubeUrl: materials.find((m) => m.type === 'youtube')?.youtubeUrl || '',
       questions: finalQuestions
     };
 
@@ -510,92 +551,122 @@ export const QuizEditorModal: React.FC<Props> = ({
                 />
               </div>
 
-              <div className="md:col-span-2 space-y-3 p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800">
+              <div className="md:col-span-2 space-y-4 p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <label className="text-xs font-bold text-teal-900 dark:text-teal-200 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>📚 Bahan Bacaan & Materi Awal (PDF, PPT, YouTube, atau Teks)</span>
-                  </label>
-                  <div className="flex items-center gap-1 bg-white dark:bg-slate-900 p-1 rounded-xl border border-teal-200 dark:border-teal-800 text-[11px] font-semibold">
+                  <div>
+                    <h3 className="text-xs font-bold text-teal-900 dark:text-teal-200 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>📚 Bahan Bacaan & Materi Awal (Bisa Lebih Dari 1 Materi: Teks, PDF, & Video)</span>
+                    </h3>
+                    <p className="text-[11px] text-teal-700/80 dark:text-teal-300/80 mt-0.5">
+                      Guru dapat melampirkan beberapa materi sekaligus (misal: beberapa teks, beberapa PDF/PPT, dan beberapa video YouTube).
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap">
                     <button
                       type="button"
-                      onClick={() => setMaterialType('text')}
-                      className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${materialType === 'text' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-300'}`}
+                      onClick={() => handleAddMaterial('text')}
+                      className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors shadow-xs cursor-pointer flex items-center gap-1"
                     >
-                      📝 Teks
+                      <span>+ Tambah Teks</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setMaterialType('pdf')}
-                      className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${materialType === 'pdf' || materialType === 'ppt' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-300'}`}
+                      onClick={() => handleAddMaterial('pdf')}
+                      className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors shadow-xs cursor-pointer flex items-center gap-1"
                     >
-                      📄 PDF / PPT
+                      <span>+ Tambah PDF/PPT</span>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setMaterialType('youtube')}
-                      className={`px-3 py-1 rounded-lg transition-colors cursor-pointer ${materialType === 'youtube' ? 'bg-teal-600 text-white' : 'text-slate-600 dark:text-slate-300'}`}
+                      onClick={() => handleAddMaterial('youtube')}
+                      className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors shadow-xs cursor-pointer flex items-center gap-1"
                     >
-                      ▶️ YouTube
+                      <span>+ Tambah Video</span>
                     </button>
                   </div>
                 </div>
 
-                {materialType === 'text' && (
-                  <textarea
-                    rows={4}
-                    value={materialContent}
-                    onChange={(e) => setMaterialContent(e.target.value)}
-                    placeholder="Masukkan teks materi bacaan atau ringkasan yang wajib dibaca siswa di awal kuis..."
-                    className="w-full text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400/40 transition-colors font-sans"
-                  />
+                {materials.length === 0 && (
+                  <div className="p-6 text-center bg-white dark:bg-slate-900 rounded-xl border border-dashed border-teal-200 dark:border-teal-800 text-xs text-slate-500">
+                    Belum ada bahan bacaan yang dilampirkan. Klik tombol di atas untuk menambahkan materi teks, dokumen PDF/PPT, atau video YouTube.
+                  </div>
                 )}
 
-                {(materialType === 'pdf' || materialType === 'ppt') && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <label className="flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-teal-300 dark:border-teal-700 bg-white dark:bg-slate-900 hover:bg-teal-50/50 dark:hover:bg-teal-950/50 transition-colors cursor-pointer text-xs font-semibold text-teal-800 dark:text-teal-300">
-                        <span>{materialFileName ? `📁 File Terpilih: ${materialFileName}` : '📂 Unggah File PDF atau PPTX'}</span>
-                        <input
-                          type="file"
-                          accept=".pdf,.ppt,.pptx"
-                          onChange={handleMaterialFileUpload}
-                          className="hidden"
+                <div className="space-y-4">
+                  {materials.map((mat, idx) => (
+                    <div
+                      key={mat.id}
+                      className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800 shadow-sm space-y-3"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="w-7 h-7 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 font-bold text-xs flex items-center justify-center shrink-0">
+                            #{idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            value={mat.title}
+                            onChange={(e) => handleUpdateMaterial(mat.id, { title: e.target.value })}
+                            placeholder="Judul Materi..."
+                            className="flex-1 text-xs font-bold p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                            {mat.type === 'text' ? '📝 Teks' : mat.type === 'pdf' ? '📄 PDF' : mat.type === 'ppt' ? '📊 PPT' : '▶️ YouTube'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMaterial(mat.id)}
+                            className="p-1.5 rounded-xl text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950 transition-colors cursor-pointer"
+                            title="Hapus Materi Ini"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {mat.type === 'text' && (
+                        <textarea
+                          rows={3}
+                          value={mat.content || ''}
+                          onChange={(e) => handleUpdateMaterial(mat.id, { content: e.target.value })}
+                          placeholder="Masukkan isi teks materi bacaan atau ringkasan..."
+                          className="w-full text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400"
                         />
-                      </label>
-                      {materialFileUrl && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setMaterialFileUrl('');
-                            setMaterialFileName('');
-                            setMaterialType('text');
-                          }}
-                          className="px-3 py-3 rounded-xl bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-200 transition-colors cursor-pointer"
-                        >
-                          Hapus File
-                        </button>
+                      )}
+
+                      {(mat.type === 'pdf' || mat.type === 'ppt') && (
+                        <div className="space-y-2">
+                          <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-teal-300 dark:border-teal-700 bg-slate-50 dark:bg-slate-800 hover:bg-teal-50/50 transition-colors cursor-pointer text-xs font-semibold text-teal-800 dark:text-teal-300">
+                            <span>{mat.fileName ? `📁 File Terpilih: ${mat.fileName}` : '📂 Unggah Dokumen PDF atau PPTX'}</span>
+                            <input
+                              type="file"
+                              accept=".pdf,.ppt,.pptx"
+                              onChange={(e) => handleMaterialFileUploadMulti(mat.id, e)}
+                              className="hidden"
+                            />
+                          </label>
+                          {mat.fileUrl && (
+                            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                              ✓ Dokumen berhasil dimuat dan dilampirkan.
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {mat.type === 'youtube' && (
+                        <input
+                          type="url"
+                          value={mat.youtubeUrl || ''}
+                          onChange={(e) => handleUpdateMaterial(mat.id, { youtubeUrl: e.target.value })}
+                          placeholder="Link Video YouTube (Contoh: https://www.youtube.com/watch?v=xxxxx)"
+                          className="w-full text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                        />
                       )}
                     </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Mendukung file dokumen PDF dan presentasi PowerPoint (.ppt, .pptx) sebagai pratinjau bacaan siswa.
-                    </p>
-                  </div>
-                )}
-
-                {materialType === 'youtube' && (
-                  <div className="space-y-2">
-                    <input
-                      type="url"
-                      value={materialYoutubeUrl}
-                      onChange={(e) => setMaterialYoutubeUrl(e.target.value)}
-                      placeholder="Masukkan Link YouTube (Contoh: https://www.youtube.com/watch?v=xxxxx atau https://youtu.be/xxxxx)"
-                      className="w-full text-xs p-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-teal-400/40 transition-colors"
-                    />
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Siswa akan dapat langsung menonton video pembelajaran YouTube tersebut di awal kuis sebagai bahan pratinjau.
-                    </p>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-1">

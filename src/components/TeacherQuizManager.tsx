@@ -15,9 +15,10 @@ import {
   Clock,
   Sparkles,
   Link,
-  Zap
+  Zap,
+  Radio
 } from 'lucide-react';
-import { Quiz, StudentSubmission, QuizSessionSettings } from '../types/quiz.js';
+import { Quiz, StudentSubmission, QuizSessionSettings, QuizSession } from '../types/quiz.js';
 import { GeminiUsageWidget } from './GeminiUsageWidget.js';
 import { PWAInstallButton } from './PWAInstallButton.js';
 import { QuizModeSelectModal } from './QuizModeSelectModal.js';
@@ -25,6 +26,7 @@ import { QuizModeSelectModal } from './QuizModeSelectModal.js';
 interface Props {
   quizzes: Quiz[];
   submissions: StudentSubmission[];
+  quizSessions: QuizSession[];
   onCreateNew: () => void;
   onOpenFileUpload: () => void;
   onEditQuiz: (quiz: Quiz) => void;
@@ -32,18 +34,21 @@ interface Props {
   onShareQuiz: (quiz: Quiz) => void;
   onPlayQuiz: (quiz: Quiz, settings?: QuizSessionSettings) => void;
   onViewSubmissions: (quizId: string) => void;
+  onManageSession: (session: QuizSession) => void;
 }
 
 export const TeacherQuizManager: React.FC<Props> = ({
   quizzes,
   submissions,
+  quizSessions,
   onCreateNew,
   onOpenFileUpload,
   onEditQuiz,
   onDeleteQuiz,
   onShareQuiz,
   onPlayQuiz,
-  onViewSubmissions
+  onViewSubmissions,
+  onManageSession
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
@@ -51,6 +56,9 @@ export const TeacherQuizManager: React.FC<Props> = ({
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showQuotaMonitor, setShowQuotaMonitor] = useState(false);
   const [selectedQuizForMode, setSelectedQuizForMode] = useState<Quiz | null>(null);
+
+  const activeSessions = quizSessions.filter((s) => s.isExamStarted);
+  const scheduledSessions = quizSessions.filter((s) => !s.isExamStarted && s.scheduledStartTime != null);
 
   const filteredQuizzes = quizzes.filter((q) => {
     const qLower = searchQuery.toLowerCase();
@@ -142,6 +150,51 @@ export const TeacherQuizManager: React.FC<Props> = ({
           <GeminiUsageWidget variant="card" />
         </div>
       )}
+
+      {/* Sessions Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {/* Active Sessions */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-teal-200 dark:border-teal-900 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Radio className="w-5 h-5 text-teal-600 animate-pulse" />
+            <h2 className="font-bold text-slate-800 dark:text-slate-100">Kuis Sedang Berjalan ({activeSessions.length})</h2>
+          </div>
+          {activeSessions.length === 0 ? (
+            <p className="text-xs text-slate-400">Tidak ada kuis aktif saat ini.</p>
+          ) : (
+            <div className="space-y-2">
+              {activeSessions.map(s => (
+                <div key={s.id} className="flex justify-between items-center text-xs p-2 bg-teal-50 dark:bg-teal-950/40 rounded-xl cursor-pointer hover:bg-teal-100 dark:hover:bg-teal-900/50 transition-colors" onClick={() => onManageSession(s)}>
+                  <span className="font-semibold text-teal-900 dark:text-teal-200">{s.quizTitle}</span>
+                  <span className="font-mono bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-teal-200 dark:border-teal-800">{s.code}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Scheduled Sessions */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl border border-amber-200 dark:border-amber-900 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-5 h-5 text-amber-600" />
+            <h2 className="font-bold text-slate-800 dark:text-slate-100">Kuis Terjadwal ({scheduledSessions.length})</h2>
+          </div>
+          {scheduledSessions.length === 0 ? (
+            <p className="text-xs text-slate-400">Tidak ada kuis terjadwal.</p>
+          ) : (
+            <div className="space-y-2">
+              {scheduledSessions.map(s => (
+                <div key={s.id} className="flex justify-between items-center text-xs p-2 bg-amber-50 dark:bg-amber-950/40 rounded-xl cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors" onClick={() => onManageSession(s)}>
+                  <span className="font-semibold text-amber-900 dark:text-amber-200">{s.quizTitle}</span>
+                  <span className="text-amber-600 dark:text-amber-400">
+                    {s.scheduledStartTime ? new Date(s.scheduledStartTime).toLocaleTimeString() : 'N/A'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Student Link Workflow Info Banner */}
       <div className="p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50 dark:from-teal-950/50 dark:via-cyan-950/40 dark:to-slate-900 border border-teal-200 dark:border-teal-900 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shadow-xs transition-colors">

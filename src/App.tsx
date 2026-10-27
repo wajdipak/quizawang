@@ -292,6 +292,13 @@ export default function App() {
     setActiveTab('rekap-nilai');
   };
 
+  const handleManageSession = (session: QuizSession) => {
+    const quiz = quizzes.find((q) => q.id === session.quizId);
+    if (quiz) {
+      setActiveLiveSession({ quiz, session });
+    }
+  };
+
   const existingCodes = quizzes.map((q) => q.code);
 
   if (loadingAuth) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -497,6 +504,7 @@ export default function App() {
               <TeacherQuizManager
                 quizzes={quizzes}
                 submissions={submissions}
+                quizSessions={quizSessions}
                 onCreateNew={handleOpenCreateNew}
                 onOpenFileUpload={() => setFileUploadOpen(true)}
                 onEditQuiz={handleOpenEditQuiz}
@@ -504,6 +512,7 @@ export default function App() {
                 onShareQuiz={handleOpenShareQuiz}
                 onPlayQuiz={handlePlayQuiz}
                 onViewSubmissions={handleViewAnalyticsForQuiz}
+                onManageSession={handleManageSession}
               />
             )}
 

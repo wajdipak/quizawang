@@ -15,12 +15,12 @@ import {
   Clock,
   Sparkles,
   Link,
-  GraduationCap,
   Zap
 } from 'lucide-react';
-import { Quiz, StudentSubmission } from '../types/quiz.js';
+import { Quiz, StudentSubmission, QuizSessionSettings } from '../types/quiz.js';
 import { GeminiUsageWidget } from './GeminiUsageWidget.js';
 import { PWAInstallButton } from './PWAInstallButton.js';
+import { QuizModeSelectModal } from './QuizModeSelectModal.js';
 
 interface Props {
   quizzes: Quiz[];
@@ -30,7 +30,7 @@ interface Props {
   onEditQuiz: (quiz: Quiz) => void;
   onDeleteQuiz: (quizId: string) => void;
   onShareQuiz: (quiz: Quiz) => void;
-  onPlayQuiz: (quiz: Quiz) => void;
+  onPlayQuiz: (quiz: Quiz, settings?: QuizSessionSettings) => void;
   onViewSubmissions: (quizId: string) => void;
 }
 
@@ -50,6 +50,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
   const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showQuotaMonitor, setShowQuotaMonitor] = useState(false);
+  const [selectedQuizForMode, setSelectedQuizForMode] = useState<Quiz | null>(null);
 
   const filteredQuizzes = quizzes.filter((q) => {
     const qLower = searchQuery.toLowerCase();
@@ -339,9 +340,9 @@ export const TeacherQuizManager: React.FC<Props> = ({
 
                       <button
                         type="button"
-                        onClick={() => onPlayQuiz(quiz)}
+                        onClick={() => setSelectedQuizForMode(quiz)}
                         className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
-                        title="Mulai Simulasi Kuis Guru"
+                        title="Pilih Format Mode & Uji Coba Kuis"
                       >
                         <Play className="w-3.5 h-3.5" />
                         <span>Uji Soal</span>
@@ -389,6 +390,19 @@ export const TeacherQuizManager: React.FC<Props> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Interactive Quiz Engine Mode Selection Modal */}
+      {selectedQuizForMode && (
+        <QuizModeSelectModal
+          quiz={selectedQuizForMode}
+          isOpen={Boolean(selectedQuizForMode)}
+          onClose={() => setSelectedQuizForMode(null)}
+          onLaunchMode={(quizToRun, settings) => {
+            setSelectedQuizForMode(null);
+            onPlayQuiz(quizToRun, settings);
+          }}
+        />
       )}
 
     </div>

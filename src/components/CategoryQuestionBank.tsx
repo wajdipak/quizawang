@@ -163,11 +163,11 @@ export const CategoryQuestionBank: React.FC<Props> = ({
             className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
               selectedCategory === 'ALL'
                 ? 'bg-teal-600 text-white'
-                : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
             }`}
           >
             <span>Semua Kategori</span>
-            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20">
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${selectedCategory === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
               {allQuestionEntries.length}
             </span>
           </button>
@@ -183,12 +183,12 @@ export const CategoryQuestionBank: React.FC<Props> = ({
                 className={`px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
                   isSelected
                     ? 'bg-teal-600 text-white font-bold'
-                    : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
+                    : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
                 }`}
               >
                 <Tag className="w-3 h-3 text-teal-400" />
                 <span>{cat}</span>
-                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
                   {count}
                 </span>
               </button>

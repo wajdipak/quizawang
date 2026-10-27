@@ -32,7 +32,11 @@ export const Navbar: React.FC<Props> = ({
               onKeyDown={(e) => { if (e.key === 'Enter') setActiveTab('beranda'); }}
               aria-label="Kembali ke Beranda Awang Long Quiz"
             >
-              <img src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png" alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain hover:scale-105 transition-transform" />
+              <img 
+                src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png" 
+                alt="Logo Awang Long Quiz" 
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain hover:scale-105 transition-transform dark:brightness-0 dark:invert dark:opacity-95" 
+              />
               <div>
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="font-extrabold text-base sm:text-lg lg:text-xl tracking-tight bg-gradient-to-r from-teal-700 via-cyan-700 to-indigo-800 dark:from-teal-300 dark:via-cyan-200 dark:to-indigo-300 bg-clip-text text-transparent">

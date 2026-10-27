@@ -88,7 +88,7 @@ export const FileUploadExtractorModal: React.FC<Props> = ({
     setTargetCountInput(next.toString());
   };
   const [preferredType, setPreferredType] = useState('campuran');
-  const [gradeLevel, setGradeLevel] = useState('SMP');
+  const [gradeLevel, setGradeLevel] = useState('SD');
   const [additionalNote, setAdditionalNote] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);

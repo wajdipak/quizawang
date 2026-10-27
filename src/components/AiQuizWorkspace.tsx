@@ -68,7 +68,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
     setQuestionCount(next);
     setCountInput(next.toString());
   };
-  const [gradeLevel, setGradeLevel] = useState('SMP');
+  const [gradeLevel, setGradeLevel] = useState('SD');
   const [difficulty, setDifficulty] = useState('Sedang');
   const [durationMinutes, setDurationMinutes] = useState(10);
 
@@ -296,7 +296,11 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-teal-100 dark:border-teal-900/60 shadow-sm w-full md:w-auto justify-center md:justify-start shrink-0">
-            <img src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png" alt="Logo" className={`w-14 h-14 sm:w-16 sm:h-16 ${isLoading ? 'animate-bounce' : ''} object-contain hover:scale-105 transition-transform`} />
+            <img 
+              src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png" 
+              alt="Logo Awang Long Quiz" 
+              className={`w-14 h-14 sm:w-16 sm:h-16 ${isLoading ? 'animate-bounce' : ''} object-contain hover:scale-105 transition-transform dark:brightness-0 dark:invert dark:opacity-95`} 
+            />
             <div className="text-xs space-y-1">
               <span className="font-bold text-slate-800 dark:text-slate-100 block">Awang Long AI Engine</span>
               <span className="text-slate-500 dark:text-slate-400 block">Asisten Kuis Guru Cerdas</span>

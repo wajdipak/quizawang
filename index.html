@@ -3,6 +3,79 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      (function() {
+        // Intercept Vite HMR WebSocket so that sandbox preview proxy drops don't trigger error events
+        if (typeof window !== 'undefined' && window.WebSocket) {
+          const RealWebSocket = window.WebSocket;
+          const FakeViteWebSocket = function(url, protocols) {
+            const isViteHmr =
+              protocols === 'vite-hmr' ||
+              (Array.isArray(protocols) && protocols.includes('vite-hmr')) ||
+              (typeof url === 'string' && (url.includes('vite-hmr') || url.includes('/@vite/client')));
+
+            if (isViteHmr) {
+              const target = new EventTarget();
+              const fakeSocket = {
+                url: String(url),
+                readyState: 1, // OPEN
+                bufferedAmount: 0,
+                extensions: '',
+                protocol: 'vite-hmr',
+                binaryType: 'blob',
+                send: function() {},
+                close: function() {},
+                addEventListener: function(type, listener, options) {
+                  target.addEventListener(type, listener, options);
+                },
+                removeEventListener: function(type, listener, options) {
+                  target.removeEventListener(type, listener, options);
+                },
+                dispatchEvent: function(event) {
+                  return target.dispatchEvent(event);
+                },
+                set onopen(fn) { target.addEventListener('open', fn); },
+                set onclose(fn) { target.addEventListener('close', fn); },
+                set onerror(fn) { target.addEventListener('error', fn); },
+                set onmessage(fn) { target.addEventListener('message', fn); }
+              };
+              Object.setPrototypeOf(fakeSocket, RealWebSocket.prototype);
+              return fakeSocket;
+            }
+            return new RealWebSocket(url, protocols);
+          };
+
+          FakeViteWebSocket.prototype = RealWebSocket.prototype;
+          FakeViteWebSocket.CONNECTING = 0;
+          FakeViteWebSocket.OPEN = 1;
+          FakeViteWebSocket.CLOSING = 2;
+          FakeViteWebSocket.CLOSED = 3;
+          Object.setPrototypeOf(FakeViteWebSocket, RealWebSocket);
+          window.WebSocket = FakeViteWebSocket;
+        }
+
+        // Also suppress any residual console.error regarding WebSocket closed
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+          if (args.some(arg => arg && (
+            (typeof arg === 'string' && arg.includes('WebSocket closed without opened')) ||
+            (arg instanceof Error && arg.message && arg.message.includes('WebSocket closed without opened')) ||
+            (arg.message && String(arg.message).includes('WebSocket closed without opened')) ||
+            (String(arg).includes('WebSocket closed without opened'))
+          ))) {
+            return;
+          }
+          originalConsoleError.apply(console, args);
+        };
+
+        window.addEventListener('error', function(e) {
+          if (e.message && e.message.includes('WebSocket closed without opened')) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        }, true);
+      })();
+    </script>
     <title>Awang Long Quiz - Platform Kuis Online Cerdas untuk Guru & Siswa</title>
     <meta name="description" content="Platform kuis online interaktif bertenaga AI untuk guru membuat, mengedit, dan membagikan tugas kuis kepada siswa dengan rekap nilai otomatis." />
     <meta property="og:title" content="Awang Long Quiz - Platform Kuis Online Cerdas untuk Guru & Siswa" />

@@ -13,7 +13,9 @@ import { StudentQuizRoom } from './components/StudentQuizRoom.js';
 import { SubmissionsAnalytics } from './components/SubmissionsAnalytics.js';
 import { AccessibilityFloatingWidget } from './components/AccessibilityFloatingWidget.js';
 import { StudentPortalPWA } from './components/StudentPortalPWA.js';
-import { Quiz, StudentSubmission } from './types/quiz.js';
+import { QuizModeSelectModal } from './components/QuizModeSelectModal.js';
+import { InteractiveQuizEngine } from './components/InteractiveQuizEngine.js';
+import { Quiz, StudentSubmission, QuizSessionSettings, QuizGameMode } from './types/quiz.js';
 import {
   loadStoredQuizzes,
   saveStoredQuizzes,
@@ -51,6 +53,11 @@ export default function App() {
   const [fileUploadOpen, setFileUploadOpen] = useState(false);
 
   const [studentActiveQuiz, setStudentActiveQuiz] = useState<Quiz | null>(null);
+  const [interactiveSessionQuiz, setInteractiveSessionQuiz] = useState<{
+    quiz: Quiz;
+    settings: QuizSessionSettings;
+  } | null>(null);
+  const [selectedQuizForModeSelect, setSelectedQuizForModeSelect] = useState<Quiz | null>(null);
   const [analyticsSelectedQuizId, setAnalyticsSelectedQuizId] = useState<string | null>(null);
   const [isStudentLinkMode, setIsStudentLinkMode] = useState(false);
 
@@ -208,9 +215,12 @@ export default function App() {
     setShareOpen(true);
   };
 
-  const handlePlayQuiz = (quiz: Quiz) => {
-    setStudentActiveQuiz(quiz);
-    setActiveTab('ruang-siswa');
+  const handlePlayQuiz = (quiz: Quiz, settings?: QuizSessionSettings) => {
+    if (settings) {
+      setInteractiveSessionQuiz({ quiz, settings });
+    } else {
+      setSelectedQuizForModeSelect(quiz);
+    }
   };
 
   const handleSubmissionComplete = async (submission: StudentSubmission) => {
@@ -377,63 +387,89 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 pb-28 md:pb-8">
-        {activeTab === 'beranda' && (
-          <AiQuizWorkspace
-            onSaveQuiz={handleSaveQuiz}
-            onPlayQuiz={handlePlayQuiz}
-            onShareQuiz={handleOpenShareQuiz}
-            onOpenFileUpload={() => setFileUploadOpen(true)}
-            existingCodes={existingCodes}
-          />
-        )}
-
-        {activeTab === 'kuis-guru' && (
-          <TeacherQuizManager
-            quizzes={quizzes}
-            submissions={submissions}
-            onCreateNew={handleOpenCreateNew}
-            onOpenFileUpload={() => setFileUploadOpen(true)}
-            onEditQuiz={handleOpenEditQuiz}
-            onDeleteQuiz={handleDeleteQuiz}
-            onShareQuiz={handleOpenShareQuiz}
-            onPlayQuiz={handlePlayQuiz}
-            onViewSubmissions={handleViewAnalyticsForQuiz}
-          />
-        )}
-
-        {activeTab === 'bank-kategori' && (
-          <CategoryQuestionBank
-            quizzes={quizzes}
-            categories={categories}
-            onAddCategory={handleAddNewCategory}
-            onEditQuiz={handleOpenEditQuiz}
-          />
-        )}
-
-        {activeTab === 'ruang-siswa' && (
-          <StudentQuizRoom
-            initialQuiz={studentActiveQuiz}
-            availableQuizzes={quizzes.filter((q) => q.isActive)}
-            onSubmissionComplete={handleSubmissionComplete}
-            isStandaloneExam={false}
-            onBackToHome={() => {
-              setStudentActiveQuiz(null);
+        {interactiveSessionQuiz ? (
+          <InteractiveQuizEngine
+            quiz={interactiveSessionQuiz.quiz}
+            settings={interactiveSessionQuiz.settings}
+            onExit={() => {
+              setInteractiveSessionQuiz(null);
               setActiveTab('kuis-guru');
             }}
+            onSubmissionSaved={handleSubmissionComplete}
           />
-        )}
+        ) : (
+          <>
+            {activeTab === 'beranda' && (
+              <AiQuizWorkspace
+                onSaveQuiz={handleSaveQuiz}
+                onPlayQuiz={handlePlayQuiz}
+                onShareQuiz={handleOpenShareQuiz}
+                onOpenFileUpload={() => setFileUploadOpen(true)}
+                existingCodes={existingCodes}
+              />
+            )}
 
-        {activeTab === 'rekap-nilai' && (
-          <SubmissionsAnalytics
-            quizzes={quizzes}
-            submissions={submissions}
-            selectedQuizId={analyticsSelectedQuizId}
-            onDeleteSubmission={handleDeleteSubmission}
-          />
+            {activeTab === 'kuis-guru' && (
+              <TeacherQuizManager
+                quizzes={quizzes}
+                submissions={submissions}
+                onCreateNew={handleOpenCreateNew}
+                onOpenFileUpload={() => setFileUploadOpen(true)}
+                onEditQuiz={handleOpenEditQuiz}
+                onDeleteQuiz={handleDeleteQuiz}
+                onShareQuiz={handleOpenShareQuiz}
+                onPlayQuiz={handlePlayQuiz}
+                onViewSubmissions={handleViewAnalyticsForQuiz}
+              />
+            )}
+
+            {activeTab === 'bank-kategori' && (
+              <CategoryQuestionBank
+                quizzes={quizzes}
+                categories={categories}
+                onAddCategory={handleAddNewCategory}
+                onEditQuiz={handleOpenEditQuiz}
+              />
+            )}
+
+            {activeTab === 'ruang-siswa' && (
+              <StudentQuizRoom
+                initialQuiz={studentActiveQuiz}
+                availableQuizzes={quizzes.filter((q) => q.isActive)}
+                onSubmissionComplete={handleSubmissionComplete}
+                isStandaloneExam={false}
+                onBackToHome={() => {
+                  setStudentActiveQuiz(null);
+                  setActiveTab('kuis-guru');
+                }}
+              />
+            )}
+
+            {activeTab === 'rekap-nilai' && (
+              <SubmissionsAnalytics
+                quizzes={quizzes}
+                submissions={submissions}
+                selectedQuizId={analyticsSelectedQuizId}
+                onDeleteSubmission={handleDeleteSubmission}
+              />
+            )}
+          </>
         )}
       </main>
 
       {/* Global Modals */}
+      {selectedQuizForModeSelect && (
+        <QuizModeSelectModal
+          quiz={selectedQuizForModeSelect}
+          isOpen={Boolean(selectedQuizForModeSelect)}
+          onClose={() => setSelectedQuizForModeSelect(null)}
+          onLaunchMode={(quizToRun, settings) => {
+            setSelectedQuizForModeSelect(null);
+            setInteractiveSessionQuiz({ quiz: quizToRun, settings });
+          }}
+        />
+      )}
+
       {editorOpen && (
         <QuizEditorModal
           initialQuiz={editingQuiz}

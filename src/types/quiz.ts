@@ -79,7 +79,25 @@ export interface StudentSubmission {
   isPassed: boolean;
   timeSpentSeconds: number;
   submittedAt: string;
+  gameMode?: QuizGameMode;
+  violationsCount?: number;
+  isDisqualified?: boolean;
   categoryScores?: Record<string, { earned: number; total: number; percentage: number }>;
+}
+
+export type QuizGameMode = 'CLASSIC' | 'MASTERY' | 'PLAYGROUND' | 'TEST' | 'TEAM';
+
+export type PowerUpType = 'DOUBLE_POINTS' | 'FIFTY_FIFTY' | 'ERASER' | 'IMMUNITY';
+
+export interface QuizSessionSettings {
+  gameMode: QuizGameMode;
+  enablePowerUps?: boolean;
+  streakBonusEnabled?: boolean;
+  masteryThreshold?: number; // 1 or 2 correct needed
+  maxTabViolations?: number; // default 3
+  teamName?: string; // 'Tim Garuda' | 'Tim Rajawali'
+  arcadeDurationSeconds?: number;
+  isTeacherTesting?: boolean;
 }
 
 export interface QuestionBreakdown {
@@ -112,3 +130,4 @@ export interface QuizResultCalculation {
   breakdown: QuestionBreakdown[];
   categoryBreakdown: Record<string, { earned: number; total: number; percentage: number; questionCount: number }>;
 }
+

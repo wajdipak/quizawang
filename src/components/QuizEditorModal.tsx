@@ -54,7 +54,7 @@ export const QuizEditorModal: React.FC<Props> = ({
       : []
   );
   const [subject, setSubject] = useState(initialQuiz?.subject || 'Sejarah Nusantara');
-  const [gradeLevel, setGradeLevel] = useState(initialQuiz?.gradeLevel || 'SMP');
+  const [gradeLevel, setGradeLevel] = useState(initialQuiz?.gradeLevel || 'SD');
   const [durationMinutes, setDurationMinutes] = useState(initialQuiz?.durationMinutes ?? 10);
   const [passingGrade, setPassingGrade] = useState(initialQuiz?.passingGrade ?? 70);
 

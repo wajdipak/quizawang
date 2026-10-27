@@ -131,3 +131,15 @@ export interface QuizResultCalculation {
   categoryBreakdown: Record<string, { earned: number; total: number; percentage: number; questionCount: number }>;
 }
 
+export interface QuizSession {
+  id: string;
+  quizId: string;
+  quizTitle: string;
+  code: string; // fresh PIN generated for this mode session
+  gameMode: QuizGameMode;
+  isExamStarted: boolean; // teacher control state
+  scheduledStartTime?: string | null; // ISO string if scheduled
+  createdAt: string;
+  settings: QuizSessionSettings;
+}
+

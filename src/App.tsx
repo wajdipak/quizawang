@@ -30,8 +30,12 @@ import {
   saveSubmissionToFirebase,
   deleteSubmissionFromFirebase,
   subscribeQuizzesRealtime,
-  subscribeSubmissionsRealtime
+  subscribeSubmissionsRealtime,
+  subscribeQuizSessionsRealtime,
+  saveQuizSessionToFirebase
 } from './services/firebaseSync.js';
+import { TeacherLiveSessionModal } from './components/TeacherLiveSessionModal.js';
+import { QuizSession } from './types/quiz.js';
 import { ArrowLeft } from 'lucide-react';
 
 export default function App() {
@@ -60,6 +64,11 @@ export default function App() {
   const [selectedQuizForModeSelect, setSelectedQuizForModeSelect] = useState<Quiz | null>(null);
   const [analyticsSelectedQuizId, setAnalyticsSelectedQuizId] = useState<string | null>(null);
   const [isStudentLinkMode, setIsStudentLinkMode] = useState(false);
+  const [quizSessions, setQuizSessions] = useState<QuizSession[]>([]);
+  const [activeLiveSession, setActiveLiveSession] = useState<{
+    quiz: Quiz;
+    session: QuizSession;
+  } | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -134,9 +143,15 @@ export default function App() {
       setSubmissions(syncedSubs);
     });
 
+    // 4. Real-time Firebase Firestore synchronizer for Quiz Sessions
+    const unsubSessions = subscribeQuizSessionsRealtime((syncedSessions) => {
+      setQuizSessions(syncedSessions);
+    });
+
     return () => {
       unsubQuizzes();
       unsubSubmissions();
+      unsubSessions();
     };
   }, [user]);
 
@@ -215,9 +230,27 @@ export default function App() {
     setShareOpen(true);
   };
 
-  const handlePlayQuiz = (quiz: Quiz, settings?: QuizSessionSettings) => {
+  const handlePlayQuiz = async (quiz: Quiz, settings?: QuizSessionSettings) => {
     if (settings) {
-      setInteractiveSessionQuiz({ quiz, settings });
+      const generateFreshPin = (mode: QuizGameMode): string => {
+        const prefix = mode === 'CLASSIC' ? 'CLS' : mode === 'MASTERY' ? 'MST' : mode === 'PLAYGROUND' ? 'ARC' : mode === 'TEST' ? 'TST' : 'TEM';
+        const rand = Math.floor(100 + Math.random() * 900);
+        return `${prefix}${rand}`;
+      };
+      const freshCode = generateFreshPin(settings.gameMode);
+      const newSession: QuizSession = {
+        id: `sess-${Date.now()}`,
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        code: freshCode,
+        gameMode: settings.gameMode,
+        isExamStarted: false,
+        scheduledStartTime: null,
+        createdAt: new Date().toISOString(),
+        settings
+      };
+      await saveQuizSessionToFirebase(newSession);
+      setActiveLiveSession({ quiz, session: newSession });
     } else {
       setSelectedQuizForModeSelect(quiz);
     }
@@ -463,8 +496,40 @@ export default function App() {
           quiz={selectedQuizForModeSelect}
           isOpen={Boolean(selectedQuizForModeSelect)}
           onClose={() => setSelectedQuizForModeSelect(null)}
-          onLaunchMode={(quizToRun, settings) => {
+          onLaunchMode={async (quizToRun, settings) => {
             setSelectedQuizForModeSelect(null);
+            const generateFreshPin = (mode: QuizGameMode): string => {
+              const prefix = mode === 'CLASSIC' ? 'CLS' : mode === 'MASTERY' ? 'MST' : mode === 'PLAYGROUND' ? 'ARC' : mode === 'TEST' ? 'TST' : 'TEM';
+              const rand = Math.floor(100 + Math.random() * 900);
+              return `${prefix}${rand}`;
+            };
+            const freshCode = generateFreshPin(settings.gameMode);
+            const newSession: QuizSession = {
+              id: `sess-${Date.now()}`,
+              quizId: quizToRun.id,
+              quizTitle: quizToRun.title,
+              code: freshCode,
+              gameMode: settings.gameMode,
+              isExamStarted: false,
+              scheduledStartTime: null,
+              createdAt: new Date().toISOString(),
+              settings
+            };
+            await saveQuizSessionToFirebase(newSession);
+            setActiveLiveSession({ quiz: quizToRun, session: newSession });
+          }}
+        />
+      )}
+
+      {activeLiveSession && (
+        <TeacherLiveSessionModal
+          quiz={activeLiveSession.quiz}
+          session={activeLiveSession.session}
+          submissions={submissions}
+          isOpen={Boolean(activeLiveSession)}
+          onClose={() => setActiveLiveSession(null)}
+          onStartTeacherEngine={(quizToRun, settings) => {
+            setActiveLiveSession(null);
             setInteractiveSessionQuiz({ quiz: quizToRun, settings });
           }}
         />

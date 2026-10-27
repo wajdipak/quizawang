@@ -8,8 +8,10 @@ import {
   AlertCircle,
   HelpCircle
 } from 'lucide-react';
-import { Quiz, StudentSubmission } from '../types/quiz.js';
+import { Quiz, QuizSession, StudentSubmission } from '../types/quiz.js';
 import { StudentExamPortal } from './StudentExamPortal.js';
+import { StudentWaitingRoom } from './StudentWaitingRoom.js';
+import { subscribeQuizSessionsRealtime } from '../services/firebaseSync.js';
 
 interface Props {
   initialQuiz?: Quiz | null;
@@ -27,8 +29,24 @@ export const StudentQuizRoom: React.FC<Props> = ({
   isStandaloneExam = false
 }) => {
   const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(initialQuiz || null);
+  const [activeSession, setActiveSession] = useState<QuizSession | null>(null);
+  const [allSessions, setAllSessions] = useState<QuizSession[]>([]);
   const [pinInput, setPinInput] = useState(initialQuiz?.code || '');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = subscribeQuizSessionsRealtime((sessions) => {
+      setAllSessions(sessions);
+      if (initialQuiz) {
+        // Check if initialQuiz matches a session code
+        const matched = sessions.find((s) => s.quizId === initialQuiz.id || s.code.toUpperCase() === initialQuiz.code.toUpperCase());
+        if (matched) {
+          setActiveSession(matched);
+        }
+      }
+    });
+    return unsubscribe;
+  }, [initialQuiz]);
 
   useEffect(() => {
     if (initialQuiz) {
@@ -47,6 +65,18 @@ export const StudentQuizRoom: React.FC<Props> = ({
       return;
     }
 
+    // 1. Check if PIN matches an active teacher session
+    const matchedSession = allSessions.find((s) => s.code.toUpperCase() === cleanPin);
+    if (matchedSession) {
+      const matchedQuiz = availableQuizzes.find((q) => q.id === matchedSession.quizId) || initialQuiz;
+      if (matchedQuiz) {
+        setActiveSession(matchedSession);
+        setActiveQuiz(matchedQuiz);
+        return;
+      }
+    }
+
+    // 2. Fallback to direct quiz code
     const matched = availableQuizzes.find(
       (q) => q.code.toUpperCase() === cleanPin && q.isActive
     );
@@ -64,11 +94,48 @@ export const StudentQuizRoom: React.FC<Props> = ({
     setActiveQuiz(matched);
   };
 
-  // If a quiz is selected or passed via direct link, render the dedicated Student Exam Portal (Session 1 -> Session 2 -> Session 3)
+  // If a session and quiz are selected, render StudentWaitingRoom (which gates on session.isExamStarted)
+  if (activeQuiz && activeSession) {
+    return (
+      <div className="space-y-4">
+        {!isStandaloneExam && (
+          <div className="flex items-center justify-between px-2">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveQuiz(null);
+                setActiveSession(null);
+                setPinInput('');
+              }}
+              className="text-xs font-semibold text-slate-500 hover:text-teal-700 transition-colors flex items-center gap-1 cursor-pointer"
+            >
+              <span>← Ganti Kuis / Masukkan PIN Lain</span>
+            </button>
+            <span className="text-[11px] text-slate-400">
+              Awang Long Quiz Siswa
+            </span>
+          </div>
+        )}
+
+        <StudentWaitingRoom
+          quiz={activeQuiz}
+          session={activeSession}
+          availableQuizzes={availableQuizzes}
+          onSubmissionComplete={onSubmissionComplete}
+          onBackToHome={() => {
+            setActiveQuiz(null);
+            setActiveSession(null);
+          }}
+          isStandaloneExam={isStandaloneExam}
+        />
+      </div>
+    );
+  }
+
+  // If a quiz is selected without session (fallback direct link)
   if (activeQuiz) {
     return (
       <div className="space-y-4">
-        {/* Quick Back/Switch Quiz banner if not standalone link */}
         {!isStandaloneExam && (
           <div className="flex items-center justify-between px-2">
             <button
@@ -112,7 +179,7 @@ export const StudentQuizRoom: React.FC<Props> = ({
             Portal Ujian Siswa
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-            Masukkan Kode PIN Kuis yang diberikan oleh guru Anda untuk memulai ujian online (Sesi 1 Identitas, Sesi 2 Pengerjaan Soal).
+            Masukkan Kode PIN Kuis yang diberikan oleh guru Anda untuk masuk ke ruang tunggu dan memulai ujian online.
           </p>
         </div>
 
@@ -127,21 +194,21 @@ export const StudentQuizRoom: React.FC<Props> = ({
         <form onSubmit={handleSelectQuizByPin} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block text-center">
-              Masukkan Kode PIN Kuis (6 Karakter):
+              Masukkan Kode PIN Kuis:
             </label>
             <div className="max-w-xs mx-auto">
               <input
                 type="text"
                 required
-                maxLength={10}
+                maxLength={12}
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value.toUpperCase())}
-                placeholder="Contoh: AWG101"
+                placeholder="Contoh: CLS482"
                 className="w-full text-center font-mono font-black text-2xl sm:text-3xl tracking-widest py-3 px-4 rounded-2xl border-2 border-teal-300 dark:border-teal-600 focus:border-teal-500 bg-teal-50/40 dark:bg-slate-800 text-teal-900 dark:text-teal-200 focus:outline-none uppercase shadow-inner placeholder:text-slate-300 dark:placeholder:text-slate-600 transition-colors"
               />
             </div>
             <p className="text-[11px] text-center text-slate-400 dark:text-slate-500">
-              Kode PIN dapat dilihat di layar guru atau link tugas yang dibagikan.
+              Kode PIN baru dibuat otomatis oleh guru untuk setiap mode kuis.
             </p>
           </div>
 
@@ -150,7 +217,7 @@ export const StudentQuizRoom: React.FC<Props> = ({
               type="submit"
               className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-teal-500 via-cyan-500 to-sky-500 hover:from-teal-600 hover:to-sky-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Buka Halaman Ujian Siswa</span>
+              <span>Masuk Ruang Ujian</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

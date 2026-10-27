@@ -8,7 +8,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase.js';
-import { Quiz, StudentSubmission } from '../types/quiz.js';
+import { Quiz, StudentSubmission, QuizSession } from '../types/quiz.js';
 import {
   loadStoredQuizzes,
   saveStoredQuizzes,
@@ -285,4 +285,59 @@ export async function deleteSubmissionFromFirebase(submissionId: string): Promis
     handleFirestoreError(err, OperationType.DELETE, `${collectionPath}/${submissionId}`);
   }
 }
+
+/**
+ * Real-time listener for active Quiz Sessions (teacher start controls & fresh PINs).
+ */
+export function subscribeQuizSessionsRealtime(
+  onUpdate: (sessions: QuizSession[]) => void,
+  onError?: (err: unknown) => void
+): () => void {
+  const collectionPath = 'quiz_sessions';
+  const colRef = collection(db, collectionPath);
+
+  const unsubscribe = onSnapshot(
+    colRef,
+    (snapshot) => {
+      try {
+        const items: QuizSession[] = [];
+        snapshot.forEach((docSnap) => {
+          items.push(docSnap.data() as QuizSession);
+        });
+        items.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+        onUpdate(items);
+      } catch (err) {
+        console.error('[Firebase] Error processing quiz_sessions snapshot:', err);
+        onError?.(err);
+      }
+    },
+    (err) => {
+      console.error('[Firebase] Quiz_sessions onSnapshot error:', err);
+      onError?.(err);
+    }
+  );
+
+  return unsubscribe;
+}
+
+export async function saveQuizSessionToFirebase(session: QuizSession): Promise<void> {
+  const collectionPath = 'quiz_sessions';
+  try {
+    const docRef = doc(db, collectionPath, session.id);
+    await setDoc(docRef, sanitizeForFirestore(session), { merge: true });
+  } catch (err) {
+    console.error('[Firebase] Error saving quiz session:', err);
+  }
+}
+
+export async function deleteQuizSessionFromFirebase(sessionId: string): Promise<void> {
+  const collectionPath = 'quiz_sessions';
+  try {
+    const docRef = doc(db, collectionPath, sessionId);
+    await deleteDoc(docRef);
+  } catch (err) {
+    console.error('[Firebase] Error deleting quiz session:', err);
+  }
+}
+
 

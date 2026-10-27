@@ -43,5 +43,21 @@ service cloud.firestore {
       allow create: if isValidId(submissionId) && isValidSubmission(request.resource.data);
       allow update, delete: if isValidId(submissionId);
     }
+
+    function isValidQuizSession(data) {
+      return data.keys().hasAll(['id', 'quizId', 'quizTitle', 'code', 'gameMode', 'isExamStarted', 'createdAt'])
+        && data.id is string && data.id.size() <= 128
+        && data.quizId is string && data.quizId.size() <= 128
+        && data.quizTitle is string && data.quizTitle.size() <= 256
+        && data.code is string && data.code.size() <= 32
+        && data.gameMode is string && data.gameMode.size() <= 64
+        && data.isExamStarted is bool;
+    }
+
+    match /quiz_sessions/{sessionId} {
+      allow get, list: if true;
+      allow create, update: if isValidId(sessionId) && isValidQuizSession(request.resource.data);
+      allow delete: if isValidId(sessionId);
+    }
   }
 }

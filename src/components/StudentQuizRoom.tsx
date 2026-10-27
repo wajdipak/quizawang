@@ -12,6 +12,7 @@ import { Quiz, QuizSession, StudentSubmission } from '../types/quiz.js';
 import { StudentExamPortal } from './StudentExamPortal.js';
 import { StudentWaitingRoom } from './StudentWaitingRoom.js';
 import { subscribeQuizSessionsRealtime } from '../services/firebaseSync.js';
+import { loadStoredQuizzes } from '../utils/storage.js';
 
 interface Props {
   initialQuiz?: Quiz | null;
@@ -68,7 +69,9 @@ export const StudentQuizRoom: React.FC<Props> = ({
     // 1. Check if PIN matches an active teacher session
     const matchedSession = allSessions.find((s) => s.code.toUpperCase() === cleanPin);
     if (matchedSession) {
-      const matchedQuiz = availableQuizzes.find((q) => q.id === matchedSession.quizId) || initialQuiz;
+      const matchedQuiz = availableQuizzes.find((q) => q.id === matchedSession.quizId) ||
+        loadStoredQuizzes().find((q) => q.id === matchedSession.quizId) ||
+        initialQuiz;
       if (matchedQuiz) {
         setActiveSession(matchedSession);
         setActiveQuiz(matchedQuiz);
@@ -78,7 +81,9 @@ export const StudentQuizRoom: React.FC<Props> = ({
 
     // 2. Fallback to direct quiz code
     const matched = availableQuizzes.find(
-      (q) => q.code.toUpperCase() === cleanPin && q.isActive
+      (q) => q.code.toUpperCase() === cleanPin
+    ) || loadStoredQuizzes().find(
+      (q) => q.code.toUpperCase() === cleanPin
     );
 
     if (!matched) {

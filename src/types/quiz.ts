@@ -141,5 +141,6 @@ export interface QuizSession {
   scheduledStartTime?: string | null; // ISO string if scheduled
   createdAt: string;
   settings: QuizSessionSettings;
+  connectedStudents?: { name: string; class: string; nis: string }[];
 }
 

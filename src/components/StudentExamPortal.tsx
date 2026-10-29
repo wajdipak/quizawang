@@ -30,6 +30,7 @@ import {
 import {
   Quiz,
   Question,
+  QuizSession,
   StudentSubmission,
   QuizResultCalculation,
   StudentAnswerValue,
@@ -40,6 +41,7 @@ import { playSelectSound, playSuccessSound, playTickSound } from '../utils/audio
 
 interface Props {
   quiz: Quiz;
+  session: QuizSession;
   availableQuizzes?: Quiz[];
   onSubmissionComplete: (submission: StudentSubmission) => void;
   onBackToHome?: () => void;
@@ -48,6 +50,7 @@ interface Props {
 
 export const StudentExamPortal: React.FC<Props> = ({
   quiz,
+  session,
   availableQuizzes = [],
   onSubmissionComplete,
   onBackToHome,
@@ -156,6 +159,16 @@ export const StudentExamPortal: React.FC<Props> = ({
     // Proceed to Reading Material session first
     setCurrentSession('material');
 
+    // Track student in session
+    const updatedSession = {
+      ...session,
+      connectedStudents: [
+        ...(session.connectedStudents || []),
+        { name: studentName.trim(), class: studentClass.trim(), nis: studentNis.trim() }
+      ]
+    };
+    saveQuizSessionToFirebase(updatedSession);
+    
     if (soundEnabled) {
       playSuccessSound();
     }

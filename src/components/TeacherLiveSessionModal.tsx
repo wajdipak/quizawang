@@ -12,7 +12,8 @@ import {
   X,
   AlertCircle,
   Calendar,
-  Radio
+  Radio,
+  CheckCircle2
 } from 'lucide-react';
 import { Quiz, QuizSession, QuizSessionSettings, StudentSubmission } from '../types/quiz.js';
 import { saveQuizSessionToFirebase } from '../services/firebaseSync.js';
@@ -245,15 +246,41 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-teal-600" />
                 <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
-                  Daftar Siswa Masuk / Mengumpulkan ({sessionSubmissions.length})
+                  Daftar Siswa Masuk ({currentSession.connectedStudents?.length || 0})
                 </h5>
               </div>
               <span className="text-[10px] text-slate-400 font-mono">Real-Time Sync Active</span>
             </div>
 
+            {!currentSession.connectedStudents || currentSession.connectedStudents.length === 0 ? (
+              <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                Belum ada siswa yang masuk ke sesi PIN {currentSession.code}.
+              </div>
+            ) : (
+              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+                {currentSession.connectedStudents.map((student, idx) => (
+                  <div key={idx} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{student.name}</span>
+                      <span className="text-[10px] text-slate-500 ml-2">({student.class} • No. {student.nis})</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mt-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                  Daftar Siswa Mengumpulkan ({sessionSubmissions.length})
+                </h5>
+              </div>
+            </div>
+
             {sessionSubmissions.length === 0 ? (
               <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
-                Belum ada siswa yang mengirimkan jawaban untuk sesi PIN {currentSession.code} ini.
+                Belum ada siswa yang mengirimkan jawaban.
               </div>
             ) : (
               <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
@@ -261,7 +288,6 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
                   <div key={sub.id} className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
                     <div>
                       <span className="font-bold text-slate-800 dark:text-slate-200">{sub.studentName}</span>
-                      <span className="text-[10px] text-slate-500 ml-2">({sub.studentClass} • No. {sub.studentNis})</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${

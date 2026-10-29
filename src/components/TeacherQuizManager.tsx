@@ -271,20 +271,20 @@ export const TeacherQuizManager: React.FC<Props> = ({
                 {/* Card Top Stripe */}
                 <div className="p-5 pb-3 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 flex items-center">
                       {quiz.subject || 'Umum'}
                     </span>
 
                     {/* PIN Pill with Copy */}
-                    <div className="flex items-center gap-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
                       <button
                         type="button"
                         onClick={(e) => handleCopyExamLink(quiz, e)}
-                        className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 hover:bg-cyan-100 dark:hover:bg-cyan-900 text-cyan-800 dark:text-cyan-300 transition-colors border border-cyan-200 dark:border-cyan-800 cursor-pointer"
+                        className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-cyan-100 dark:bg-cyan-800 text-cyan-900 dark:text-cyan-100 transition-colors border border-cyan-300 dark:border-cyan-700 cursor-pointer hover:bg-cyan-200 dark:hover:bg-cyan-700 w-[190px] shrink-0"
                         title="Salin Link Langsung Siswa"
                       >
-                        <Link className="w-3 h-3 text-cyan-700 dark:text-cyan-400" />
-                        <span>{copiedLinkId === quiz.id ? 'Link Disalin!' : 'Link Siswa'}</span>
+                        <Link className="w-3 h-3 text-cyan-700 dark:text-cyan-300 shrink-0" />
+                        <span className="truncate">{copiedLinkId === quiz.id ? 'Link Disalin!' : 'Link Siswa'}</span>
                       </button>
 
                       <button

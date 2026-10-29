@@ -161,6 +161,7 @@ export const StudentQuizRoom: React.FC<Props> = ({
 
         <StudentExamPortal
           quiz={activeQuiz}
+          session={activeSession}
           availableQuizzes={availableQuizzes}
           onSubmissionComplete={onSubmissionComplete}
           onBackToHome={onBackToHome}

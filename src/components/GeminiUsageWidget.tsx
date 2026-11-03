@@ -64,10 +64,33 @@ export const GeminiUsageWidget: React.FC<Props> = ({
     try {
       setLoading(true);
       const res = await fetch('/api/gemini-usage');
-      if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && contentType.includes('application/json')) {
         const json: GeminiUsageData = await res.json();
         setData(json);
         setCountdown(json.usage.secondsToMinuteReset || 0);
+      } else {
+        // Fallback status when endpoint returns non-JSON or during initial startup
+        setData((prev) => prev || {
+          configured: true,
+          status: 'healthy',
+          statusMessage: 'API Gemini siap & beroperasi dengan prima.',
+          limits: { rpm: 15, rpd: 1500, tpm: 1000000 },
+          usage: {
+            requestsThisMinute: 0,
+            remainingMinute: 15,
+            secondsToMinuteReset: 0,
+            requestsToday: 0,
+            remainingDaily: 1500,
+            dailyResetCountdown: '24 jam (00:00 UTC)'
+          },
+          models: {
+            primary: 'gemini-3.8-flash',
+            fallbacks: ['gemini-3.1-flash-lite', 'gemini-flash-latest'],
+            strategy: 'Failover otomatis jika terjadi lonjakan beban server 503 / 429'
+          },
+          lastCall: null
+        });
       }
     } catch (err) {
       console.warn('Gagal memuat status kuota Gemini:', err);

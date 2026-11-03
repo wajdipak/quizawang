@@ -31,9 +31,42 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
   selectedQuizId: initialSelectedQuizId,
   onDeleteSubmission
 }) => {
-  const [filterQuizId, setFilterQuizId] = useState<string>(initialSelectedQuizId || 'ALL');
+  // Helper to find the quiz ID of the most recently submitted quiz
+  const getLatestSubmittedQuizId = (): string => {
+    if (initialSelectedQuizId) return initialSelectedQuizId;
+    if (submissions && submissions.length > 0) {
+      const sortedSubs = [...submissions].sort(
+        (a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime()
+      );
+      if (sortedSubs[0]?.quizId) {
+        return sortedSubs[0].quizId;
+      }
+    }
+    if (quizzes && quizzes.length > 0) {
+      return quizzes[0].id;
+    }
+    return 'ALL';
+  };
+
+  const [filterQuizId, setFilterQuizId] = useState<string>(getLatestSubmittedQuizId);
+  const [hasUserChangedFilter, setHasUserChangedFilter] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [inspectSubmission, setInspectSubmission] = useState<StudentSubmission | null>(null);
+
+  // Synchronize filter when initialSelectedQuizId or submissions update
+  React.useEffect(() => {
+    if (initialSelectedQuizId) {
+      setFilterQuizId(initialSelectedQuizId);
+      setHasUserChangedFilter(false);
+    } else if (!hasUserChangedFilter && submissions.length > 0) {
+      const sortedSubs = [...submissions].sort(
+        (a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime()
+      );
+      if (sortedSubs[0]?.quizId) {
+        setFilterQuizId(sortedSubs[0].quizId);
+      }
+    }
+  }, [initialSelectedQuizId, submissions, hasUserChangedFilter]);
 
   const filtered = submissions.filter((sub) => {
     const matchesQuiz = filterQuizId === 'ALL' || sub.quizId === filterQuizId;
@@ -226,7 +259,10 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
             <Filter className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
             <select
               value={filterQuizId}
-              onChange={(e) => setFilterQuizId(e.target.value)}
+              onChange={(e) => {
+                setFilterQuizId(e.target.value);
+                setHasUserChangedFilter(true);
+              }}
               className="text-xs p-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none w-full sm:w-64"
             >
               <option value="ALL">Semua Kuis Guru</option>
@@ -236,6 +272,13 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
                 </option>
               ))}
             </select>
+            {filterQuizId !== 'ALL' && (
+              <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 shrink-0">
+                {filterQuizId === getLatestSubmittedQuizId() && !initialSelectedQuizId
+                  ? '📌 Kuis Terakhir Dikerjakan'
+                  : '📌 Filter Kuis Aktif'}
+              </span>
+            )}
           </div>
 
           <div className="relative w-full sm:w-60">

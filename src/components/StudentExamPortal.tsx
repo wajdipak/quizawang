@@ -38,10 +38,11 @@ import {
 } from '../types/quiz.js';
 import { calculateQuizScore, formatTimeRemaining } from '../utils/quizLogic.js';
 import { playSelectSound, playSuccessSound, playTickSound } from '../utils/audio.js';
+import { saveQuizSessionToFirebase } from '../services/firebaseSync.js';
 
 interface Props {
   quiz: Quiz;
-  session: QuizSession;
+  session?: QuizSession | null;
   availableQuizzes?: Quiz[];
   onSubmissionComplete: (submission: StudentSubmission) => void;
   onBackToHome?: () => void;
@@ -160,14 +161,16 @@ export const StudentExamPortal: React.FC<Props> = ({
     setCurrentSession('material');
 
     // Track student in session
-    const updatedSession = {
-      ...session,
-      connectedStudents: [
-        ...(session.connectedStudents || []),
-        { name: studentName.trim(), class: studentClass.trim(), nis: studentNis.trim() }
-      ]
-    };
-    saveQuizSessionToFirebase(updatedSession);
+    if (session) {
+      const updatedSession = {
+        ...session,
+        connectedStudents: [
+          ...(session.connectedStudents || []),
+          { name: studentName.trim(), class: studentClass.trim(), nis: studentNis.trim() }
+        ]
+      };
+      saveQuizSessionToFirebase(updatedSession);
+    }
     
     if (soundEnabled) {
       playSuccessSound();

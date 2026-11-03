@@ -72,7 +72,6 @@ export const StudentWaitingRoom: React.FC<Props> = ({
     return (
       <StudentExamPortal
         quiz={quiz}
-        session={session}
         availableQuizzes={availableQuizzes}
         onSubmissionComplete={onSubmissionComplete}
         onBackToHome={onBackToHome}

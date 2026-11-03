@@ -276,6 +276,103 @@ function getFallbackQuestions(topic: string, count: number = 5) {
   return adjustPointsTo100(generic);
 }
 
+// ==========================================
+// LOCAL AI (OLLAMA) INTEGRATION
+// ==========================================
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'qwen2.5:latest';
+const AI_PROVIDER = (process.env.AI_PROVIDER || 'auto').toLowerCase();
+
+async function testOllamaConnection(): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1500);
+    const res = await fetch(`${OLLAMA_BASE_URL}/api/tags`, { signal: controller.signal });
+    clearTimeout(timeout);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function callOllama(prompt: string, options: { model?: string; images?: string[] } = {}): Promise<string> {
+  const model = options.model || OLLAMA_MODEL;
+  const res = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      prompt,
+      format: 'json',
+      stream: false,
+      images: options.images
+    })
+  });
+  if (!res.ok) {
+    throw new Error(`Ollama API error [${res.status}]: ${res.statusText}`);
+  }
+  const data = (await res.json()) as any;
+  return data.response || '';
+}
+
+async function streamOllama(
+  prompt: string,
+  onChunk: (chunk: string) => void,
+  options: { model?: string } = {}
+): Promise<string> {
+  const model = options.model || OLLAMA_MODEL;
+  const res = await fetch(`${OLLAMA_BASE_URL}/api/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model,
+      prompt,
+      format: 'json',
+      stream: true
+    })
+  });
+  if (!res.ok || !res.body) {
+    throw new Error(`Ollama stream error [${res.status}]: ${res.statusText}`);
+  }
+
+  const reader = (res.body as any).getReader();
+  const decoder = new TextDecoder();
+  let fullText = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const raw = decoder.decode(value, { stream: true });
+    const lines = raw.split('\n').filter(Boolean);
+    for (const line of lines) {
+      try {
+        const parsed = JSON.parse(line);
+        if (parsed.response) {
+          fullText += parsed.response;
+          onChunk(parsed.response);
+        }
+      } catch {}
+    }
+  }
+
+  return fullText;
+}
+
+async function determineActiveAI(): Promise<'gemini' | 'ollama' | 'fallback'> {
+  if (AI_PROVIDER === 'ollama') {
+    const ok = await testOllamaConnection();
+    return ok ? 'ollama' : 'fallback';
+  }
+  if (AI_PROVIDER === 'gemini') {
+    return getGeminiClient() ? 'gemini' : 'fallback';
+  }
+  // 'auto' mode: prefer Gemini if API key is set, otherwise check if Ollama is running locally
+  if (getGeminiClient()) return 'gemini';
+  const ollamaOk = await testOllamaConnection();
+  if (ollamaOk) return 'ollama';
+  return 'fallback';
+}
+
 // SSE Streaming AI Quiz Generator Endpoint
 app.get('/api/generate-quiz-stream', async (req: Request, res: Response) => {
   const topic = String(req.query.topic || 'Sejarah Awang Long dan Kutai');
@@ -291,9 +388,9 @@ app.get('/api/generate-quiz-stream', async (req: Request, res: Response) => {
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
 
-  const genAI = getGeminiClient();
+  const activeAI = await determineActiveAI();
 
-  if (!genAI) {
+  if (activeAI === 'fallback') {
     // Stream simulation with smart curated data
     sendEvent('status', { message: 'Merancang kisi-kisi soal interaktif...' });
     await new Promise((r) => setTimeout(r, 600));
@@ -317,10 +414,7 @@ app.get('/api/generate-quiz-stream', async (req: Request, res: Response) => {
     return;
   }
 
-  try {
-    sendEvent('status', { message: 'Menghubungkan ke Google AI Studio (Gemini 3.8 Flash)...' });
-
-    const prompt = `Anda adalah asisten kurikulum cerdas untuk platform kuis interaktif "Awang Long Quiz".
+  const prompt = `Anda adalah asisten kurikulum cerdas untuk platform kuis interaktif "Awang Long Quiz".
 Tugas Anda: Buat kuis sebanyak ${count} soal pilihan ganda tentang: "${topic}".
 Tingkat pendidikan: ${gradeLevel}.
 Tingkat kesulitan: ${difficulty}.
@@ -352,20 +446,31 @@ Contoh skema JSON:
   ]
 }`;
 
-    const responseStream = await genAI.models.generateContentStream({
-      model: 'gemini-3.8-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
-    });
-
+  try {
     let fullText = '';
-    for await (const chunk of responseStream) {
-      const text = chunk.text;
-      if (text) {
-        fullText += text;
-        sendEvent('chunk', { chunk: text });
+
+    if (activeAI === 'ollama') {
+      sendEvent('status', { message: `Menghubungkan ke Local AI (Ollama: ${OLLAMA_MODEL})...` });
+      fullText = await streamOllama(prompt, (chunk) => {
+        sendEvent('chunk', { chunk });
+      });
+    } else {
+      const genAI = getGeminiClient()!;
+      sendEvent('status', { message: 'Menghubungkan ke Google AI Studio (Gemini 3.8 Flash)...' });
+      const responseStream = await genAI.models.generateContentStream({
+        model: 'gemini-3.8-flash',
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json'
+        }
+      });
+
+      for await (const chunk of responseStream) {
+        const text = chunk.text;
+        if (text) {
+          fullText += text;
+          sendEvent('chunk', { chunk: text });
+        }
       }
     }
 
@@ -404,7 +509,7 @@ Contoh skema JSON:
       });
     }
   } catch (err: any) {
-    console.error('Gemini API Error:', err);
+    console.error('AI Generation Error:', err);
     sendEvent('status', { message: 'Beralih ke mode cerdas cepat...' });
     const fallback = getFallbackQuestions(topic, count);
     sendEvent('complete', {
@@ -423,9 +528,9 @@ Contoh skema JSON:
 app.post('/api/generate-quiz', async (req: Request, res: Response) => {
   const { topic = 'Sejarah Awang Long dan Kutai', gradeLevel = 'SMP', count: rawCount = 5, difficulty = 'Sedang' } = req.body;
   const count = Math.max(Number(rawCount) || 5, 1);
-  const genAI = getGeminiClient();
+  const activeAI = await determineActiveAI();
 
-  if (!genAI) {
+  if (activeAI === 'fallback') {
     const fallback = getFallbackQuestions(topic, count);
     return res.json({
       title: `Kuis ${topic}`,
@@ -460,12 +565,18 @@ Instruksi Khusus:
   ]
 }`;
 
-    const text = await generateGeminiWithRetry(genAI, {
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json'
-      }
-    });
+    let text = '';
+    if (activeAI === 'ollama') {
+      text = await callOllama(prompt);
+    } else {
+      const genAI = getGeminiClient()!;
+      text = await generateGeminiWithRetry(genAI, {
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json'
+        }
+      });
+    }
 
     const cleaned = text.trim().replace(/^```json\s*/, '').replace(/```$/, '');
     const data = JSON.parse(cleaned);
@@ -501,12 +612,11 @@ app.post('/api/extract-quiz-from-file', async (req: Request, res: Response) => {
 
   const rawNum = Number(targetCount);
   const unlimitedMode = isUnlimited === true || targetCount === 'all' || targetCount === 0 || rawNum === 0 || isNaN(rawNum);
-  // If not unlimited, allow any positive count requested by user (no 50 ceiling)
   const count = unlimitedMode ? null : Math.max(rawNum, 1);
-  const genAI = getGeminiClient();
+  const activeAI = await determineActiveAI();
 
-  if (!genAI) {
-    // Intelligent fallback for demo when no API key is provided
+  if (activeAI === 'fallback') {
+    // Intelligent fallback for demo when no AI key is provided
     const topicExtracted = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
     const effectiveCount = unlimitedMode ? 10 : count!;
     const fallback = getFallbackQuestions(topicExtracted, effectiveCount);
@@ -586,36 +696,46 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
   ]
 }`;
 
-    let contentsParts: any[] = [{ text: prompt }];
+    let text = '';
+    const cleanBase64 = base64Data ? base64Data.replace(/^data:[^;]+;base64,/, '') : undefined;
 
-    // If base64 data is supplied (for PDF, Image, etc.)
-    if (base64Data) {
-      // Strip base64 header if exists e.g. data:application/pdf;base64,
-      const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, '');
-      contentsParts.push({
-        inlineData: {
-          mimeType: mimeType || 'application/pdf',
-          data: cleanBase64
-        }
+    if (activeAI === 'ollama') {
+      const fullPrompt = textContent
+        ? `${prompt}\n\nIsi teks dokumen:\n\n${textContent.slice(0, 150000)}`
+        : prompt;
+      text = await callOllama(fullPrompt, {
+        images: cleanBase64 && mimeType.startsWith('image/') ? [cleanBase64] : undefined
       });
-    } else if (textContent) {
-      contentsParts.push({
-        text: `Isi teks dokumen:\n\n${textContent.slice(0, 500000)}`
+    } else {
+      const genAI = getGeminiClient()!;
+      let contentsParts: any[] = [{ text: prompt }];
+
+      if (base64Data) {
+        contentsParts.push({
+          inlineData: {
+            mimeType: mimeType || 'application/pdf',
+            data: cleanBase64!
+          }
+        });
+      } else if (textContent) {
+        contentsParts.push({
+          text: `Isi teks dokumen:\n\n${textContent.slice(0, 500000)}`
+        });
+      }
+
+      text = await generateGeminiWithRetry(genAI, {
+        contents: [
+          {
+            role: 'user',
+            parts: contentsParts
+          }
+        ],
+        config: {
+          responseMimeType: 'application/json'
+        },
+        action: 'extract-quiz-from-file'
       });
     }
-
-    const text = await generateGeminiWithRetry(genAI, {
-      contents: [
-        {
-          role: 'user',
-          parts: contentsParts
-        }
-      ],
-      config: {
-        responseMimeType: 'application/json'
-      },
-      action: 'extract-quiz-from-file'
-    });
 
     const cleaned = text.trim().replace(/^```json\s*/, '').replace(/```$/, '');
     const data = JSON.parse(cleaned);
@@ -643,10 +763,12 @@ Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):
   }
 });
 
-// Endpoint to monitor Gemini API usage, rate limit quota (RPM & RPD), and operational health
-app.get('/api/gemini-usage', (_req: Request, res: Response) => {
+// Endpoint to monitor AI engine usage, rate limit quota (RPM & RPD), and operational health
+app.get('/api/gemini-usage', async (_req: Request, res: Response) => {
+  const activeAI = await determineActiveAI();
+  const ollamaOnline = await testOllamaConnection();
   const genAI = getGeminiClient();
-  const configured = !!genAI;
+  const configured = !!genAI || ollamaOnline;
   const now = Date.now();
 
   const oneMinuteAgo = now - 60 * 1000;
@@ -682,18 +804,20 @@ app.get('/api/gemini-usage', (_req: Request, res: Response) => {
   const minsToDailyReset = Math.floor((msToUtcMidnight % (1000 * 60 * 60)) / (1000 * 60));
 
   let status: 'healthy' | 'warning' | 'rate_limited' = 'healthy';
-  let statusMessage = 'API Gemini siap & beroperasi dengan prima';
+  let statusMessage = activeAI === 'ollama'
+    ? `Local AI Ollama (${OLLAMA_MODEL}) aktif dan beroperasi tanpa kuota internet.`
+    : 'API Gemini siap & beroperasi dengan prima.';
 
   if (!configured) {
     status = 'warning';
-    statusMessage = 'API Key Gemini belum diset. Mode simulasi cerdas lokal aktif.';
-  } else if (requestsThisMinute >= minuteLimit) {
+    statusMessage = 'AI Key Gemini / Ollama belum aktif. Mode simulasi cerdas lokal aktif.';
+  } else if (activeAI === 'gemini' && requestsThisMinute >= minuteLimit) {
     status = 'rate_limited';
     statusMessage = `Batas permintaan per-menit (${minuteLimit} RPM) tercapai. Silakan tunggu ${secondsToMinuteReset} detik.`;
-  } else if (requestsThisMinute >= 11) {
+  } else if (activeAI === 'gemini' && requestsThisMinute >= 11) {
     status = 'warning';
     statusMessage = `Mendekati batas menit (${requestsThisMinute}/${minuteLimit} RPM). Jeda singkat beberapa detik disarankan.`;
-  } else if (requestsToday >= dailyLimit) {
+  } else if (activeAI === 'gemini' && requestsToday >= dailyLimit) {
     status = 'rate_limited';
     statusMessage = `Batas harian (${dailyLimit} RPD) tercapai. Reset pada pukul 00:00 UTC.`;
   }
@@ -704,11 +828,17 @@ app.get('/api/gemini-usage', (_req: Request, res: Response) => {
 
   res.json({
     configured,
+    activeProvider: activeAI,
+    ollama: {
+      online: ollamaOnline,
+      baseUrl: OLLAMA_BASE_URL,
+      model: OLLAMA_MODEL
+    },
     status,
     statusMessage,
     limits: {
-      rpm: minuteLimit,
-      rpd: dailyLimit,
+      rpm: activeAI === 'ollama' ? 'Unlimited' : minuteLimit,
+      rpd: activeAI === 'ollama' ? 'Unlimited' : dailyLimit,
       tpm: 1000000
     },
     usage: {
@@ -720,9 +850,9 @@ app.get('/api/gemini-usage', (_req: Request, res: Response) => {
       dailyResetCountdown: `${hoursToDailyReset} jam ${minsToDailyReset} mnt (00:00 UTC)`
     },
     models: {
-      primary: 'gemini-3.8-flash',
+      primary: activeAI === 'ollama' ? `Ollama (${OLLAMA_MODEL})` : 'gemini-3.8-flash',
       fallbacks: ['gemini-3.1-flash-lite', 'gemini-flash-latest'],
-      strategy: 'Failover otomatis jika terjadi lonjakan beban server 503 / 429'
+      strategy: activeAI === 'ollama' ? 'Lokal PC Server (100% Offline)' : 'Failover otomatis jika terjadi lonjakan beban server 503 / 429'
     },
     lastCall: lastCall ? {
       model: lastCall.model,
@@ -785,14 +915,14 @@ app.post('/api/smart-score-quiz', async (req: Request, res: Response) => {
       success: true,
       questions: [{ ...questions[0], points: 100, difficultyTag: 'Mudah' }],
       totalPoints: 100,
-      source: 'Gemini AI Assessment',
+      source: 'AI Assessment',
       summary: 'Kuis dengan 1 butir soal: total skor otomatis bernilai tepat 100 poin.'
     });
   }
 
-  const genAI = getGeminiClient();
+  const activeAI = await determineActiveAI();
 
-  if (genAI) {
+  if (activeAI === 'ollama' || activeAI === 'gemini') {
     try {
       const simplifiedQuestions = questions.map((q, i) => ({
         index: i,
@@ -817,17 +947,23 @@ Keluarkan HANYA JSON array:
   { "index": 0, "difficulty": "Mudah" | "Sedang" | "Sulit (HOTS)", "reason": "alasan pedagogis singkat" }
 ]`;
 
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('AI scoring timed out')), 18000)
-      );
+      let responseText = '';
+      if (activeAI === 'ollama') {
+        responseText = await callOllama(prompt);
+      } else {
+        const genAI = getGeminiClient()!;
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('AI scoring timed out')), 18000)
+        );
 
-      const responseText = await Promise.race([
-        generateGeminiWithRetry(genAI, {
-          contents: prompt,
-          action: 'smart-score'
-        }, ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']),
-        timeoutPromise
-      ]) as string;
+        responseText = (await Promise.race([
+          generateGeminiWithRetry(genAI, {
+            contents: prompt,
+            action: 'smart-score'
+          }, ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']),
+          timeoutPromise
+        ])) as string;
+      }
 
       const cleaned = responseText.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```$/i, '').trim();
       const aiAnalysis = JSON.parse(cleaned);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from './firebase.js';
 import { LoginPage } from './components/LoginPage.js';
@@ -24,6 +24,7 @@ import {
   loadStoredCategories,
   saveStoredCategories
 } from './utils/storage.js';
+import { readInitialExamParams } from './utils/examParams.js';
 import {
   saveQuizToFirebase,
   deleteQuizFromFirebase,
@@ -42,9 +43,19 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
+  // Student link detection is centralized in a small helper.
+  const examLink =
+    typeof window === 'undefined'
+      ? { isStudentLinkMode: false, quizCode: null, autostart: false }
+      : readInitialExamParams({ toString: () => window.location.search });
+  const urlCode = examLink.quizCode;
+  const autostart = examLink.autostart;
+
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [submissions, setSubmissions] = useState<StudentSubmission[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const categoriesRef = useRef(categories);
+  categoriesRef.current = categories;
   const [activeTab, setActiveTab] = useState<NavTab>('beranda');
 
   // Modals & Active selections
@@ -70,6 +81,26 @@ export default function App() {
     session: QuizSession;
   } | null>(null);
 
+  // Read student exam link on the initial client render only.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const examParam = params.get('exam');
+    const urlCode = examParam || params.get('code');
+    const autostart = params.get('autostart');
+
+    if (urlCode) {
+      setIsStudentLinkMode(true);
+      setActiveTab('ruang-siswa');
+      const found = loadStoredQuizzes().find(
+        (q) => q.code.toUpperCase() === urlCode.toUpperCase()
+      );
+      if (found) setStudentActiveQuiz(found);
+    } else if (autostart) {
+      setActiveTab('beranda');
+    }
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -80,7 +111,6 @@ export default function App() {
 
   // Load persistent storage & subscribe to live Firebase real-time updates
   useEffect(() => {
-    // 1. Initial immediate load from local cache for instant zero-latency UI
     const loadedQuizzes = loadStoredQuizzes();
     const loadedSubs = loadStoredSubmissions();
     const loadedCats = loadStoredCategories();
@@ -89,46 +119,27 @@ export default function App() {
     setSubmissions(loadedSubs);
     setCategories(loadedCats);
 
-    // Check if ?code= or ?exam= is present in URL on initial load
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const examParam = params.get('exam');
-      const urlCode = examParam || params.get('code');
-      const autostart = params.get('autostart');
-
-      if (urlCode) {
-        setIsStudentLinkMode(true);
-        setActiveTab('ruang-siswa');
-        const found = loadedQuizzes.find((q) => q.code.toUpperCase() === urlCode.toUpperCase());
-        if (found) {
-          setStudentActiveQuiz(found);
-        }
-      } else if (autostart) {
-        setActiveTab('beranda');
-      }
-    }
-
     // 2. Real-time Firebase Firestore synchronizer for Quizzes
     const unsubQuizzes = subscribeQuizzesRealtime((syncedQuizzes) => {
       setQuizzes(syncedQuizzes);
 
-      // Check if student link mode is active and we need to match quiz by code
-      if (typeof window !== 'undefined') {
+      // Keep the student link mode in sync when Firebase data arrives.
+      if (typeof window === 'undefined') return;
         const params = new URLSearchParams(window.location.search);
         const examParam = params.get('exam');
         const urlCode = examParam || params.get('code');
-        if (urlCode) {
+
+      if (urlCode && !studentActiveQuiz) {
           setIsStudentLinkMode(true);
           setActiveTab('ruang-siswa');
-          setStudentActiveQuiz((prev) => {
-            if (prev) return prev;
-            return syncedQuizzes.find((q) => q.code.toUpperCase() === urlCode.toUpperCase()) || null;
-          });
-        }
+        const found = syncedQuizzes.find(
+          (q) => q.code.toUpperCase() === urlCode.toUpperCase()
+        );
+        if (found) setStudentActiveQuiz(found);
       }
 
-      // Automatically derive and sync categories
-      const allCats = new Set(loadedCats);
+      // Derive and sync categories from the current stored categories.
+      const allCats = new Set(categoriesRef.current);
       syncedQuizzes.forEach((q) => {
         if (q.categories) q.categories.forEach((c) => allCats.add(c));
       });
@@ -170,7 +181,7 @@ export default function App() {
     });
 
     // Also update categories if quiz has new ones
-    if (quiz.categories && quiz.categories.length > 0) {
+    if (quiz.categories?.length) {
       setCategories((prev) => {
         const set = new Set([...prev, ...quiz.categories]);
         const updatedCats = Array.from(set);
@@ -186,7 +197,7 @@ export default function App() {
     try {
       await saveQuizToFirebase(quiz);
     } catch (err) {
-      console.error('[Firebase] Error saving quiz in real-time:', err);
+      console.error('[Firebase] Failed to save quiz:', err);
     }
   };
 
@@ -210,7 +221,7 @@ export default function App() {
     try {
       await deleteQuizFromFirebase(quizId);
     } catch (err) {
-      console.error('[Firebase] Error deleting quiz in real-time:', err);
+      console.error('[Firebase] Failed to delete quiz:', err);
     }
   };
 
@@ -266,7 +277,7 @@ export default function App() {
     try {
       await saveSubmissionToFirebase(submission);
     } catch (err) {
-      console.error('[Firebase] Error saving submission in real-time:', err);
+      console.error('[Firebase] Failed to save submission:', err);
     }
   };
 
@@ -283,7 +294,7 @@ export default function App() {
     try {
       await deleteSubmissionFromFirebase(submissionId);
     } catch (err) {
-      console.error('[Firebase] Error deleting submission:', err);
+      console.error('[Firebase] Failed to delete submission:', err);
     }
   };
 
@@ -304,27 +315,28 @@ export default function App() {
   if (loadingAuth) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
 
   // If accessed via student exam link (e.g. ?exam=CODE or ?code=CODE), render standalone student portal without teacher login
-  if (isStudentLinkMode || (typeof window !== 'undefined' && window.location.pathname === '/siswa')) {
+  if (examLink.isStudentLinkMode || (typeof window !== 'undefined' && window.location.pathname === '/siswa')) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-teal-200 dark:selection:bg-teal-900 transition-colors duration-200">
+      <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] flex flex-col font-sans antialiased">
         
         {/* Dedicated Student Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-md bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-xs px-4 sm:px-8 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 text-white flex items-center justify-center font-bold shadow-xs">
-              🎓
-            </div>
+        <header className="sticky top-0 z-40 bg-[var(--paper)] border-b-2 border-[var(--line)]">
+          <div className="flex items-stretch">
+            <div className="flex items-center gap-3 px-4 py-3 border-r-2 border-[var(--line)]">
+              <img
+                src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png"
+                alt=""
+                className="w-8 h-8 object-contain"
+              />
             <div>
-              <span className="font-extrabold text-base sm:text-lg text-slate-800 dark:text-slate-100 block leading-tight">
-                Awang Long Quiz
-              </span>
-              <span className="text-[11px] text-teal-700 dark:text-teal-300 font-semibold">
-                Portal Ujian Online Resmi Siswa
-              </span>
+                <span className="poster-display text-xl sm:text-2xl leading-none block">Awang Long</span>
+                <span className="poster-label text-[var(--ink-soft)]">Portal ujian siswa</span>
             </div>
           </div>
-          <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-            🔒 Mode Ujian Siswa Terisolasi
+            <div className="flex items-center gap-2 px-3 ml-auto">
+              <span className="w-2.5 h-2.5 bg-[var(--danger)]" aria-hidden="true" />
+              <span className="poster-label">Mode ujian terkunci</span>
+          </div>
           </div>
         </header>
 
@@ -343,16 +355,12 @@ export default function App() {
         <AccessibilityFloatingWidget />
 
         {/* Dedicated Student Footer */}
-        <footer className="py-6 border-t border-teal-100/60 dark:border-slate-800 bg-white/40 dark:bg-slate-900/60 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-teal-800 dark:text-teal-400">Awang Long Quiz Siswa</span>
-              <span>•</span>
-              <span>Evaluasi & Tugas Online Terpadu</span>
-            </div>
-            <div className="text-[11px] text-slate-400 dark:text-slate-500">
-              Siswa wajib mengisi keterangan diri (Sesi 1) dan menyelesaikan seluruh soal sebelum mengirim jawaban.
-            </div>
+        <footer className="border-t-2 border-[var(--line)] bg-[var(--paper)]">
+          <div className="mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span className="poster-label">Awang Long Quiz Siswa &middot; Evaluasi &amp; tugas online</span>
+            <span className="text-[12px] text-[var(--ink-soft)]">
+              Isi keterangan diri di Sesi 1 dan selesaikan semua soal sebelum mengirim jawaban.
+            </span>
           </div>
         </footer>
 
@@ -367,48 +375,52 @@ export default function App() {
   const ADMIN_UID = 'yQNuogQOmVOrLv6YPkUwaAWIfAn1';
   if (user.uid !== ADMIN_UID) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] p-4">
-        <div className="max-w-md w-full bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-xl text-center border border-slate-200 dark:border-slate-800">
-          <div className="text-4xl mb-4">🔒</div>
-          <h1 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">Akses Admin Ditolak</h1>
-          <p className="text-slate-600 dark:text-slate-400 mb-4 text-sm">
-            Akun Anda tidak memiliki hak akses sebagai admin pengajar. UID Anda:
+      <div className="min-h-screen flex items-center justify-center bg-[var(--paper)] p-4">
+        <div className="max-w-lg w-full border-2 border-[var(--line)] bg-[var(--paper)]">
+          <div className="border-b-2 border-[var(--line)] bg-[var(--danger)] px-5 py-3">
+            <h1 className="poster-display text-3xl leading-none text-[#0a0a0a]">Akses ditolak</h1>
+          </div>
+          <div className="p-5 sm:p-6">
+            <p className="text-sm font-medium leading-snug mb-4">
+              Akun ini bukan admin pengajar, jadi portal guru tidak terbuka. UID akun Anda:
           </p>
-          <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg font-mono text-xs text-slate-700 dark:text-slate-300 mb-6 break-all">
+            <div className="border-2 border-[var(--line)] bg-[var(--paper-2)] p-2 font-mono text-xs mb-5 break-all">
             {user.uid}
           </div>
           <button
             onClick={() => auth.signOut()}
-            className="w-full px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-sm font-semibold transition"
+              className="btn-ink w-full py-2.5 text-xs"
           >
-            Keluar (Logout)
+              Keluar
           </button>
         </div>
+      </div>
       </div>
     );
   }
 
-  if (isStudentLinkMode) {
+  if (examLink.isStudentLinkMode) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-teal-200 dark:selection:bg-teal-900 transition-colors duration-200">
+      <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] flex flex-col font-sans antialiased">
         
         {/* Dedicated Student Header */}
-        <header className="sticky top-0 z-40 backdrop-blur-md bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-xs px-4 sm:px-8 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-500 text-white flex items-center justify-center font-bold shadow-xs">
-              🎓
-            </div>
+        <header className="sticky top-0 z-40 bg-[var(--paper)] border-b-2 border-[var(--line)]">
+          <div className="flex items-stretch">
+            <div className="flex items-center gap-3 px-4 py-3 border-r-2 border-[var(--line)]">
+              <img
+                src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png"
+                alt=""
+                className="w-8 h-8 object-contain"
+              />
             <div>
-              <span className="font-extrabold text-base sm:text-lg text-slate-800 dark:text-slate-100 block leading-tight">
-                Awang Long Quiz
-              </span>
-              <span className="text-[11px] text-teal-700 dark:text-teal-300 font-semibold">
-                Portal Ujian Online Resmi Siswa
-              </span>
+                <span className="poster-display text-xl sm:text-2xl leading-none block">Awang Long</span>
+                <span className="poster-label text-[var(--ink-soft)]">Portal ujian siswa</span>
             </div>
           </div>
-          <div className="text-[11px] sm:text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-            🔒 Mode Ujian Siswa Terisolasi
+            <div className="flex items-center gap-2 px-3 ml-auto">
+              <span className="w-2.5 h-2.5 bg-[var(--danger)]" aria-hidden="true" />
+              <span className="poster-label">Mode ujian terkunci</span>
+          </div>
           </div>
         </header>
 
@@ -427,16 +439,12 @@ export default function App() {
         <AccessibilityFloatingWidget />
 
         {/* Dedicated Student Footer */}
-        <footer className="py-6 border-t border-teal-100/60 dark:border-slate-800 bg-white/40 dark:bg-slate-900/60 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-teal-800 dark:text-teal-400">Awang Long Quiz Siswa</span>
-              <span>•</span>
-              <span>Evaluasi & Tugas Online Terpadu</span>
-            </div>
-            <div className="text-[11px] text-slate-400 dark:text-slate-500">
-              Siswa wajib mengisi keterangan diri (Sesi 1) dan menyelesaikan seluruh soal sebelum mengirim jawaban.
-            </div>
+        <footer className="border-t-2 border-[var(--line)] bg-[var(--paper)]">
+          <div className="mx-auto px-4 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <span className="poster-label">Awang Long Quiz Siswa &middot; Evaluasi &amp; tugas online</span>
+            <span className="text-[12px] text-[var(--ink-soft)]">
+              Isi keterangan diri di Sesi 1 dan selesaikan semua soal sebelum mengirim jawaban.
+            </span>
           </div>
         </footer>
 
@@ -445,7 +453,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-teal-200 dark:selection:bg-teal-900 transition-colors duration-200">
+    <div className="min-h-screen bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB]    text-slate-800  flex flex-col font-sans antialiased selection:bg-teal-200  transition-colors duration-200">
       
       {/* Top Navigation Bar with Teacher Portal Focus */}
       <Navbar
@@ -456,11 +464,12 @@ export default function App() {
 
       {/* Teacher Quiz Preview Notice when simulating a quiz */}
       {activeTab === 'ruang-siswa' && (
-        <div className="bg-gradient-to-r from-teal-800 via-cyan-900 to-indigo-900 text-white text-xs px-4 py-2.5 flex items-center justify-between shadow-xs border-b border-teal-700/50">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-bold">Mode Simulasi & Uji Kuis Guru</span>
-            <span className="hidden sm:inline text-teal-200">• Anda sedang menguji coba pengerjaan soal sebagai simulasi kuis</span>
+        <div className="bg-[var(--signal)] text-[#0a0a0a] border-b-2 border-[var(--line)] px-4 py-2.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="poster-label">Mode simulasi</span>
+            <span className="hidden sm:inline text-xs font-medium truncate">
+              Anda mengerjakan soal ini sebagai guru, bukan sebagai siswa.
+            </span>
           </div>
           <button
             type="button"
@@ -468,16 +477,16 @@ export default function App() {
               setStudentActiveQuiz(null);
               setActiveTab('kuis-guru');
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold text-xs transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 border-2 border-[#0a0a0a] bg-transparent hover:bg-[#0a0a0a] hover:text-[var(--signal)] font-bold uppercase tracking-[0.08em] text-[10px] transition-colors cursor-pointer shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            <span>Kembali ke Kuis Guru</span>
+            <span>Kembali</span>
           </button>
         </div>
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 pb-28 md:pb-8">
+      <main className="flex-1 max-w-[1400px] w-full mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 pb-28 md:pb-8">
         {interactiveSessionQuiz ? (
           <InteractiveQuizEngine
             quiz={interactiveSessionQuiz.quiz}
@@ -633,14 +642,14 @@ export default function App() {
       <AccessibilityFloatingWidget />
 
       {/* Footer */}
-      <footer className="py-6 mb-16 md:mb-0 border-t border-teal-100/60 dark:border-slate-800 bg-white/40 dark:bg-slate-900/60 text-center text-xs text-slate-500 dark:text-slate-400 transition-colors">
+      <footer className="py-6 mb-16 md:mb-0 border-t border-teal-100/60  bg-white/40  text-center text-xs text-slate-500  transition-colors">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-teal-800 dark:text-teal-400">Awang Long Quiz</span>
+            <span className="font-bold text-teal-800 ">Awang Long Quiz</span>
             <span>•</span>
             <span>Portal Kuis & Evaluasi Belajar Guru</span>
           </div>
-          <div className="flex items-center gap-3 text-[11px] text-slate-400 dark:text-slate-500">
+          <div className="flex items-center gap-3 text-xs text-slate-400 ">
             <span>Ditenagai Google AI Studio (Gemini API)</span>
             <span>•</span>
             <span>Mode Akun Guru Eksklusif</span>

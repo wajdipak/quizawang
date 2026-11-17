@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { signInWithPopup, signInWithRedirect, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
-import { AlertCircle } from 'lucide-react';
 
 export function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -15,9 +14,9 @@ export function LoginPage() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       console.error('Error signing in with Google popup:', error);
-      // If popup is blocked or cross-origin iframe issue, fallback or suggest redirect
+      // Popup is blocked in some iframes, so fall back to a full redirect.
       if (error?.code === 'auth/popup-blocked' || error?.code === 'auth/popup-closed-by-user' || error?.message?.includes('popup')) {
-        setErrorMsg('Popup Google diblokir oleh browser atau iframe pratinjau. Mencoba metode Redirect...');
+        setErrorMsg('Popup Google diblokir browser atau iframe pratinjau. Mencoba metode redirect...');
         try {
           const provider = new GoogleAuthProvider();
           await signInWithRedirect(auth, provider);
@@ -47,69 +46,132 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8F8F5] via-[#F4F9F9] to-[#EBF5FB] dark:from-slate-950 dark:via-slate-900 dark:to-[#0b1324] p-4">
-      <div className="w-full max-w-md p-8 bg-white dark:bg-slate-900 shadow-2xl rounded-2xl border border-slate-200 dark:border-slate-800 text-center">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-tr from-teal-600 to-cyan-500 text-white flex items-center justify-center text-3xl shadow-lg">
-          🎓
+    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] flex flex-col">
+      {/* Masthead */}
+      <header className="border-b-2 border-[var(--line)]">
+        <div className="max-w-[1400px] mx-auto flex items-stretch">
+          <div className="flex items-center gap-3 px-4 sm:px-6 py-3 border-r-2 border-[var(--line)]">
+            <img
+              src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png"
+              alt="Logo Awang Long Quiz"
+              className="w-9 h-9 object-contain  "
+            />
+            <span className="poster-display text-xl sm:text-2xl leading-none">Awang Long</span>
         </div>
-        <h1 className="text-2xl font-extrabold text-slate-800 dark:text-slate-100 mb-2">Awang Long Quiz</h1>
-        <p className="text-slate-600 dark:text-slate-400 mb-6 text-sm">
-          Masuk ke akun guru Anda untuk mulai mengelola kuis dan ujian online.
+          <div className="hidden sm:flex items-center px-4 py-3 border-r-2 border-[var(--line)]">
+            <span className="poster-label">Portal Guru</span>
+          </div>
+          <div className="flex items-center px-4 py-3 ml-auto">
+            <span className="poster-label text-[var(--ink-soft)]">Kuis &amp; Evaluasi</span>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1">
+        <div className="max-w-[1400px] mx-auto grid lg:grid-cols-[1.35fr_1fr] border-b-2 border-[var(--line)]">
+          {/* Statement */}
+          <section className="px-4 sm:px-8 py-8 sm:py-12 border-b-2 lg:border-b-0 lg:border-r-2 border-[var(--line)]">
+            <p className="poster-label mb-6">Platform kuis online untuk guru</p>
+            <h1 className="poster-display text-[clamp(3rem,9vw,7rem)]">
+              Buat kuis,
+              <br />
+              bagikan
+              <br />
+              <span className="bg-[var(--signal)] px-2 py-1 text-[#0a0a0a] inline-block">tautannya.</span>
+            </h1>
+
+            <p className="mt-8 max-w-xl text-base sm:text-lg font-medium leading-snug">
+              Soal dibuat dengan bantuan AI, tautan ujian dibagikan ke siswa, dan nilai
+              terkumpul otomatis di rekap. Satu akun guru untuk semuanya.
         </p>
 
+            <div className="mt-8 flex items-center gap-3 border-2 border-[var(--line)] w-fit px-3 py-2">
+              <span className="w-3 h-3 bg-[var(--danger)]" aria-hidden="true" />
+              <span className="poster-label">Akses khusus akun guru terdaftar</span>
+            </div>
+          </section>
+
+          {/* Login panel */}
+          <section className="px-4 sm:px-8 py-8 sm:py-12 bg-[var(--paper-2)]">
+            <div className="border-2 border-[var(--line)] bg-[var(--paper)]">
+              <div className="border-b-2 border-[var(--line)] px-4 py-3 flex items-baseline justify-between gap-3">
+                <h2 className="text-2xl leading-none">Masuk</h2>
+                <span className="poster-label text-[var(--ink-soft)]">01 / Akun</span>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                <p className="text-sm font-medium leading-snug mb-5">
+                  Masuk dengan akun Google yang terdaftar sebagai guru untuk mengelola kuis
+                  dan ujian.
+                </p>
+
         {errorMsg && (
-          <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-xl text-amber-800 dark:text-amber-200 text-xs flex items-start gap-2.5 text-left">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold mb-1">Kendala Login Google</p>
+                  <div
+                    role="alert"
+                    className="mb-5 border-2 border-[var(--danger)] bg-[var(--danger-pale)] p-3 text-[13px] leading-snug"
+                  >
+                    <p className="poster-label mb-1 text-[var(--danger)]">Kendala login Google</p>
               <p>{errorMsg}</p>
             </div>
-          </div>
         )}
 
-        <div className="space-y-3">
+                <div className="space-y-2.5">
           <button
+                    type="button"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-lg transition-all duration-200 disabled:bg-slate-400 dark:disabled:bg-slate-700 flex items-center justify-center gap-2 cursor-pointer"
+                    className="btn-ink w-full py-3.5 text-sm"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path
-                fill="currentColor"
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              />
-              <path
-                fill="currentColor"
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
-              />
-              <path
-                fill="currentColor"
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
-              />
-            </svg>
-            {loading ? 'Memproses...' : 'Login dengan Google (Popup)'}
+                    {loading ? 'Memproses...' : 'Masuk dengan Google'}
           </button>
 
           <button
+                    type="button"
             onClick={handleRedirectLogin}
             disabled={loading}
-            className="w-full px-6 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition border border-slate-300 dark:border-slate-700 cursor-pointer"
+                    className="w-full py-3 border-2 border-[var(--line)] bg-[var(--paper)] hover:bg-[var(--paper-2)] text-[11px] font-bold uppercase tracking-[0.08em] cursor-pointer transition-colors disabled:opacity-45 disabled:cursor-not-allowed"
           >
-            Login dengan Redirect (Alternatif Iframe/Browser Ketat)
+                    Masuk lewat redirect (alternatif iframe)
           </button>
         </div>
 
-        <div className="mt-8 text-left bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 space-y-1">
-          <p className="font-bold text-slate-700 dark:text-slate-300">Catatan Popup Login:</p>
-          <p>• Jika popup tidak muncul, hal ini disebabkan oleh pembatasan iframe keamanan browser atau domain belum terdaftar di Authorized Domains Firebase Console.</p>
-          <p>• Gunakan tombol <strong>Redirect</strong> di atas jika popup diblokir.</p>
+                <div className="mt-6 border-t-2 border-[var(--line)] pt-3 text-[12px] leading-snug text-[var(--ink-soft)]">
+                  <p className="poster-label text-[var(--ink)] mb-1.5">Catatan popup</p>
+                  <p>
+                    Jika popup tidak muncul, browser memblokirnya dari dalam iframe atau domain
+                    belum terdaftar di Authorized Domains Firebase Console. Pakai tombol redirect.
+                  </p>
         </div>
       </div>
     </div>
+          </section>
+        </div>
+
+        {/* Feature strip: real capabilities only */}
+        <div className="max-w-[1400px] mx-auto grid sm:grid-cols-3 border-b-2 border-[var(--line)]">
+          <div className="px-4 sm:px-6 py-4 border-b-2 sm:border-b-0 sm:border-r-2 border-[var(--line)] flex items-baseline gap-3">
+            <span className="poster-display text-3xl leading-none">01</span>
+            <div>
+              <p className="poster-label">Generator AI</p>
+              <p className="text-[12px] text-[var(--ink-soft)] mt-0.5">Soal dibuat dari materi atau file.</p>
+            </div>
+          </div>
+          <div className="px-4 sm:px-6 py-4 border-b-2 sm:border-b-0 sm:border-r-2 border-[var(--line)] flex items-baseline gap-3">
+            <span className="poster-display text-3xl leading-none">02</span>
+            <div>
+              <p className="poster-label">Tautan ujian</p>
+              <p className="text-[12px] text-[var(--ink-soft)] mt-0.5">Bagikan satu tautan ke siswa.</p>
+            </div>
+          </div>
+          <div className="px-4 sm:px-6 py-4 flex items-baseline gap-3">
+            <span className="poster-display text-3xl leading-none">03</span>
+            <div>
+              <p className="poster-label">Rekap nilai</p>
+              <p className="text-[12px] text-[var(--ink-soft)] mt-0.5">Skor dan analitik per kelas.</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   );
 }
-

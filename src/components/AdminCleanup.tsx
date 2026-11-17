@@ -38,9 +38,9 @@ export const AdminCleanup: React.FC = () => {
   };
 
   return (
-    <div className="p-4 bg-red-50 border border-red-200 rounded-lg dark:bg-red-950/20 dark:border-red-900">
-      <h2 className="font-bold text-red-800 dark:text-red-300">Admin Cleanup</h2>
-      <p className="text-xs text-red-600 dark:text-red-400 mt-1">Hapus data dummy dari Firebase.</p>
+    <div className="p-4 bg-red-50 border border-red-200 rounded-lg  ">
+      <h2 className="font-bold text-red-800 ">Admin Cleanup</h2>
+      <p className="text-xs text-red-600  mt-1">Hapus data dummy dari Firebase.</p>
       <button 
         onClick={handleCleanup}
         disabled={loading}
@@ -48,7 +48,7 @@ export const AdminCleanup: React.FC = () => {
       >
         {loading ? 'Menghapus...' : 'Hapus Data Dummy'}
       </button>
-      {message && <p className="mt-2 text-sm font-medium text-red-700 dark:text-red-300">{message}</p>}
+      {message && <p className="mt-2 text-sm font-medium text-red-700 ">{message}</p>}
     </div>
   );
 };

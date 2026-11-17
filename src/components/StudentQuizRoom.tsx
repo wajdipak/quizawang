@@ -174,23 +174,20 @@ export const StudentQuizRoom: React.FC<Props> = ({
   // If no quiz has been chosen yet, show PIN entry / Quiz Selector
   return (
     <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6 animate-in fade-in duration-300">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4 sm:space-y-6 transition-colors">
+ <div className="bg-[var(--paper)] p-4 sm:p-6 lg:p-8 border-2 border-[var(--line)] space-y-5 sm:space-y-7">
         
         {/* Welcome Header */}
         <div className="text-center space-y-1.5 sm:space-y-2">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-cyan-400 via-teal-400 to-sky-400 text-white flex items-center justify-center mx-auto text-2xl sm:text-3xl shadow-md">
-            🎓
-          </div>
-          <h1 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-slate-100">
+  <h1 className="text-xl sm:text-2xl font-black text-slate-800 ">
             Portal Ujian Siswa
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+ <p className="text-xs text-slate-500  max-w-sm mx-auto">
             Masukkan Kode PIN Kuis yang diberikan oleh guru Anda untuk masuk ke ruang tunggu dan memulai ujian online.
           </p>
         </div>
 
         {errorMessage && (
-          <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-xs text-center font-semibold flex items-center justify-center gap-2">
+ <div className="p-3.5 rounded-2xl bg-rose-50  border border-rose-200  text-rose-700  text-xs text-center font-semibold flex items-center justify-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMessage}</span>
           </div>
@@ -199,7 +196,7 @@ export const StudentQuizRoom: React.FC<Props> = ({
         {/* PIN Entry Form */}
         <form onSubmit={handleSelectQuizByPin} className="space-y-4">
           <div className="space-y-1.5">
-            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block text-center">
+ <label className="text-xs font-bold text-slate-700  block text-center">
               Masukkan Kode PIN Kuis:
             </label>
             <div className="max-w-xs mx-auto">
@@ -209,11 +206,11 @@ export const StudentQuizRoom: React.FC<Props> = ({
                 maxLength={12}
                 value={pinInput}
                 onChange={(e) => setPinInput(e.target.value.toUpperCase())}
-                placeholder="Contoh: CLS482"
-                className="w-full text-center font-mono font-black text-2xl sm:text-3xl tracking-widest py-3 px-4 rounded-2xl border-2 border-teal-300 dark:border-teal-600 focus:border-teal-500 bg-teal-50/40 dark:bg-slate-800 text-teal-900 dark:text-teal-200 focus:outline-none uppercase shadow-inner placeholder:text-slate-300 dark:placeholder:text-slate-600 transition-colors"
+                placeholder="CLS482"
+                className="w-full text-center font-mono font-black text-2xl sm:text-3xl tracking-[0.18em] py-3 px-4 border-2 border-[var(--line)] bg-[var(--paper-2)] text-[var(--ink)] focus:outline-2 focus:outline-[var(--ink)] focus:outline-offset-2 uppercase placeholder:text-[var(--ink-soft)] placeholder:text-lg placeholder:tracking-[0.1em]"
               />
             </div>
-            <p className="text-[11px] text-center text-slate-400 dark:text-slate-500">
+ <p className="text-[11px] text-center text-slate-400 ">
               Kode PIN baru dibuat otomatis oleh guru untuk setiap mode kuis.
             </p>
           </div>
@@ -221,7 +218,7 @@ export const StudentQuizRoom: React.FC<Props> = ({
           <div className="max-w-xs mx-auto pt-2">
             <button
               type="submit"
-              className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-teal-500 via-cyan-500 to-sky-500 hover:from-teal-600 hover:to-sky-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+              className="btn-ink w-full py-3.5 text-sm"
             >
               <span>Masuk Ruang Ujian</span>
               <ArrowRight className="w-4 h-4" />
@@ -231,8 +228,8 @@ export const StudentQuizRoom: React.FC<Props> = ({
 
         {/* Available Active Quizzes list for easy testing & classroom access */}
         {availableQuizzes.length > 0 && (
-          <div className="pt-5 border-t border-slate-100 dark:border-slate-800 space-y-3">
-            <span className="text-xs font-bold text-slate-600 dark:text-slate-400 block uppercase tracking-wider text-center">
+ <div className="pt-5 border-t-2 border-[var(--line)] space-y-3">
+ <span className="text-xs font-bold text-slate-600  block uppercase tracking-wider text-center">
               Atau Pilih Kuis Aktif dari Guru:
             </span>
 
@@ -241,22 +238,22 @@ export const StudentQuizRoom: React.FC<Props> = ({
                 <div
                   key={quiz.id}
                   onClick={() => setActiveQuiz(quiz)}
-                  className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-teal-50/60 dark:hover:bg-slate-800 hover:border-teal-300 dark:hover:border-teal-700 transition-all cursor-pointer flex items-center justify-between gap-3 group"
+                  className="p-3.5 border-2 border-[var(--line)] bg-[var(--paper)] hover:bg-[var(--signal)] transition-colors cursor-pointer flex items-center justify-between gap-3 group"
                 >
                   <div className="space-y-0.5">
-                    <span className="font-bold text-xs text-slate-800 dark:text-slate-200 group-hover:text-teal-700 dark:group-hover:text-teal-300 transition-colors block">
+ <span className="font-bold text-xs text-slate-800  group-hover:text-teal-700  transition-colors block">
                       {quiz.title}
                     </span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+ <span className="text-[11px] text-slate-500 ">
                       {quiz.subject} • {quiz.questions.length} Butir Soal • KKM {quiz.passingGrade}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="font-mono text-xs font-black px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-teal-800 dark:text-teal-300 shadow-xs">
+ <span className="font-mono text-xs font-black px-2.5 py-1 rounded-xl bg-white  border border-slate-200  text-teal-800  shadow-xs">
                       {quiz.code}
                     </span>
-                    <span className="p-1.5 rounded-xl bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-400 group-hover:bg-teal-600 group-hover:text-white transition-colors">
+ <span className="p-1.5 rounded-xl bg-teal-100  text-teal-700  group-hover:bg-teal-600 group-hover:text-white transition-colors">
                       <ArrowRight className="w-3.5 h-3.5" />
                     </span>
                   </div>

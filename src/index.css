@@ -1,23 +1,466 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
-
+/* ------------------------------------------------------------------
+   Palette
+   Derived from the reference poster: paper, ink, signal yellow, signal
+   red. Nothing else. Dark mode is the same four colours inverted.
+   ------------------------------------------------------------------ */
 :root {
+  --ink: #0a0a0a;
+  --ink-soft: #5b5750;
+  --paper: #ffffff;
+  --paper-2: #f2f0e9;
+  --paper-3: #e5e2d8;
+  --white: #ffffff;
+  --signal: #ffe500;
+  --signal-pale: #fff7bd;
+  --danger: #ff3b1e;
+  --danger-pale: #ffe4de;
+  --line: #0a0a0a;
+  /* Type on the signal yellow/red blocks. Those fills never invert, so this
+     stays ink in both themes. */
+  --on-accent: #0a0a0a;
   --app-font-scale: 100%;
 }
 
+html.dark {
+  --ink: #f5f3ee;
+  --ink-soft: #a8a29a;
+  --paper: #0b0b0b;
+  --paper-2: #141414;
+  --paper-3: #1f1f1f;
+  --white: #101010;
+  --signal: #ffe500;
+  --signal-pale: #2a2708;
+  --danger: #ff6a4d;
+  --danger-pale: #2c120c;
+  --line: #f5f3ee;
+}
+
+@theme {
+  --font-sans: "Archivo", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "Anton", "Archivo", Impact, "Arial Narrow", sans-serif;
+
+  /* Square corners everywhere. The reference has not one rounded edge. */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+
+  /* Elevation is a border in this language, never a blur. */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
+  --inset-shadow-2xs: none;
+  --inset-shadow-xs: none;
+  --inset-shadow-sm: none;
+  --drop-shadow-xs: none;
+  --drop-shadow-sm: none;
+  --drop-shadow-md: none;
+  --drop-shadow-lg: none;
+  --drop-shadow-xl: none;
+  --drop-shadow-2xl: none;
+
+  --color-white: var(--white);
+  --color-black: var(--ink);
+
+  /* Primary family (teal) becomes ink. */
+  --color-teal-50: var(--paper-2);
+  --color-teal-100: var(--paper-2);
+  --color-teal-200: var(--line);
+  --color-teal-300: var(--line);
+  --color-teal-400: var(--ink-soft);
+  --color-teal-500: var(--ink-soft);
+  --color-teal-600: var(--ink);
+  --color-teal-700: var(--ink);
+  --color-teal-800: var(--ink);
+  --color-teal-900: var(--ink);
+  --color-teal-950: var(--paper-2);
+
+  /* Every other decorative hue collapses into ink too. */
+  --color-emerald-50: var(--paper-2);
+  --color-emerald-100: var(--paper-2);
+  --color-emerald-200: var(--line);
+  --color-emerald-300: var(--line);
+  --color-emerald-400: var(--ink-soft);
+  --color-emerald-500: var(--ink-soft);
+  --color-emerald-600: var(--ink);
+  --color-emerald-700: var(--ink);
+  --color-emerald-800: var(--ink);
+  --color-emerald-900: var(--ink);
+  --color-emerald-950: var(--paper-2);
+
+  --color-cyan-50: var(--paper-2);
+  --color-cyan-100: var(--paper-2);
+  --color-cyan-200: var(--line);
+  --color-cyan-300: var(--line);
+  --color-cyan-400: var(--ink-soft);
+  --color-cyan-500: var(--ink-soft);
+  --color-cyan-600: var(--ink);
+  --color-cyan-700: var(--ink);
+  --color-cyan-800: var(--ink);
+  --color-cyan-900: var(--ink);
+  --color-cyan-950: var(--paper-2);
+
+  --color-sky-50: var(--paper-2);
+  --color-sky-100: var(--paper-2);
+  --color-sky-200: var(--line);
+  --color-sky-300: var(--line);
+  --color-sky-400: var(--ink-soft);
+  --color-sky-500: var(--ink-soft);
+  --color-sky-600: var(--ink);
+  --color-sky-700: var(--ink);
+  --color-sky-800: var(--ink);
+  --color-sky-900: var(--ink);
+  --color-sky-950: var(--paper-2);
+
+  --color-blue-50: var(--paper-2);
+  --color-blue-100: var(--paper-2);
+  --color-blue-200: var(--line);
+  --color-blue-300: var(--line);
+  --color-blue-400: var(--ink-soft);
+  --color-blue-500: var(--ink-soft);
+  --color-blue-600: var(--ink);
+  --color-blue-700: var(--ink);
+  --color-blue-800: var(--ink);
+  --color-blue-900: var(--ink);
+  --color-blue-950: var(--paper-2);
+
+  --color-indigo-50: var(--paper-2);
+  --color-indigo-100: var(--paper-2);
+  --color-indigo-200: var(--line);
+  --color-indigo-300: var(--line);
+  --color-indigo-400: var(--ink-soft);
+  --color-indigo-500: var(--ink-soft);
+  --color-indigo-600: var(--ink);
+  --color-indigo-700: var(--ink);
+  --color-indigo-800: var(--ink);
+  --color-indigo-900: var(--ink);
+  --color-indigo-950: var(--paper-2);
+
+  --color-violet-50: var(--paper-2);
+  --color-violet-100: var(--paper-2);
+  --color-violet-200: var(--line);
+  --color-violet-300: var(--line);
+  --color-violet-400: var(--ink-soft);
+  --color-violet-500: var(--ink-soft);
+  --color-violet-600: var(--ink);
+  --color-violet-700: var(--ink);
+  --color-violet-800: var(--ink);
+  --color-violet-900: var(--ink);
+  --color-violet-950: var(--paper-2);
+
+  --color-purple-50: var(--paper-2);
+  --color-purple-100: var(--paper-2);
+  --color-purple-200: var(--line);
+  --color-purple-300: var(--line);
+  --color-purple-400: var(--ink-soft);
+  --color-purple-500: var(--ink-soft);
+  --color-purple-600: var(--ink);
+  --color-purple-700: var(--ink);
+  --color-purple-800: var(--ink);
+  --color-purple-900: var(--ink);
+  --color-purple-950: var(--paper-2);
+
+  /* Warning family keeps the signal yellow. */
+  --color-amber-50: var(--signal-pale);
+  --color-amber-100: var(--signal-pale);
+  --color-amber-200: var(--signal);
+  --color-amber-300: var(--signal);
+  --color-amber-400: var(--signal);
+  --color-amber-500: var(--signal);
+  --color-amber-600: var(--ink);
+  --color-amber-700: var(--ink);
+  --color-amber-800: var(--ink);
+  --color-amber-900: var(--ink);
+  --color-amber-950: var(--ink);
+
+  --color-orange-50: var(--signal-pale);
+  --color-orange-100: var(--signal-pale);
+  --color-orange-200: var(--signal);
+  --color-orange-300: var(--signal);
+  --color-orange-400: var(--signal);
+  --color-orange-500: var(--signal);
+  --color-orange-600: var(--ink);
+  --color-orange-700: var(--ink);
+  --color-orange-800: var(--ink);
+  --color-orange-900: var(--ink);
+  --color-orange-950: var(--ink);
+
+  /* Danger family keeps the signal red. */
+  --color-rose-50: var(--danger-pale);
+  --color-rose-100: var(--danger-pale);
+  --color-rose-200: var(--danger);
+  --color-rose-300: var(--danger);
+  --color-rose-400: var(--danger);
+  --color-rose-500: var(--danger);
+  --color-rose-600: var(--danger);
+  --color-rose-700: var(--danger);
+  --color-rose-800: var(--danger);
+  --color-rose-900: var(--danger);
+  --color-rose-950: var(--paper-2);
+
+  --color-red-50: var(--danger-pale);
+  --color-red-100: var(--danger-pale);
+  --color-red-200: var(--danger);
+  --color-red-300: var(--danger);
+  --color-red-400: var(--danger);
+  --color-red-500: var(--danger);
+  --color-red-600: var(--danger);
+  --color-red-700: var(--danger);
+  --color-red-800: var(--danger);
+  --color-red-900: var(--danger);
+  --color-red-950: var(--paper-2);
+
+  --color-pink-50: var(--danger-pale);
+  --color-pink-100: var(--danger-pale);
+  --color-pink-200: var(--danger);
+  --color-pink-300: var(--danger);
+  --color-pink-400: var(--danger);
+  --color-pink-500: var(--danger);
+  --color-pink-600: var(--danger);
+  --color-pink-700: var(--danger);
+  --color-pink-800: var(--danger);
+  --color-pink-900: var(--danger);
+
+  /* Neutral family: paper surfaces, ink type, ink rules. */
+  --color-slate-50: var(--paper-2);
+  --color-slate-100: var(--paper-2);
+  --color-slate-200: var(--line);
+  --color-slate-300: var(--line);
+  --color-slate-400: var(--ink-soft);
+  --color-slate-500: var(--ink-soft);
+  --color-slate-600: var(--ink);
+  --color-slate-700: var(--ink);
+  --color-slate-800: var(--ink);
+  --color-slate-900: var(--ink);
+  --color-slate-950: var(--ink);
+
+  --color-gray-50: var(--paper-2);
+  --color-gray-100: var(--paper-2);
+  --color-gray-200: var(--line);
+  --color-gray-300: var(--line);
+  --color-gray-400: var(--ink-soft);
+  --color-gray-500: var(--ink-soft);
+  --color-gray-600: var(--ink);
+  --color-gray-700: var(--ink);
+  --color-gray-800: var(--ink);
+  --color-gray-900: var(--ink);
+  --color-gray-950: var(--ink);
+
+  --color-zinc-50: var(--paper-2);
+  --color-zinc-100: var(--paper-2);
+  --color-zinc-200: var(--line);
+  --color-zinc-300: var(--line);
+  --color-zinc-400: var(--ink-soft);
+  --color-zinc-500: var(--ink-soft);
+  --color-zinc-600: var(--ink);
+  --color-zinc-700: var(--ink);
+  --color-zinc-800: var(--ink);
+  --color-zinc-900: var(--ink);
+  --color-zinc-950: var(--ink);
+
+  --color-stone-50: var(--paper-2);
+  --color-stone-100: var(--paper-2);
+  --color-stone-200: var(--line);
+  --color-stone-300: var(--line);
+  --color-stone-400: var(--ink-soft);
+  --color-stone-500: var(--ink-soft);
+  --color-stone-600: var(--ink);
+  --color-stone-700: var(--ink);
+  --color-stone-800: var(--ink);
+  --color-stone-900: var(--ink);
+  --color-stone-950: var(--ink);
+}
+
+@layer base {
 html {
   font-size: var(--app-font-scale, 100%);
-  transition: font-size 0.15s ease-out;
 }
 
 html.dark {
   color-scheme: dark;
 }
 
-html.dark body {
-  background-color: #0b1120;
-  color: #f1f5f9;
+  body {
+    background-color: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+  /* Display type carries the poster: condensed, uppercase, tight. */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    text-transform: uppercase;
+    line-height: 0.9;
+    letter-spacing: -0.01em;
+  }
+
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  ::selection {
+    background: var(--signal);
+    color: #0a0a0a;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  /* Square corners, including the pill utilities Tailwind hardcodes. */
+  *,
+  *::before,
+  *::after {
+    border-radius: 0 !important;
+  }
+}
+
+@layer utilities {
+  /* Flat ink and paper only: gradients and glows are not part of the language. */
+  [class*="bg-gradient-"] {
+    background-image: none !important;
+    /* Gradient fills were the only background on most CTAs, so they become
+       solid ink instead of turning transparent. */
+    background-color: var(--ink);
+  }
+
+  /* Page wrappers that carried the old pastel gradient go back to paper. */
+  [class*="from-[#"] {
+    background-color: var(--paper) !important;
+  }
+
+  [class*="bg-clip-text"] {
+    background: none !important;
+    -webkit-text-fill-color: currentColor;
+    color: var(--ink) !important;
+  }
+
+  [class*="shadow-"] {
+    box-shadow: none !important;
+  }
+
+  /* Rules are the only elevation here, so they carry weight. */
+  .border {
+    border-width: 2px;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Poster primitives
+   ------------------------------------------------------------------ */
+.poster-label {
+  font-size: 0.6875rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.poster-display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 0.9;
+  letter-spacing: -0.015em;
+}
+
+.poster-cell {
+  border: 2px solid var(--line);
+  background-color: var(--paper);
+}
+
+.tool-grid {
+  counter-reset: tool;
+}
+
+.tool-cell {
+  counter-increment: tool;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  text-align: left;
+  border-right: 2px solid var(--line);
+  border-bottom: 2px solid var(--line);
+  background-color: var(--paper);
+  cursor: pointer;
+  transition: background-color 0.12s linear;
+}
+
+.tool-cell::before {
+  content: counter(tool, decimal-leading-zero);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  line-height: 0.8;
+}
+
+.tool-cell:hover {
+  background-color: var(--paper-2);
+}
+
+.tool-cell[aria-pressed="true"] {
+  background-color: var(--signal);
+  color: #0a0a0a;
+}
+
+.btn-ink,
+.btn-signal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 2px solid var(--line);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: background-color 0.12s linear, color 0.12s linear;
+}
+
+.btn-ink {
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+.btn-ink:hover:not(:disabled) {
+  background-color: var(--signal);
+  color: #0a0a0a;
+}
+
+.btn-signal {
+  background-color: var(--signal);
+  color: #0a0a0a;
+}
+
+.btn-signal:hover:not(:disabled) {
+  background-color: var(--ink);
+  color: var(--paper);
+}
+
+.btn-ink:disabled,
+.btn-signal:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 /* High contrast accessibility mode */

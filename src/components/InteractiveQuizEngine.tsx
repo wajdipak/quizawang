@@ -120,10 +120,10 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
   });
   const [eliminatedOptions, setEliminatedOptions] = useState<number[]>([]);
   const [leaderboard, setLeaderboard] = useState<SimulatedPlayer[]>([
-    { id: 'p1', name: 'Siti Rahma', score: 3250, avatar: '🦊' },
-    { id: 'p2', name: 'Budi Santoso', score: 2900, avatar: '🐯' },
-    { id: 'p3', name: 'Rian Pratama', score: 2600, avatar: '🦁' },
-    { id: 'p4', name: 'Aisyah Putri', score: 2200, avatar: '🐼' }
+    { id: 'p1', name: 'Siti Rahma', score: 3250, avatar: '' },
+    { id: 'p2', name: 'Budi Santoso', score: 2900, avatar: '' },
+    { id: 'p3', name: 'Rian Pratama', score: 2600, avatar: '' },
+    { id: 'p4', name: 'Aisyah Putri', score: 2200, avatar: '' }
   ]);
 
   // PLAYGROUND ARCADE MODE states
@@ -520,12 +520,12 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
     const finalCalc = calculateQuizScore(answers, quiz.questions, quiz.passingGrade);
 
     return (
-      <div className="max-w-4xl mx-auto space-y-5 p-4 sm:p-6 animate-in fade-in duration-300 text-slate-800 dark:text-slate-100">
+ <div className="max-w-4xl mx-auto space-y-5 p-4 sm:p-6 animate-in fade-in duration-300 text-slate-800 ">
         
         {/* Top Celebration Banner */}
         <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-700 text-white shadow-xl text-center space-y-4">
           <div className="w-16 h-16 rounded-3xl bg-white/20 backdrop-blur-md flex items-center justify-center mx-auto text-3xl shadow-inner font-black">
-            {isDisqualified ? '⚠️' : finalCalc.isPassed ? '🏆' : '🎯'}
+            {isDisqualified ? '' : finalCalc.isPassed ? '' : ''}
           </div>
 
           <div className="space-y-1">
@@ -563,32 +563,32 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             {mode === 'CLASSIC' && (
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
                 <span className="text-[10px] text-teal-100 font-semibold uppercase block">Streak Max</span>
-                <span className="text-xl sm:text-2xl font-black">🔥 {maxStreak}x</span>
+ <span className="text-xl sm:text-2xl font-black"> {maxStreak}x</span>
               </div>
             )}
             {mode === 'PLAYGROUND' && (
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
                 <span className="text-[10px] text-teal-100 font-semibold uppercase block">Koin Arcade</span>
-                <span className="text-xl sm:text-2xl font-black">🪙 {arcadeCoins}</span>
+ <span className="text-xl sm:text-2xl font-black"> {arcadeCoins}</span>
               </div>
             )}
             {mode === 'MASTERY' && (
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
                 <span className="text-[10px] text-teal-100 font-semibold uppercase block">Ketuntasan</span>
-                <span className="text-xl sm:text-2xl font-black">🏔️ {masteryPercentage}%</span>
+ <span className="text-xl sm:text-2xl font-black"> {masteryPercentage}%</span>
               </div>
             )}
             {mode === 'TEST' && (
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
                 <span className="text-[10px] text-teal-100 font-semibold uppercase block">Pelanggaran Tab</span>
-                <span className="text-xl sm:text-2xl font-black">🛡️ {violationsCount}x</span>
+ <span className="text-xl sm:text-2xl font-black"> {violationsCount}x</span>
               </div>
             )}
             {mode === 'TEAM' && (
               <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15">
                 <span className="text-[10px] text-teal-100 font-semibold uppercase block">Regu Anda</span>
                 <span className="text-xl sm:text-2xl font-black">
-                  {myTeam === 'Tim Garuda' ? '🦅 Garuda' : '🦅 Rajawali'}
+                  {myTeam === 'Tim Garuda' ? 'Garuda' : 'Rajawali'}
                 </span>
               </div>
             )}
@@ -602,8 +602,8 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
         </div>
 
         {/* Detailed Question Review List */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-          <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center justify-between">
+ <div className="bg-white  rounded-3xl p-5 sm:p-6 border border-slate-200  shadow-sm space-y-4">
+ <h3 className="font-bold text-sm text-slate-900  flex items-center justify-between">
             <span>Evaluasi Butir Soal</span>
             <span className="text-xs font-semibold text-slate-500">
               {finalCalc.correctCount} dari {finalCalc.totalQuestions} Soal Terjawab Benar
@@ -616,37 +616,37 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 key={b.questionId}
                 className={`p-3.5 rounded-2xl border text-xs space-y-1.5 transition-colors ${
                   b.isCorrect
-                    ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800'
-                    : 'bg-rose-50/50 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800'
+                    ? 'bg-emerald-50/50  border-emerald-200 '
+                    : 'bg-rose-50/50  border-rose-200 '
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-slate-700 dark:text-slate-300">
+ <span className="font-bold text-slate-700 ">
                     No. {idx + 1} ({b.category})
                   </span>
                   <span
                     className={`font-bold px-2 py-0.5 rounded-md text-[10px] ${
                       b.isCorrect
-                        ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200'
-                        : 'bg-rose-100 dark:bg-rose-900 text-rose-800 dark:text-rose-200'
+                        ? 'bg-emerald-100  text-emerald-800 '
+                        : 'bg-rose-100  text-rose-800 '
                     }`}
                   >
-                    {b.isCorrect ? '✓ Benar' : '✗ Salah'}
+                    {b.isCorrect ? 'Benar' : 'Salah'}
                   </span>
                 </div>
 
-                <p className="font-medium text-slate-800 dark:text-slate-200 leading-snug">
+ <p className="font-medium text-slate-800  leading-snug">
                   {b.questionText}
                 </p>
 
-                <div className="text-[11px] text-slate-600 dark:text-slate-400">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">Kunci Jawaban: </span>
+ <div className="text-[11px] text-slate-600 ">
+ <span className="font-semibold text-slate-700 ">Kunci Jawaban: </span>
                   <span>{b.correctAnswerSummary}</span>
                 </div>
 
                 {b.explanation && (
-                  <div className="p-2 rounded-xl bg-white/70 dark:bg-slate-800/70 border border-slate-200/50 dark:border-slate-700/50 text-[11px] text-slate-600 dark:text-slate-400">
-                    <span className="font-semibold text-teal-700 dark:text-teal-300">Penjelasan: </span>
+ <div className="p-2 rounded-xl bg-white/70  border border-slate-200/50  text-[11px] text-slate-600 ">
+ <span className="font-semibold text-teal-700 ">Penjelasan: </span>
                     {b.explanation}
                   </div>
                 )}
@@ -679,7 +679,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
       {isFrozenScreen && (
         <div className="fixed inset-0 z-50 bg-sky-950/80 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center select-none animate-in fade-in">
           <div className="max-w-md w-full p-6 rounded-3xl bg-sky-900/90 border-2 border-cyan-400 text-white shadow-2xl space-y-4">
-            <div className="text-5xl animate-bounce">❄️</div>
+ <div className="text-5xl animate-bounce"></div>
             <h2 className="text-xl font-black text-cyan-200">
               Layar Anda Dibekukan! (Screen Freeze)
             </h2>
@@ -692,7 +692,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
               onClick={handleTapMeltIce}
               className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 active:scale-95 text-slate-900 font-black text-base shadow-lg transition-transform cursor-pointer"
             >
-              🔨 Ketuk Memecah Es ({freezeTapsRemaining} Kali Tersisa!)
+               Ketuk Memecah Es ({freezeTapsRemaining} Kali Tersisa!)
             </button>
           </div>
         </div>
@@ -701,18 +701,15 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
       {/* PROCTOR VIOLATION WARNING MODAL (Test Mode) */}
       {showViolationWarningModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="max-w-md w-full p-6 rounded-3xl bg-white dark:bg-slate-900 border-2 border-rose-500 text-slate-900 dark:text-slate-100 shadow-2xl space-y-4">
-            <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto text-2xl font-black">
-              ⚠️
-            </div>
+ <div className="max-w-md w-full p-6 rounded-3xl bg-white  border-2 border-rose-500 text-slate-900  shadow-2xl space-y-4">
             <div className="text-center space-y-1">
-              <h3 className="text-lg font-black text-rose-600 dark:text-rose-400">
+ <h3 className="text-lg font-black text-rose-600 ">
                 Peringatan Integritas Anti-Cheat!
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+ <p className="text-xs text-slate-600  leading-relaxed">
                 {violationNotice}
               </p>
-              <div className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 text-[11px] font-bold text-rose-700 dark:text-rose-300">
+ <div className="p-2 rounded-xl bg-rose-50  border border-rose-200  text-[11px] font-bold text-rose-700 ">
                 Pelanggaran Saat Ini: {violationsCount} dari Batas Maksimal {maxViolations}
               </div>
             </div>
@@ -732,7 +729,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
       {showVaultHeistModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
           <div className="max-w-md w-full p-6 rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 border-2 border-amber-400 text-white shadow-2xl space-y-4 text-center">
-            <div className="text-4xl">🏦</div>
+ <div className="text-4xl"></div>
             <h3 className="text-lg font-black text-amber-300">
               Aksi Vault Heist (Bobol Brankas)
             </h3>
@@ -748,7 +745,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                   onClick={() => handleOpenVault(idx)}
                   className="p-4 rounded-2xl bg-white/10 hover:bg-amber-400/20 border border-white/20 hover:border-amber-400 text-center transition-all cursor-pointer group"
                 >
-                  <div className="text-3xl mb-1 group-hover:scale-110 transition-transform">🎁</div>
+ <div className="text-3xl mb-1 group-hover:scale-110 transition-transform"></div>
                   <span className="text-[10px] font-bold text-amber-200">Brankas {idx + 1}</span>
                 </button>
               ))}
@@ -756,7 +753,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
             {vaultReward !== null && (
               <div className="p-3 rounded-2xl bg-amber-400/20 border border-amber-400 text-amber-200 text-xs font-black animate-in zoom-in">
-                🎉 Anda Membobol +{vaultReward} Koin Arcade!
+                 Anda Membobol +{vaultReward} Koin Arcade!
               </div>
             )}
 
@@ -775,12 +772,12 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
       )}
 
       {/* TOP HEADER STATUS BAR */}
-      <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-3">
+ <div className="bg-white  rounded-3xl p-4 sm:p-5 border border-slate-200  shadow-sm flex flex-col gap-3">
         
         {/* Upper row: Mode Title, PIN, Sound & Exit */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300">
+ <div className="p-2 rounded-xl bg-teal-50  text-teal-700 ">
               {mode === 'CLASSIC' && <Zap className="w-4 h-4 text-amber-500" />}
               {mode === 'MASTERY' && <Mountain className="w-4 h-4 text-emerald-500" />}
               {mode === 'PLAYGROUND' && <Gamepad2 className="w-4 h-4 text-indigo-500" />}
@@ -789,16 +786,16 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+ <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100  text-slate-700 ">
                   Mode: {mode}
                 </span>
                 {isTeacherTesting && (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200">
+ <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100  text-teal-800 ">
                     Simulasi Guru
                   </span>
                 )}
               </div>
-              <h2 className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-100 line-clamp-1">
+ <h2 className="text-xs sm:text-sm font-black text-slate-800  line-clamp-1">
                 {quiz.title} (PIN: {quiz.code})
               </h2>
             </div>
@@ -809,7 +806,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setSoundEnabled(!soundEnabled)}
-                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 cursor-pointer transition-colors"
+                className="p-2 rounded-xl bg-slate-100  hover:bg-slate-200  text-slate-600  cursor-pointer transition-colors"
                 title={soundEnabled ? 'Matikan Suara' : 'Aktifkan Suara'}
               >
                 {soundEnabled ? <Volume2 className="w-4 h-4 text-teal-600" /> : <VolumeX className="w-4 h-4" />}
@@ -819,7 +816,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             <button
               type="button"
               onClick={onExit}
-              className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer transition-colors"
+              className="px-3 py-1.5 rounded-xl bg-slate-100  hover:bg-slate-200  text-slate-700  font-bold text-xs cursor-pointer transition-colors"
             >
               Keluar
             </button>
@@ -830,20 +827,20 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
         {/* 1. CLASSIC MODE HUD: Streak multiplier, Power-Ups Drawer, Points */}
         {mode === 'CLASSIC' && (
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+ <div className="pt-2 border-t border-slate-100  flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1.5 font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-800">
+ <div className="flex items-center gap-1.5 font-black text-amber-600  bg-amber-50  px-3 py-1.5 rounded-xl border border-amber-200 ">
                 <Flame className="w-4 h-4 fill-amber-500 text-amber-500 animate-pulse" />
                 <span>Streak: {currentStreak}x</span>
                 {currentStreak >= 3 && (
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500 text-white">
+ <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500 text-[var(--on-accent)]">
                     {currentStreak >= 5 ? '1.5x' : currentStreak === 4 ? '1.2x' : '1.1x'} Poin
                   </span>
                 )}
               </div>
 
-              <div className="font-black text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800">
-                🏆 {totalScore.toLocaleString()} Poin
+ <div className="font-black text-teal-700  bg-teal-50  px-3 py-1.5 rounded-xl border border-teal-200 ">
+                 {totalScore.toLocaleString()} Poin
               </div>
             </div>
 
@@ -858,12 +855,12 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 disabled={availablePowerUps.DOUBLE_POINTS <= 0}
                 className={`px-2 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all ${
                   availablePowerUps.DOUBLE_POINTS > 0
-                    ? 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 hover:scale-105 cursor-pointer'
-                    : 'opacity-40 bg-slate-100 dark:bg-slate-800 text-slate-400'
+                    ? 'bg-amber-100  text-amber-800  hover:scale-105 cursor-pointer'
+                    : 'opacity-40 bg-slate-100  text-slate-400'
                 }`}
                 title="2x Skor Soal Ini"
               >
-                <span>⚡ 2x</span>
+ <span> 2x</span>
                 <span className="text-[9px]">({availablePowerUps.DOUBLE_POINTS})</span>
               </button>
 
@@ -873,12 +870,12 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 disabled={availablePowerUps.FIFTY_FIFTY <= 0}
                 className={`px-2 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all ${
                   availablePowerUps.FIFTY_FIFTY > 0
-                    ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 hover:scale-105 cursor-pointer'
-                    : 'opacity-40 bg-slate-100 dark:bg-slate-800 text-slate-400'
+                    ? 'bg-indigo-100  text-indigo-800  hover:scale-105 cursor-pointer'
+                    : 'opacity-40 bg-slate-100  text-slate-400'
                 }`}
                 title="Hapus 2 Pilihan Salah"
               >
-                <span>🌓 50/50</span>
+ <span> 50/50</span>
                 <span className="text-[9px]">({availablePowerUps.FIFTY_FIFTY})</span>
               </button>
 
@@ -888,12 +885,12 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 disabled={availablePowerUps.ERASER <= 0}
                 className={`px-2 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all ${
                   availablePowerUps.ERASER > 0
-                    ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 hover:scale-105 cursor-pointer'
-                    : 'opacity-40 bg-slate-100 dark:bg-slate-800 text-slate-400'
+                    ? 'bg-purple-100  text-purple-800  hover:scale-105 cursor-pointer'
+                    : 'opacity-40 bg-slate-100  text-slate-400'
                 }`}
                 title="Hapus 1 Pilihan Salah"
               >
-                <span>🧹 Eraser</span>
+ <span> Eraser</span>
                 <span className="text-[9px]">({availablePowerUps.ERASER})</span>
               </button>
 
@@ -903,12 +900,12 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 disabled={availablePowerUps.IMMUNITY <= 0}
                 className={`px-2 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1 transition-all ${
                   availablePowerUps.IMMUNITY > 0
-                    ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 hover:scale-105 cursor-pointer'
-                    : 'opacity-40 bg-slate-100 dark:bg-slate-800 text-slate-400'
+                    ? 'bg-emerald-100  text-emerald-800  hover:scale-105 cursor-pointer'
+                    : 'opacity-40 bg-slate-100  text-slate-400'
                 }`}
                 title="Cegah Penurunan Streak Jika Salah"
               >
-                <span>🛡️ Imun</span>
+ <span> Imun</span>
                 <span className="text-[9px]">({availablePowerUps.IMMUNITY})</span>
               </button>
             </div>
@@ -917,24 +914,24 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
         {/* 2. MASTERY PEAK MODE HUD: Mountain Climbing Visualizer */}
         {mode === 'MASTERY' && (
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2 text-xs">
+ <div className="pt-2 border-t border-slate-100  space-y-2 text-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Mountain className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="font-black text-slate-800 dark:text-slate-200">
+ <Mountain className="w-4 h-4 text-emerald-600 " />
+ <span className="font-black text-slate-800 ">
                   Jalur Pendakian Puncak: {masteryPercentage}% Dikuasai
                 </span>
                 <span className="text-[10px] text-slate-400">
                   ({masteredCount} dari {quiz.questions.length} Butir Tuntas)
                 </span>
               </div>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200">
+ <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100  text-emerald-800 ">
                 Tanpa Batas Waktu
               </span>
             </div>
 
             {/* Climbing Progress Bar */}
-            <div className="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden relative">
+ <div className="w-full bg-slate-100  h-3 rounded-full overflow-hidden relative">
               <div
                 className="h-full bg-gradient-to-r from-teal-500 to-emerald-500 transition-all duration-500 rounded-full"
                 style={{ width: `${masteryPercentage}%` }}
@@ -945,16 +942,16 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
         {/* 3. PLAYGROUND ARCADE HUD: Coins, Energy, Vault Heist & Freeze Sabotage Trigger */}
         {mode === 'PLAYGROUND' && (
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+ <div className="pt-2 border-t border-slate-100  flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-3">
-              <div className="font-black text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-3 py-1 rounded-xl border border-amber-200 dark:border-amber-800 flex items-center gap-1.5">
+ <div className="font-black text-amber-600  bg-amber-50  px-3 py-1 rounded-xl border border-amber-200  flex items-center gap-1.5">
                 <Coins className="w-4 h-4 text-amber-500" />
-                <span>🪙 {arcadeCoins} Koin</span>
+ <span> {arcadeCoins} Koin</span>
               </div>
 
-              <div className="font-black text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 px-3 py-1 rounded-xl border border-indigo-200 dark:border-indigo-800 flex items-center gap-1.5">
+ <div className="font-black text-indigo-600  bg-indigo-50  px-3 py-1 rounded-xl border border-indigo-200  flex items-center gap-1.5">
                 <Zap className="w-4 h-4 text-indigo-500" />
-                <span>⚡ Energi: {arcadeEnergy}/5</span>
+ <span> Energi: {arcadeEnergy}/5</span>
               </div>
             </div>
 
@@ -964,7 +961,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 onClick={() => setShowVaultHeistModal(true)}
                 className="px-3 py-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs flex items-center gap-1 shadow-xs cursor-pointer transition-all"
               >
-                <span>🏦 Bobol Brankas</span>
+ <span> Bobol Brankas</span>
               </button>
 
               <button
@@ -974,7 +971,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 className="px-3 py-1 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:opacity-40 text-white font-bold text-xs flex items-center gap-1 shadow-xs cursor-pointer transition-all"
                 title="Tes Efek Screen Freeze Sabotase"
               >
-                <span>❄️ Uji Freeze</span>
+ <span> Uji Freeze</span>
               </button>
             </div>
           </div>
@@ -982,17 +979,17 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
         {/* 4. PROCTORED TEST HUD: Strict Anti-Cheat Indicators */}
         {mode === 'TEST' && (
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 text-xs">
+ <div className="pt-2 border-t border-slate-100  flex items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-sky-600" />
-              <span className="font-bold text-slate-700 dark:text-slate-300">
+ <span className="font-bold text-slate-700 ">
                 Pengawasan Anti-Cheat Aktif:
               </span>
               <span
                 className={`font-mono font-bold px-2 py-0.5 rounded-md ${
                   violationsCount > 0
-                    ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200'
-                    : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
+                    ? 'bg-rose-100 text-rose-800  '
+                    : 'bg-emerald-100 text-emerald-800  '
                 }`}
               >
                 {violationsCount} / {maxViolations} Pelanggaran
@@ -1007,7 +1004,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={() => handleTriggerViolation('Simulasi Pelanggaran Guru')}
-                  className="text-[10px] font-bold px-2 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/60 cursor-pointer"
+                  className="text-[10px] font-bold px-2 py-1 rounded-lg bg-rose-50  text-rose-700  border border-rose-200  hover:bg-rose-100  cursor-pointer"
                 >
                   Tes Deteksi Tab
                 </button>
@@ -1018,21 +1015,21 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
         {/* 5. TEAM MODE HUD: Race Board with mascot progress */}
         {mode === 'TEAM' && (
-          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 space-y-2 text-xs">
+ <div className="pt-2 border-t border-slate-100  space-y-2 text-xs">
             <div className="flex items-center justify-between text-xs font-bold">
-              <div className="flex items-center gap-2 text-rose-600 dark:text-rose-400">
-                <span>🦅 Tim Garuda (Merah): {teamGarudaScore} Poin</span>
+ <div className="flex items-center gap-2 text-rose-600 ">
+ <span> Tim Garuda (Merah): {teamGarudaScore} Poin</span>
                 {myTeam === 'Tim Garuda' && (
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-rose-100 dark:bg-rose-950">
+ <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-rose-100 ">
                     Regu Anda
                   </span>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                <span>🦅 Tim Rajawali (Biru): {teamRajawaliScore} Poin</span>
+ <div className="flex items-center gap-2 text-blue-600 ">
+ <span> Tim Rajawali (Biru): {teamRajawaliScore} Poin</span>
                 {myTeam === 'Tim Rajawali' && (
-                  <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-blue-100 dark:bg-blue-950">
+ <span className="text-[9px] px-1.5 py-0.2 rounded-md bg-blue-100 ">
                     Regu Anda
                   </span>
                 )}
@@ -1041,13 +1038,13 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
             {/* Duel Race Track */}
             <div className="space-y-1.5">
-              <div className="w-full bg-rose-100 dark:bg-rose-950/60 h-2.5 rounded-full overflow-hidden">
+ <div className="w-full bg-rose-100  h-2.5 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-rose-500 transition-all duration-500 rounded-full"
                   style={{ width: `${Math.min(100, (teamGarudaScore / 10000) * 100)}%` }}
                 />
               </div>
-              <div className="w-full bg-blue-100 dark:bg-blue-950/60 h-2.5 rounded-full overflow-hidden">
+ <div className="w-full bg-blue-100  h-2.5 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-blue-500 transition-all duration-500 rounded-full"
                   style={{ width: `${Math.min(100, (teamRajawaliScore / 10000) * 100)}%` }}
@@ -1061,7 +1058,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
       {/* QUESTION GRID NAVIGATION (for PROCTORED TEST MODE) */}
       {mode === 'TEST' && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-3 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between gap-2 overflow-x-auto">
+ <div className="bg-white  rounded-2xl p-3 border border-slate-200  shadow-xs flex items-center justify-between gap-2 overflow-x-auto">
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">
               Navigasi Soal:
@@ -1084,8 +1081,8 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                       : isFlagged
                       ? 'bg-amber-100 text-amber-800 border border-amber-300'
                       : isAnswered
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200'
+                      ? 'bg-emerald-100 text-emerald-800  '
+                      : 'bg-slate-100  text-slate-700  hover:bg-slate-200'
                   }`}
                 >
                   {qIdx + 1}
@@ -1105,7 +1102,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                   }));
                 }
               }}
-              className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950 text-amber-800 dark:text-amber-200 font-bold text-xs border border-amber-200 dark:border-amber-800 flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-lg bg-amber-50  text-amber-800  font-bold text-xs border border-amber-200  flex items-center gap-1 cursor-pointer"
             >
               <Flag className="w-3 h-3" />
               <span>Ragu-ragu</span>
@@ -1116,20 +1113,20 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
       {/* QUESTION CARD */}
       {currentQuestion && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-md space-y-5 animate-in fade-in duration-200">
+ <div className="bg-white  rounded-3xl p-5 sm:p-7 border border-slate-200  shadow-md space-y-5 animate-in fade-in duration-200">
           
           {/* Question Subheader */}
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-bold px-2.5 py-0.5 rounded-full bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-200">
+ <span className="font-bold px-2.5 py-0.5 rounded-full bg-teal-100  text-teal-800 ">
                 Soal #{mode === 'MASTERY' ? masteryCurrentQueueIndex + 1 : currentIndex + 1}
               </span>
               <span className="text-slate-400">|</span>
-              <span className="font-semibold text-slate-500 dark:text-slate-400">
+ <span className="font-semibold text-slate-500 ">
                 {currentQuestion.category || 'Umum'}
               </span>
               {currentQuestion.difficultyTag && (
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+ <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100  text-slate-600 ">
                   {currentQuestion.difficultyTag}
                 </span>
               )}
@@ -1143,7 +1140,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
           </div>
 
           {/* Question Text */}
-          <h3 className="text-base sm:text-lg font-black text-slate-800 dark:text-slate-100 leading-snug">
+ <h3 className="text-base sm:text-lg font-black text-slate-800  leading-snug">
             {currentQuestion.text}
           </h3>
 
@@ -1159,7 +1156,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                   return (
                     <div
                       key={optIdx}
-                      className="p-3.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-slate-400 text-xs flex items-center justify-between opacity-50"
+                      className="p-3.5 rounded-2xl border border-dashed border-slate-300  bg-slate-50/50  text-slate-400 text-xs flex items-center justify-between opacity-50"
                     >
                       <span className="font-mono">{letter}. Pilihan Dieliminasi (50/50)</span>
                     </div>
@@ -1174,15 +1171,15 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                     onClick={() => handleAnswerQuestion(optIdx)}
                     className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left text-xs sm:text-sm font-semibold transition-all flex items-center gap-3 cursor-pointer disabled:cursor-not-allowed ${
                       isSelected
-                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-950/60 text-teal-950 dark:text-teal-100 shadow-sm'
-                        : 'border-slate-200 dark:border-slate-800 hover:border-teal-300 dark:hover:border-teal-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+                        ? 'border-teal-500 bg-teal-50  text-teal-950  shadow-sm'
+                        : 'border-slate-200  hover:border-teal-300  bg-white  text-slate-700 '
                     }`}
                   >
                     <span
                       className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                         isSelected
                           ? 'bg-teal-600 text-white'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                          : 'bg-slate-100  text-slate-700 '
                       }`}
                     >
                       {letter}
@@ -1213,7 +1210,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                     handleAnswerQuestion((answers[currentQuestion.id] as string) || '');
                   }
                 }}
-                className="w-full p-3.5 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-sm font-medium focus:ring-2 focus:ring-teal-500 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                className="w-full p-3.5 rounded-2xl border border-slate-300  bg-slate-50  text-slate-900  text-sm font-medium focus:ring-2 focus:ring-teal-500 outline-none disabled:opacity-60 disabled:cursor-not-allowed"
               />
 
               <button
@@ -1235,9 +1232,9 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 {currentQuestion.matchingPairs.map((pair, pIdx) => (
                   <div
                     key={pIdx}
-                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1.5"
+                    className="p-3 rounded-xl bg-slate-50  border border-slate-200  space-y-1.5"
                   >
-                    <span className="font-bold text-slate-800 dark:text-slate-200 block">
+ <span className="font-bold text-slate-800  block">
                       {pair.left}
                     </span>
                     <select
@@ -1249,7 +1246,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                         const updated = { ...currMap, [pair.left]: val };
                         setAnswers((prev) => ({ ...prev, [currentQuestion.id]: updated }));
                       }}
-                      className="w-full p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full p-2 rounded-lg bg-white  border border-slate-300  font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       <option value="">-- Pilih Pasangan --</option>
                       {currentQuestion.matchingPairs?.map((item, idx) => (
@@ -1280,8 +1277,8 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             <div
               className={`p-4 rounded-2xl border text-xs space-y-2 animate-in fade-in zoom-in-95 ${
                 lastAnswerCorrect
-                  ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200'
-                  : 'bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-200'
+                  ? 'bg-emerald-50  border-emerald-300  text-emerald-900 '
+                  : 'bg-rose-50  border-rose-300  text-rose-900 '
               }`}
             >
               <div className="flex items-center justify-between">
@@ -1314,8 +1311,8 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
               )}
 
               {mode === 'MASTERY' && !lastAnswerCorrect && (
-                <div className="p-2 rounded-xl bg-white/60 dark:bg-slate-900/60 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
-                  🏔️ <em>Soal ini dimasukkan ke antrean perulangan (*re-queue*) dan akan muncul kembali nanti agar Anda menguasainya!</em>
+ <div className="p-2 rounded-xl bg-white/60  text-[10px] font-semibold text-slate-700 ">
+ <em>Soal ini dimasukkan ke antrean perulangan (*re-queue*) dan akan muncul kembali nanti agar Anda menguasainya!</em>
                 </div>
               )}
 
@@ -1323,7 +1320,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={handleProceedNext}
-                  className="px-5 py-2 rounded-xl bg-slate-900 dark:bg-slate-100 hover:bg-slate-800 text-white dark:text-slate-900 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
+                  className="px-5 py-2 rounded-xl bg-slate-900  hover:bg-slate-800 text-white  font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
                 >
                   <span>Lanjut ke Soal Berikutnya</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -1334,12 +1331,12 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
           {/* BOTTOM CONTROLS FOR PROCTORED TEST MODE */}
           {mode === 'TEST' && (
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+ <div className="pt-3 border-t border-slate-100  flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
                 disabled={currentIndex === 0}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
+                className="px-4 py-2 rounded-xl bg-slate-100  hover:bg-slate-200  disabled:opacity-40 text-slate-700  font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Sebelumnya</span>
@@ -1372,10 +1369,10 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
       {/* BOTTOM LEADERBOARD SNIPPET (Classic Mode) */}
       {mode === 'CLASSIC' && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center justify-between gap-3 text-xs">
+ <div className="bg-white  rounded-3xl p-4 border border-slate-200  shadow-xs flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
             <Trophy className="w-4 h-4 text-amber-500" />
-            <span className="font-bold text-slate-800 dark:text-slate-200">
+ <span className="font-bold text-slate-800 ">
               Peringkat Sementara Kelas:
             </span>
           </div>
@@ -1384,10 +1381,10 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             {leaderboard.map((p, idx) => (
               <div
                 key={p.id}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-50  border border-slate-200/80 "
               >
                 <span className="text-[11px]">{p.avatar}</span>
-                <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px]">
+ <span className="font-bold text-slate-700  text-[11px]">
                   #{idx + 1} {p.name}
                 </span>
                 <span className="text-[10px] text-teal-600 font-bold">{p.score}</span>

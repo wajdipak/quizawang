@@ -831,7 +831,7 @@ export const QuizEditorModal: React.FC<Props> = ({
                   title="AI menganalisis tingkat kesulitan setiap soal (Mudah, Sedang, Sulit/HOTS) dan membagikan poin agar akumulasi total seluruh soal selalu tepat 100 poin (tidak kurang atau lebih)"
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-teal-500 via-cyan-500 to-indigo-600 hover:from-teal-600 hover:to-indigo-700 text-white font-bold text-xs shadow-sm hover:shadow-md flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
                 >
-                  <Sparkles className={`w-4 h-4 ${isAiScoring ? 'animate-spin text-amber-300' : 'text-amber-300'}`} />
+                  <Sparkles className={`w-4 h-4 ${isAiScoring ? 'animate-spin' : ''}`} />
                   <span>{isAiScoring ? 'AI Sedang Menganalisis Kesulitan & Skor 100...' : 'Atur Poin Pintar AI (Total 100 Poin)'}</span>
                 </button>
               </div>

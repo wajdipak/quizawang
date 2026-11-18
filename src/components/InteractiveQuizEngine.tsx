@@ -690,7 +690,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             <button
               type="button"
               onClick={handleTapMeltIce}
-              className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 active:scale-95 text-slate-900 font-black text-base shadow-lg transition-transform cursor-pointer"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 active:scale-95 text-[var(--paper)] font-black text-base shadow-lg transition-transform cursor-pointer"
             >
                Ketuk Memecah Es ({freezeTapsRemaining} Kali Tersisa!)
             </button>
@@ -778,7 +778,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
  <div className="p-2 rounded-xl bg-teal-50  text-teal-700 ">
-              {mode === 'CLASSIC' && <Zap className="w-4 h-4 text-amber-500" />}
+              {mode === 'CLASSIC' && <Zap className="w-4 h-4 text-amber-600" />}
               {mode === 'MASTERY' && <Mountain className="w-4 h-4 text-emerald-500" />}
               {mode === 'PLAYGROUND' && <Gamepad2 className="w-4 h-4 text-indigo-500" />}
               {mode === 'TEST' && <ShieldAlert className="w-4 h-4 text-sky-600" />}
@@ -830,7 +830,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
  <div className="pt-2 border-t border-slate-100  flex flex-wrap items-center justify-between gap-3 text-xs">
             <div className="flex items-center gap-3">
  <div className="flex items-center gap-1.5 font-black text-amber-600  bg-amber-50  px-3 py-1.5 rounded-xl border border-amber-200 ">
-                <Flame className="w-4 h-4 fill-amber-500 text-amber-500 animate-pulse" />
+                <Flame className="w-4 h-4 fill-amber-500 text-amber-600 animate-pulse" />
                 <span>Streak: {currentStreak}x</span>
                 {currentStreak >= 3 && (
  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500 text-[var(--on-accent)]">
@@ -945,7 +945,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
  <div className="pt-2 border-t border-slate-100  flex flex-wrap items-center justify-between gap-2 text-xs">
             <div className="flex items-center gap-3">
  <div className="font-black text-amber-600  bg-amber-50  px-3 py-1 rounded-xl border border-amber-200  flex items-center gap-1.5">
-                <Coins className="w-4 h-4 text-amber-500" />
+                <Coins className="w-4 h-4 text-amber-600" />
  <span> {arcadeCoins} Koin</span>
               </div>
 
@@ -1371,7 +1371,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
       {mode === 'CLASSIC' && (
  <div className="bg-white  rounded-3xl p-4 border border-slate-200  shadow-xs flex items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-amber-500" />
+            <Trophy className="w-4 h-4 text-amber-600" />
  <span className="font-bold text-slate-800 ">
               Peringkat Sementara Kelas:
             </span>

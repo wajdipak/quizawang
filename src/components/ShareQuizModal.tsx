@@ -66,7 +66,7 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
         </div>
 
         {/* Big PIN Code Box (Classroom Display) */}
- <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50    border-2 border-teal-200  text-center space-y-2.5 sm:space-y-3 shadow-inner transition-colors">
+ <div className="p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl bg-[var(--paper-2)]    border-2 border-teal-200  text-center space-y-2.5 sm:space-y-3 shadow-inner transition-colors">
  <div className="flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-teal-800 ">
  <Sparkles className="w-3.5 h-3.5 text-teal-600 " />
             <span>Kode PIN Ujian Siswa</span>

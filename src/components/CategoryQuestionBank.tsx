@@ -85,25 +85,24 @@ export const CategoryQuestionBank: React.FC<Props> = ({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       
       {/* Header */}
- <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 bg-white  p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200  shadow-xs transition-colors">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div>
- <h1 className="text-lg sm:text-xl font-bold text-slate-800 ">
-              Bank Soal & Kategorisasi Materi
-            </h1>
- <p className="text-[11px] sm:text-xs text-slate-500 ">
-              Kelola kategori soal (Sejarah, Biologi, Logika) dan lihat daftar seluruh butir soal per kategori.
-            </p>
-          </div>
+ <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-5 bg-[var(--paper)] p-5 sm:p-7 border-2 border-[var(--line)]">
+        <div className="space-y-2">
+          <span className="poster-label text-[var(--ink-soft)]">03 / Bank Soal</span>
+          <h1 className="poster-display text-[clamp(1.9rem,4vw,2.9rem)]">
+            Bank Soal & Kategorisasi Materi
+          </h1>
+          <p className="lede">
+            Kelola kategori soal (Sejarah, Biologi, Logika) dan lihat daftar seluruh butir soal per kategori.
+          </p>
         </div>
 
         <button
           type="button"
           onClick={() => setIsAddingCategory(true)}
-          className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+          className="btn-ink w-full sm:w-auto px-4 py-2.5 text-[0.75rem] gap-2"
         >
           <Plus className="w-4 h-4" />
           <span>Buat Kategori Baru</span>
@@ -114,11 +113,11 @@ export const CategoryQuestionBank: React.FC<Props> = ({
       {isAddingCategory && (
         <form
           onSubmit={handleCreateCategory}
-          className="p-5 rounded-3xl bg-teal-50/70  border-2 border-teal-300  flex flex-col sm:flex-row items-center justify-between gap-3 animate-in fade-in transition-colors"
+          className="p-5 bg-[var(--paper-2)] border-2 border-[var(--line)] flex flex-col sm:flex-row items-center justify-between gap-3"
         >
-          <div className="space-y-1 w-full sm:w-auto flex-1">
- <label className="text-xs font-bold text-teal-900  block">
-              Nama Kategori Baru:
+          <div className="space-y-1.5 w-full sm:w-auto flex-1">
+ <label className="poster-label block">
+              Nama Kategori Baru
             </label>
             <input
               type="text"
@@ -127,20 +126,20 @@ export const CategoryQuestionBank: React.FC<Props> = ({
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
               placeholder="Contoh: Sejarah Kutai Kartanegara, Biologi Lingkungan, Matematika Logika..."
-              className="w-full text-xs p-2.5 rounded-xl border border-teal-300  bg-white  text-slate-800  focus:outline-none"
+              className="w-full text-sm p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--ink)]"
             />
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto pt-2 sm:pt-4">
             <button
               type="button"
               onClick={() => setIsAddingCategory(false)}
-              className="px-4 py-2 rounded-xl border border-slate-200  text-slate-600  text-xs font-semibold hover:bg-slate-100  transition-colors"
+              className="px-4 py-2 border-2 border-[var(--line)] bg-[var(--paper)] text-[0.8125rem] font-semibold hover:bg-[var(--paper-2)] transition-colors"
             >
               Batal
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs transition-colors"
+              className="btn-ink px-5 py-2.5 text-[0.75rem]"
             >
               Simpan Kategori
             </button>
@@ -149,22 +148,22 @@ export const CategoryQuestionBank: React.FC<Props> = ({
       )}
 
       {/* Category Pills Selector */}
-      <div className="space-y-2">
- <label className="text-xs font-bold text-slate-700  uppercase tracking-wider block">
-          Pilih Kategori Soal:
+      <div className="space-y-3">
+ <label className="poster-label block">
+          Pilih Kategori Soal
         </label>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setSelectedCategory('ALL')}
-            className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
+            className={`tnum px-3 py-2 text-[0.8125rem] font-bold transition-colors flex items-center gap-2 cursor-pointer border-2 border-[var(--line)] ${
               selectedCategory === 'ALL'
-                ? 'bg-teal-600 text-white'
-                : 'bg-white  hover:bg-slate-50  text-slate-700  border border-slate-200 '
+                ? 'bg-[var(--ink)] text-[var(--paper)]'
+                : 'bg-[var(--paper)] hover:bg-[var(--paper-2)] text-[var(--ink)]'
             }`}
           >
             <span>Semua Kategori</span>
- <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${selectedCategory === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-100  text-slate-600 '}`}>
+ <span className={`text-[0.6875rem] px-1.5 py-0.5 border ${selectedCategory === 'ALL' ? 'border-[var(--paper)]' : 'border-[var(--line)]'}`}>
               {allQuestionEntries.length}
             </span>
           </button>
@@ -177,15 +176,15 @@ export const CategoryQuestionBank: React.FC<Props> = ({
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3.5 py-2 rounded-2xl text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer ${
+                className={`tnum px-3 py-2 text-[0.8125rem] font-semibold transition-colors flex items-center gap-2 cursor-pointer border-2 border-[var(--line)] ${
                   isSelected
-                    ? 'bg-teal-600 text-white font-bold'
-                    : 'bg-white  hover:bg-slate-50  text-slate-700  border border-slate-200 '
+                    ? 'bg-[var(--ink)] text-[var(--paper)] font-bold'
+                    : 'bg-[var(--paper)] hover:bg-[var(--paper-2)] text-[var(--ink)]'
                 }`}
               >
-                <Tag className="w-3 h-3 text-teal-400" />
+                <Tag className="w-3.5 h-3.5 shrink-0" />
                 <span>{cat}</span>
- <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-100  text-slate-600 '}`}>
+ <span className={`text-[0.6875rem] px-1.5 py-0.5 border ${isSelected ? 'border-[var(--paper)]' : 'border-[var(--line)]'}`}>
                   {count}
                 </span>
               </button>
@@ -195,7 +194,7 @@ export const CategoryQuestionBank: React.FC<Props> = ({
       </div>
 
       {/* Filter and Search Bar */}
- <div className="bg-white  p-4 rounded-3xl border border-slate-200  flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-colors">
+ <div className="bg-[var(--paper)] p-4 border-2 border-[var(--line)] flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
           {/* Question Type Filter */}
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -203,7 +202,7 @@ export const CategoryQuestionBank: React.FC<Props> = ({
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="text-xs p-2 rounded-xl border border-slate-300  bg-slate-50  text-slate-700  focus:outline-none w-full sm:w-48"
+              className="text-sm p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] focus:outline-none w-full sm:w-56"
             >
               <option value="ALL">Semua Jenis Soal</option>
               <option value="multiple_choice">Pilihan Ganda</option>
@@ -220,21 +219,21 @@ export const CategoryQuestionBank: React.FC<Props> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari teks soal atau kunci jawaban..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-300  bg-white  text-slate-800  focus:outline-none"
+              className="w-full pl-9 pr-3 py-2.5 text-sm border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--ink)]"
             />
           </div>
         </div>
 
- <div className="text-xs text-slate-500  font-medium">
+ <div className="tnum text-[0.8125rem] font-medium text-[var(--ink-soft)]">
           Ditemukan {filteredQuestions.length} butir soal
         </div>
       </div>
 
       {/* Questions by Category Cards Grid */}
       {filteredQuestions.length === 0 ? (
- <div className="bg-white  rounded-3xl p-12 text-center border border-slate-200  space-y-3 transition-colors">
- <p className="font-bold text-slate-700  text-sm">Tidak ada soal dalam kategori ini</p>
- <p className="text-xs text-slate-500  max-w-sm mx-auto">
+ <div className="bg-[var(--paper)] p-12 text-center border-2 border-[var(--line)] space-y-2">
+ <p className="text-[0.9375rem] font-bold text-[var(--ink)]">Tidak ada soal dalam kategori ini</p>
+ <p className="text-[0.8125rem] leading-relaxed text-[var(--ink-soft)] max-w-sm mx-auto">
             Pilih kategori lain atau tambahkan soal dengan kategori ini melalui fitur &quot;Kuis Saya&quot;.
           </p>
         </div>
@@ -244,7 +243,7 @@ export const CategoryQuestionBank: React.FC<Props> = ({
             return (
               <div
                 key={`${quiz.id}-${q.id || index}`}
-                className="bg-white  rounded-3xl p-5 border border-slate-200  shadow-xs space-y-3 flex flex-col justify-between hover:border-teal-300  transition-all"
+                className="bg-[var(--paper)] p-5 border-2 border-[var(--line)] space-y-3 flex flex-col justify-between hover:bg-[var(--paper-2)] transition-colors"
               >
                 <div className="space-y-2.5">
                   {/* Top badges: Category and Question Type */}
@@ -271,7 +270,7 @@ export const CategoryQuestionBank: React.FC<Props> = ({
                   </div>
 
                   {/* Question Text */}
- <h3 className="font-bold text-sm text-slate-800  leading-snug">
+ <h3 className="text-[0.9375rem] leading-relaxed text-[var(--ink)]">
                     {q.text}
                   </h3>
 
@@ -330,12 +329,12 @@ export const CategoryQuestionBank: React.FC<Props> = ({
                 </div>
 
                 {/* Footer metadata */}
- <div className="pt-3 border-t border-slate-100  flex items-center justify-between text-xs text-slate-400 ">
- <span className="truncate max-w-[200px]">Dari kuis: <strong className="text-slate-700 ">{quiz.title}</strong></span>
+ <div className="pt-3 border-t-2 border-[var(--line)] flex items-center justify-between gap-3 text-[0.75rem] text-[var(--ink-soft)]">
+ <span className="truncate max-w-[220px]">Dari kuis: <strong className="text-[var(--ink)]">{quiz.title}</strong></span>
                   <button
                     type="button"
                     onClick={() => onEditQuiz(quiz)}
-                    className="text-teal-700  hover:text-teal-900  font-bold flex items-center gap-1 hover:underline cursor-pointer"
+                    className="font-bold text-[var(--ink)] flex items-center gap-1 hover:underline underline-offset-4 cursor-pointer shrink-0"
                   >
                     <span>Edit Soal</span>
                     <ChevronRight className="w-3.5 h-3.5" />

@@ -68,7 +68,7 @@ export const QuizModeSelectModal: React.FC<Props> = ({
       id: 'CLASSIC',
       name: 'Mode Klasik (Classic)',
       subtitle: 'Gamifikasi Penuh & Pacuan Kecepatan',
-      icon: <Zap className="w-5 h-5 text-amber-500" />,
+      icon: <Zap className="w-5 h-5 text-amber-600" />,
       tag: 'Cepat & Kompetitif',
       themeColor: 'from-amber-500 to-orange-500',
       borderColor: 'border-amber-400 ',
@@ -426,7 +426,7 @@ export const QuizModeSelectModal: React.FC<Props> = ({
                   </div>
 
  <div className="p-2.5 rounded-xl bg-white  border border-slate-200  flex items-center gap-2">
-                    <Coins className="w-4 h-4 text-amber-500 shrink-0" />
+                    <Coins className="w-4 h-4 text-amber-600 shrink-0" />
  <span className="text-[11px] text-slate-600 ">
                       Setiap jawaban benar memberi <strong>+50 Koin</strong> untuk aksi <strong>Vault Heist</strong> & <strong>Screen Freeze</strong>.
                     </span>

@@ -91,44 +91,38 @@ export const TeacherQuizManager: React.FC<Props> = ({
     <div className="space-y-6">
       
       {/* Header bar */}
- <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 bg-white  p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200  shadow-xs transition-colors">
-        <div>
-          <div className="flex items-center gap-2">
- <span className="p-1.5 sm:p-2 rounded-xl bg-teal-100  text-teal-700  text-base sm:text-lg">
-
-            </span>
-            <div>
- <h1 className="text-lg sm:text-xl font-bold text-slate-800 ">
-                Manajemen Kuis Guru
-              </h1>
- <p className="text-[11px] sm:text-xs text-slate-500 ">
-                Buat kuis tugas baru, bagikan tautan pengerjaan otomatis ke siswa, dan pantau hasil penilaian seketika.
-              </p>
-            </div>
-          </div>
+ <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-5 bg-[var(--paper)] p-5 sm:p-7 border-2 border-[var(--line)]">
+        <div className="space-y-2">
+          <span className="poster-label text-[var(--ink-soft)]">02 / Kuis Guru</span>
+          <h1 className="poster-display text-[clamp(1.9rem,4vw,2.9rem)]">
+            Manajemen Kuis Guru
+          </h1>
+          <p className="lede">
+            Buat kuis tugas baru, bagikan tautan pengerjaan otomatis ke siswa, dan pantau hasil penilaian seketika.
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
           <PWAInstallButton />
           
           <button
             type="button"
             onClick={() => setShowQuotaMonitor(!showQuotaMonitor)}
-            className={`px-3 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl border text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+            className={`px-3 py-2.5 border-2 text-[0.75rem] font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
               showQuotaMonitor
-                ? 'bg-amber-100  text-amber-900  border-amber-300 '
-                : 'bg-slate-50  text-slate-700  border-slate-200  hover:bg-slate-100'
+                ? 'bg-[var(--signal)] text-[#0a0a0a] border-[var(--line)]'
+                : 'bg-[var(--paper)] text-[var(--ink)] border-[var(--line)] hover:bg-[var(--paper-2)]'
             }`}
             title="Lihat status penggunaan limit kuota API Gemini saat ini"
           >
-            <Zap className="w-3.5 h-3.5 text-amber-500" />
+            <Zap className="w-3.5 h-3.5 text-amber-700" />
             <span>Kuota AI Gemini</span>
           </button>
 
           <button
             type="button"
             onClick={onOpenFileUpload}
-            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-cyan-50  hover:bg-cyan-100  text-cyan-800  border border-cyan-200  font-bold text-xs shadow-xs flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all"
+            className="flex-1 sm:flex-none px-3.5 sm:px-4 py-2.5 border-2 border-[var(--line)] bg-[var(--paper)] hover:bg-[var(--paper-2)] font-bold text-[0.75rem] flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-colors"
           >
  <span> Upload Dokumen (AI)</span>
           </button>
@@ -136,7 +130,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
           <button
             type="button"
             onClick={onCreateNew}
-            className="flex-1 sm:flex-none px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer transition-all"
+            className="btn-ink flex-1 sm:flex-none px-4 sm:px-5 py-2.5 text-[0.75rem] gap-1.5 sm:gap-2"
           >
             <Plus className="w-4 h-4" />
             <span>Buat Kuis Baru</span>
@@ -154,19 +148,19 @@ export const TeacherQuizManager: React.FC<Props> = ({
       {/* Sessions Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {/* Active Sessions */}
- <div className="bg-white  p-5 rounded-3xl border border-teal-200  shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Radio className="w-5 h-5 text-teal-600 animate-pulse" />
- <h2 className="font-bold text-slate-800 ">Kuis Sedang Berjalan ({activeSessions.length})</h2>
+ <div className="border-2 border-[var(--line)] border-t-4 border-t-[var(--signal)] bg-[var(--paper)] p-5">
+          <div className="flex items-center gap-2.5 mb-4">
+            <Radio className="w-5 h-5 animate-pulse" />
+ <h2 className="poster-display text-xl leading-none">Kuis Sedang Berjalan <span className="tnum">({activeSessions.length})</span></h2>
           </div>
           {activeSessions.length === 0 ? (
-            <p className="text-xs text-slate-400">Tidak ada kuis aktif saat ini.</p>
+            <p className="text-[0.8125rem] text-[var(--ink-soft)]">Tidak ada kuis aktif saat ini.</p>
           ) : (
             <div className="space-y-2">
               {activeSessions.map(s => (
- <div key={s.id} className="flex justify-between items-center text-xs p-2 bg-teal-50  rounded-xl cursor-pointer hover:bg-teal-100  transition-colors" onClick={() => onManageSession(s)}>
- <span className="font-semibold text-teal-900 ">{s.quizTitle}</span>
- <span className="font-mono bg-white  px-2 py-0.5 rounded border border-teal-200 ">{s.code}</span>
+ <div key={s.id} className="flex justify-between items-center gap-3 text-[0.8125rem] px-3 py-2.5 border-2 border-[var(--line)] bg-[var(--paper-2)] cursor-pointer hover:bg-[var(--paper-3)] transition-colors" onClick={() => onManageSession(s)}>
+ <span className="font-semibold truncate">{s.quizTitle}</span>
+ <span className="tnum font-mono bg-[var(--paper)] px-2 py-0.5 border-2 border-[var(--line)] shrink-0">{s.code}</span>
                 </div>
               ))}
             </div>
@@ -174,19 +168,19 @@ export const TeacherQuizManager: React.FC<Props> = ({
         </div>
 
         {/* Scheduled Sessions */}
- <div className="bg-white  p-5 rounded-3xl border border-amber-200  shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-amber-600" />
- <h2 className="font-bold text-slate-800 ">Kuis Terjadwal ({scheduledSessions.length})</h2>
+ <div className="border-2 border-[var(--line)] border-t-4 border-t-[var(--danger)] bg-[var(--paper)] p-5">
+          <div className="flex items-center gap-2.5 mb-4">
+            <Clock className="w-5 h-5" />
+ <h2 className="poster-display text-xl leading-none">Kuis Terjadwal <span className="tnum">({scheduledSessions.length})</span></h2>
           </div>
           {scheduledSessions.length === 0 ? (
-            <p className="text-xs text-slate-400">Tidak ada kuis terjadwal.</p>
+            <p className="text-[0.8125rem] text-[var(--ink-soft)]">Tidak ada kuis terjadwal.</p>
           ) : (
             <div className="space-y-2">
               {scheduledSessions.map(s => (
- <div key={s.id} className="flex justify-between items-center text-xs p-2 bg-amber-50  rounded-xl cursor-pointer hover:bg-amber-100  transition-colors" onClick={() => onManageSession(s)}>
- <span className="font-semibold text-amber-900 ">{s.quizTitle}</span>
- <span className="text-amber-600 ">
+ <div key={s.id} className="flex justify-between items-center gap-3 text-[0.8125rem] px-3 py-2.5 border-2 border-[var(--line)] bg-[var(--paper-2)] cursor-pointer hover:bg-[var(--paper-3)] transition-colors" onClick={() => onManageSession(s)}>
+ <span className="font-semibold truncate">{s.quizTitle}</span>
+ <span className="tnum">
                     {s.scheduledStartTime ? new Date(s.scheduledStartTime).toLocaleTimeString() : 'N/A'}
                   </span>
                 </div>
@@ -197,13 +191,13 @@ export const TeacherQuizManager: React.FC<Props> = ({
       </div>
 
       {/* Student Link Workflow Info Banner */}
- <div className="p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-teal-50 via-cyan-50 to-emerald-50    border border-teal-200  text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 sm:gap-3 shadow-xs transition-colors">
+ <div className="p-4 sm:p-5 border-2 border-[var(--line)] bg-[var(--paper-2)] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="space-y-0.5">
- <span className="font-bold text-teal-950  block text-xs">
-              Alur Halaman Siswa Otomatis (Sesi 1 & Sesi 2)
+          <div className="space-y-1">
+ <span className="poster-label block">
+              Alur Halaman Siswa Otomatis (Sesi 1 &amp; Sesi 2)
             </span>
- <p className="text-slate-600  text-[10px] sm:text-[11px] leading-snug">
+ <p className="lede text-[0.8125rem]">
               Setiap kuis otomatis memiliki link pengerjaan siswa. Siswa akan melalui <strong>Sesi 1 (Input Keterangan Diri)</strong> lalu lanjut ke <strong>Sesi 2 (Pengerjaan 1 Soal per Halaman dengan Navigasi Nomor Soal & Submit)</strong>.
             </p>
           </div>
@@ -219,28 +213,28 @@ export const TeacherQuizManager: React.FC<Props> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari judul kuis, mata pelajaran, atau kode PIN..."
-            className="w-full pl-10 pr-4 py-2 text-xs rounded-2xl border border-slate-200  bg-white  text-slate-800  focus:outline-none focus:ring-2 focus:ring-teal-400/40 transition-colors"
+            className="w-full pl-10 pr-4 py-2.5 text-sm border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--ink)] transition-colors"
           />
         </div>
 
- <div className="text-xs text-slate-500  font-medium">
+ <div className="tnum text-[0.8125rem] font-medium text-[var(--ink-soft)]">
           Menampilkan {filteredQuizzes.length} dari {quizzes.length} kuis
         </div>
       </div>
 
       {/* Quiz Cards Grid */}
       {filteredQuizzes.length === 0 ? (
- <div className="p-12 text-center bg-white  rounded-3xl border border-slate-200  space-y-4 transition-colors">
-          <div className="space-y-1">
- <h3 className="font-bold text-slate-700  text-sm">Tidak ada kuis yang ditemukan</h3>
- <p className="text-xs text-slate-400 ">
+ <div className="p-12 text-center bg-[var(--paper)] border-2 border-[var(--line)] space-y-4">
+          <div className="space-y-1.5">
+ <h3 className="text-[1rem] text-[var(--ink)]">Tidak ada kuis yang ditemukan</h3>
+ <p className="text-[0.8125rem] leading-relaxed text-[var(--ink-soft)]">
               Coba cari dengan kata kunci lain atau buat kuis baru melalui generator AI.
             </p>
           </div>
           <button
             type="button"
             onClick={onCreateNew}
-            className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs inline-flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+            className="btn-ink px-4 py-2.5 text-[0.75rem]"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Buat Kuis Baru Sekarang</span>
@@ -260,7 +254,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
             return (
               <div
                 key={quiz.id}
-                className="bg-white  rounded-3xl border border-slate-200/90  hover:border-teal-300  hover:shadow-md transition-all flex flex-col justify-between overflow-hidden group"
+                className="bg-[var(--paper)] border-2 border-[var(--line)] hover:bg-[var(--paper-2)] transition-colors flex flex-col justify-between overflow-hidden group"
               >
                 {/* Card Top Stripe */}
                 <div className="p-5 pb-3 space-y-3">
@@ -298,10 +292,10 @@ export const TeacherQuizManager: React.FC<Props> = ({
                   </div>
 
                   <div>
- <h3 className="font-bold text-base text-slate-800  line-clamp-2 leading-snug group-hover:text-teal-600  transition-colors">
+ <h3 className="text-[1.125rem] line-clamp-2 leading-snug">
                       {quiz.title}
                     </h3>
- <p className="text-xs text-slate-500  line-clamp-2 mt-1">
+ <p className="text-[0.8125rem] leading-relaxed text-[var(--ink-soft)] line-clamp-2 mt-1.5">
                       {quiz.description || 'Tidak ada deskripsi.'}
                     </p>
                   </div>
@@ -318,7 +312,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
                   )}
 
                   {/* Metadata Chips */}
- <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px] text-slate-500 ">
+ <div className="tnum flex flex-wrap items-center gap-1.5 pt-1 text-[0.75rem] text-[var(--ink-soft)]">
  <span className="flex items-center gap-1 bg-slate-50  px-2 py-0.5 rounded-md border border-slate-100 ">
                        {quiz.questions.length} Soal
                     </span>
@@ -332,8 +326,8 @@ export const TeacherQuizManager: React.FC<Props> = ({
                 </div>
 
                 {/* Submissions summary stats */}
- <div className="px-5 py-2.5 bg-slate-50/70  border-t border-b border-slate-100  flex items-center justify-between text-xs">
- <div className="flex items-center gap-1.5 text-slate-600 ">
+ <div className="px-5 py-3 bg-[var(--paper-2)] border-y-2 border-[var(--line)] flex items-center justify-between gap-2 text-[0.8125rem]">
+ <div className="flex items-center gap-1.5 text-[var(--ink)]">
  <Users className="w-3.5 h-3.5 text-slate-400 " />
                     <span>{quizSubs.length} Siswa Mengerjakan</span>
                   </div>
@@ -345,13 +339,13 @@ export const TeacherQuizManager: React.FC<Props> = ({
                 </div>
 
                 {/* Card Actions Bottom */}
- <div className="p-4 bg-white  border-t border-slate-100  flex flex-col gap-2">
+ <div className="p-4 border-t-2 border-[var(--line)] flex flex-col gap-2">
                   <div className="flex items-center justify-between gap-1.5">
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => onEditQuiz(quiz)}
-                        className="p-2 rounded-xl bg-slate-100  hover:bg-slate-200  text-slate-700  transition-colors cursor-pointer"
+                        className="p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] hover:bg-[var(--paper-3)] transition-colors cursor-pointer"
                         title="Edit / Tambah Soal Kuis"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
@@ -359,7 +353,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => onViewSubmissions(quiz.id)}
-                        className="p-2 rounded-xl bg-amber-50  hover:bg-amber-100  text-amber-700  transition-colors cursor-pointer"
+                        className="p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] hover:bg-[var(--signal)] hover:text-[#0a0a0a] transition-colors cursor-pointer"
                         title="Lihat Rekap Nilai Siswa"
                       >
                         <Award className="w-3.5 h-3.5" />
@@ -367,7 +361,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmId(quiz.id)}
-                        className="p-2 rounded-xl bg-rose-50  hover:bg-rose-100  text-rose-600  transition-colors cursor-pointer"
+                        className="p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--danger-ink)] hover:bg-[var(--danger-pale)] transition-colors cursor-pointer"
                         title="Hapus Kuis"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -378,7 +372,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => onShareQuiz(quiz)}
-                        className="px-3 py-1.5 rounded-xl bg-teal-50  hover:bg-teal-100  text-teal-800  font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer border border-teal-200 "
+                        className="px-3 py-2 border-2 border-[var(--line)] bg-[var(--paper)] hover:bg-[var(--paper-3)] font-bold text-[0.75rem] flex items-center gap-1.5 transition-colors cursor-pointer"
                         title="Mulai & Bagikan Link Siswa"
                       >
  <Share2 className="w-3.5 h-3.5 text-teal-600 " />
@@ -388,7 +382,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
                       <button
                         type="button"
                         onClick={() => setSelectedQuizForMode(quiz)}
-                        className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer"
+                        className="btn-signal px-3.5 py-2 text-[0.75rem] gap-1.5"
                         title="Pilih Format Mode & Uji Coba Kuis"
                       >
                         <Play className="w-3.5 h-3.5" />
@@ -406,13 +400,13 @@ export const TeacherQuizManager: React.FC<Props> = ({
       {/* Delete Confirmation Modal */}
       {deleteConfirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
- <div className="bg-white  rounded-3xl max-w-sm w-full p-6 shadow-xl space-y-4 border border-slate-200  animate-in fade-in zoom-in-95">
- <div className="w-12 h-12 rounded-2xl bg-rose-100  text-rose-600  flex items-center justify-center mx-auto">
+ <div className="bg-[var(--paper)] max-w-sm w-full p-6 space-y-4 border-2 border-[var(--line)]">
+ <div className="w-12 h-12 bg-[var(--danger-pale)] text-[var(--danger-ink)] flex items-center justify-center mx-auto border-2 border-[var(--line)]">
               <AlertTriangle className="w-6 h-6" />
             </div>
-            <div className="text-center space-y-1">
- <h3 className="font-bold text-slate-800  text-base">Hapus Kuis Ini?</h3>
- <p className="text-xs text-slate-500 ">
+            <div className="text-center space-y-1.5">
+ <h3 className="text-[1.0625rem] text-[var(--ink)]">Hapus Kuis Ini?</h3>
+ <p className="text-[0.8125rem] leading-relaxed text-[var(--ink-soft)]">
                 Kuis dan riwayat pengerjaan terkait akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.
               </p>
             </div>
@@ -420,7 +414,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setDeleteConfirmId(null)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200  text-slate-700  font-semibold text-xs hover:bg-slate-50  transition-colors"
+                className="flex-1 px-4 py-2.5 border-2 border-[var(--line)] bg-[var(--paper)] font-semibold text-[0.75rem] hover:bg-[var(--paper-2)] transition-colors"
               >
                 Batal
               </button>
@@ -430,7 +424,7 @@ export const TeacherQuizManager: React.FC<Props> = ({
                   onDeleteQuiz(deleteConfirmId);
                   setDeleteConfirmId(null);
                 }}
-                className="flex-1 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-xs transition-colors"
+                className="btn-ink flex-1 px-4 py-2.5 text-[0.75rem]"
               >
                 Ya, Hapus
               </button>

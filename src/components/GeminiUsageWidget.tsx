@@ -123,7 +123,7 @@ export const GeminiUsageWidget: React.FC<Props> = ({
 
   if (!data && loading) {
     return (
-      <div className="p-3 rounded-xl bg-slate-50  border border-slate-200  text-xs text-slate-500 flex items-center justify-between animate-pulse">
+      <div className="p-3.5 border-2 border-[var(--line)] bg-[var(--paper-2)] text-[0.8125rem] text-[var(--ink-soft)] flex items-center justify-between animate-pulse">
         <span className="flex items-center gap-2">
           <RotateCw className="w-3.5 h-3.5 animate-spin text-teal-500" />
           Memeriksa kuota & batas penggunaan Gemini API...
@@ -149,26 +149,26 @@ export const GeminiUsageWidget: React.FC<Props> = ({
 
   if (variant === 'banner') {
     return (
-      <div className="rounded-2xl border border-teal-200/80  bg-gradient-to-r from-teal-50/90 via-cyan-50/50 to-emerald-50/80    shadow-xs overflow-hidden transition-all text-slate-800 ">
+      <div className="border-2 border-[var(--line)] bg-[var(--paper-2)] overflow-hidden transition-colors">
         {/* Banner Top Row */}
         <div
           onClick={() => setIsExpanded(!isExpanded)}
-          className="p-3 sm:p-3.5 flex items-center justify-between gap-3 cursor-pointer hover:bg-teal-100/40  transition-colors"
+          className="p-3.5 sm:p-4 flex items-center justify-between gap-3 cursor-pointer hover:bg-[var(--paper-3)] transition-colors"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-teal-500/15  text-teal-700  flex items-center justify-center font-bold shrink-0 border border-teal-300/40  shadow-2xs">
-              <Zap className="w-4 h-4 text-teal-600 " />
+            <div className="w-9 h-9 bg-[var(--signal)] text-[#0a0a0a] flex items-center justify-center shrink-0 border-2 border-[var(--line)]">
+              <Zap className="w-4 h-4" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-bold text-xs flex items-center gap-1.5 text-teal-950 ">
-                  Status Kuota Gemini AI:
+                <span className="poster-label">
+                  Status Kuota Gemini AI
                 </span>
-                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${statusColor}`}>
+                <span className={`text-[0.6875rem] font-bold px-2 py-0.5 border ${statusColor}`}>
                   {isLimited ? 'Batas Tercapai (Jeda Menit)' : isWarning ? 'Mendekati Batas' : 'Siap & Prima'}
                 </span>
               </div>
-              <p className="text-[11px] text-teal-900/70  truncate">
+              <p className="text-[0.75rem] leading-snug text-[var(--ink-soft)] truncate">
                 {countdown > 0
                   ? `Jeda pulih dalam ${countdown} dtk • Sisa menit ini: ${data.usage.remainingMinute}/${data.limits.rpm} req`
                   : `Tersedia ${data.usage.remainingMinute}/${data.limits.rpm} req/mnt • Sisa kuota hari ini: ${data.usage.remainingDaily.toLocaleString('id-ID')} kuis`}

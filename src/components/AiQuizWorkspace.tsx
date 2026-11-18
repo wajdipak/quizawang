@@ -277,35 +277,39 @@ export const AiQuizWorkspace: React.FC<Props> = ({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-8 sm:space-y-10">
       
       {/* Visual Workspace Hero Banner */}
- <div className="border-2 border-[var(--line)] bg-[var(--paper)] p-4 sm:p-6 lg:p-8 relative overflow-hidden">
-        <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
-          <div className="space-y-2 max-w-xl text-center md:text-left">
- <div className="inline-flex items-center gap-2 border-2 border-[var(--line)] px-2 py-1 poster-label">
- <Sparkles className="w-3.5 h-3.5" />
-              <span>Studio Pembuat Kuis Cerdas Guru</span>
+ <div className="border-2 border-[var(--line)] bg-[var(--paper)] p-5 sm:p-8 lg:p-10 relative overflow-hidden">
+        <div className="relative z-10 grid gap-6 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] lg:items-center lg:gap-10">
+          <div className="space-y-4 text-left">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="inline-flex items-center gap-2 border-2 border-[var(--line)] px-2.5 py-1 poster-label">
+                <Sparkles className="w-3.5 h-3.5" />
+                Studio Pembuat Kuis Cerdas Guru
+              </span>
+              <span className="poster-label text-[var(--ink-soft)]">01 / Beranda</span>
             </div>
- <h1 className="poster-display text-[clamp(2rem,5vw,3.5rem)]">
+ <h1 className="poster-display max-w-[19ch] text-[clamp(2.25rem,6vw,4.25rem)]">
               Tugas Online & Kuis Interaktif Awang Long
             </h1>
- <p className="text-sm font-medium leading-snug max-w-lg">
+ <p className="lede">
               Bantu guru merancang soal kuis seru secara instan, otomatis memberikan penjelasan edukatif, dan bagikan kode PIN langsung kepada siswa di kelas.
             </p>
           </div>
 
- <div className="flex items-center gap-3 bg-[var(--paper-2)] border-2 border-[var(--line)] p-3 sm:p-4 w-full md:w-auto shrink-0">
+ <div className="flex items-center gap-4 bg-[var(--paper-2)] border-2 border-[var(--line)] p-4 sm:p-5 w-full">
             <img 
               src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png" 
               alt="Logo Awang Long Quiz" 
               className={`w-14 h-14 sm:w-16 sm:h-16 ${isLoading ? 'animate-bounce' : ''} object-contain hover:scale-105 transition-transform   `}
             />
-            <div className="text-xs space-y-1">
- <span className="font-bold text-slate-800  block">Awang Long AI Engine</span>
- <span className="text-slate-500  block">Asisten Kuis Guru Cerdas</span>
- <span className="inline-flex items-center gap-1.5 poster-label">
-                ● Mesin AI Gemini Aktif
+            <div className="min-w-0 space-y-1.5">
+ <span className="block text-[0.9375rem] font-extrabold leading-tight">Awang Long AI Engine</span>
+ <span className="block text-[0.8125rem] text-[var(--ink-soft)]">Asisten Kuis Guru Cerdas</span>
+ <span className="inline-flex items-center gap-1.5 pt-0.5 poster-label">
+                <span className="w-2 h-2 bg-[var(--signal)] border border-[var(--line)]" aria-hidden="true" />
+                Mesin AI Gemini Aktif
               </span>
             </div>
           </div>
@@ -313,12 +317,10 @@ export const AiQuizWorkspace: React.FC<Props> = ({
       </div>
 
       {/* Tool Selector Buttons */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
- <label className="text-xs font-bold text-slate-700  uppercase tracking-wider">
-            Pilih Alat AI:
-          </label>
- <span className="text-xs text-slate-500 ">Pilih mode kreasi edukasi</span>
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+          <h2 className="poster-label font-sans">Pilih alat AI</h2>
+          <span className="text-[0.8125rem] text-[var(--ink-soft)]">Pilih mode kreasi edukasi</span>
         </div>
 
  <div className="tool-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-0 border-t-2 border-l-2 border-[var(--line)]">
@@ -371,9 +373,6 @@ export const AiQuizWorkspace: React.FC<Props> = ({
             aria-pressed={activeTool === 'asisten'}
             className="tool-cell"
           >
- <div className="w-10 h-10 rounded-xl bg-amber-100/80  text-amber-700  flex items-center justify-center font-bold text-lg">
-              ‍
-            </div>
             <div>
  <span className="block font-bold text-sm text-slate-800 ">Asisten Belajar</span>
  <span className="block text-[11px] text-slate-500 ">Bimbingan Materi</span>
@@ -395,25 +394,25 @@ export const AiQuizWorkspace: React.FC<Props> = ({
             </div>
           </button>
         </div>
-      </div>
+      </section>
 
       {/* Live Gemini API Quota Monitor */}
       <GeminiUsageWidget variant="banner" />
 
       {/* Main Workspace 2-Column Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-start">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 lg:gap-8 items-start">
         
         {/* Left Column: Input Panel */}
- <div className="bg-white  rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90  shadow-sm space-y-4 sm:space-y-5 transition-colors">
-          <div className="flex items-center justify-between">
- <h2 className="text-base sm:text-lg font-bold text-slate-800  flex items-center gap-2">
-              <span>Masukkan Imajinasimu!</span>
+ <div className="border-2 border-[var(--line)] bg-[var(--paper)] p-5 sm:p-7 space-y-5">
+          <div className="flex items-baseline justify-between gap-3 border-b-2 border-[var(--line)] pb-3">
+ <h2 className="poster-display text-2xl sm:text-3xl leading-none">
+              Masukkan Imajinasimu!
             </h2>
- <span className="text-xs text-slate-400  font-mono">Google AI Studio</span>
+ <span className="poster-label text-[var(--ink-soft)]">Google AI Studio</span>
           </div>
 
-          <div className="space-y-1.5 sm:space-y-2">
- <label htmlFor="prompt-input" className="text-xs font-semibold text-slate-600  block">
+          <div className="space-y-2">
+ <label htmlFor="prompt-input" className="poster-label block text-[var(--ink-soft)]">
               Materi / Topik Kuis yang Ingin Dibuat:
             </label>
             <div className="relative">
@@ -423,21 +422,21 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                 value={promptText}
                 onChange={(e) => setPromptText(e.target.value)}
                 placeholder="Ketik topik kuis atau tempel rangkuman materi pelajaran..."
-                className="w-full p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-300  focus:border-teal-500 focus:ring-3 focus:ring-teal-200/50 outline-none text-xs sm:text-sm text-slate-800  bg-white  placeholder:text-slate-400  transition-all resize-none shadow-xs"
+                className="w-full min-h-[7.5rem] p-3.5 sm:p-4 border-2 border-[var(--line)] bg-[var(--paper)] outline-none text-sm sm:text-[0.9375rem] leading-relaxed text-[var(--ink)] placeholder:text-[var(--ink-soft)] transition-colors resize-none focus:border-[var(--ink)]"
               />
             </div>
           </div>
 
           {/* Preset Chips */}
           <div className="space-y-2">
- <span className="text-xs font-medium text-slate-500  block">Contoh Topik Cepat:</span>
+ <span className="poster-label block text-[var(--ink-soft)]">Contoh topik cepat</span>
             <div className="flex flex-wrap gap-1.5">
               {quickPresets.map((preset, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setPromptText(preset.text)}
-                  className="text-xs px-2.5 py-1 rounded-xl bg-slate-100  hover:bg-teal-50  hover:text-teal-800  text-slate-600  border border-slate-200  transition-all cursor-pointer"
+                  className="text-[0.8125rem] px-2.5 py-1.5 bg-[var(--paper-2)] text-[var(--ink)] border-2 border-[var(--line)] hover:bg-[var(--signal)] hover:text-[#0a0a0a] transition-colors cursor-pointer"
                 >
                   {preset.label}
                 </button>
@@ -466,13 +465,13 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                 </button>
                 <label
                   onClick={() => setShowAdjustDrawer(!showAdjustDrawer)}
-                  className="text-xs font-semibold text-slate-700  cursor-pointer"
+                  className="text-[0.8125rem] font-semibold cursor-pointer"
                 >
                   Sesuaikan Kreativitas & Parameter Soal
                 </label>
               </div>
 
- <span className="text-xs text-slate-400 ">
+ <span className="tnum text-[0.75rem] text-[var(--ink-soft)]">
                 {questionCount} Soal • {gradeLevel}
               </span>
             </div>
@@ -617,7 +616,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
               type="button"
               onClick={handleGenerate}
               disabled={isLoading || !promptText.trim()}
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-teal-500 via-cyan-500 to-sky-500 hover:from-teal-600 hover:to-sky-600 text-white font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              className="btn-ink w-full sm:w-auto px-6 py-3.5 text-[0.8125rem] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -635,11 +634,11 @@ export const AiQuizWorkspace: React.FC<Props> = ({
         </div>
 
         {/* Right Column: Output / Result Panel */}
- <div className="bg-white  rounded-2xl sm:rounded-3xl p-4 sm:p-6 border border-slate-200/90  shadow-sm space-y-4 min-h-[380px] sm:min-h-[440px] flex flex-col justify-between transition-colors">
+ <div className="border-2 border-[var(--line)] bg-[var(--paper)] p-5 sm:p-7 space-y-5 min-h-[380px] sm:min-h-[440px] flex flex-col justify-between">
           <div>
- <div className="flex items-center justify-between pb-3 border-b border-slate-100 ">
- <h2 className="text-lg font-bold text-slate-800  flex items-center gap-2">
-                <span>Hasil Kuis Ajaib</span>
+ <div className="flex items-baseline justify-between gap-3 pb-3 border-b-2 border-[var(--line)]">
+ <h2 className="poster-display text-2xl leading-none">
+                Hasil Kuis Ajaib
               </h2>
 
  <div className="flex items-center gap-1.5 text-slate-400 ">
@@ -698,9 +697,9 @@ export const AiQuizWorkspace: React.FC<Props> = ({
             {/* Generated Quiz Result */}
             {!isLoading && generatedQuiz && (
               <div className="space-y-4 pt-2">
- <div className="bg-gradient-to-r from-teal-50 to-cyan-50   p-4 rounded-2xl border border-teal-100  space-y-2">
+ <div className="bg-[var(--paper-2)] p-4 border-2 border-[var(--line)] space-y-2.5">
                   <div className="flex items-center justify-between">
- <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-teal-200/80  text-teal-800 ">
+ <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[var(--signal)] text-[var(--on-accent)] ">
                       {generatedQuiz.subject} • {generatedQuiz.gradeLevel}
                     </span>
                     <div className="flex items-center gap-1.5">
@@ -718,14 +717,14 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                     </div>
                   </div>
 
- <h3 className="font-bold text-base text-slate-900  leading-snug">
+ <h3 className="text-[1.0625rem] leading-snug">
                     {generatedQuiz.title}
                   </h3>
- <p className="text-xs text-slate-600 ">
+ <p className="text-[0.8125rem] leading-relaxed text-[var(--ink-soft)]">
                     {generatedQuiz.description}
                   </p>
 
- <div className="flex items-center gap-3 text-xs text-slate-500  pt-1">
+ <div className="tnum flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.75rem] text-[var(--ink-soft)] pt-1">
                     <span>{generatedQuiz.questions.length} Soal Pilihan Ganda</span>
                     <span>•</span>
                     <span>{generatedQuiz.durationMinutes > 0 ? `${generatedQuiz.durationMinutes} Menit` : 'Tanpa Waktu'}</span>
@@ -781,7 +780,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
  <span className="w-5 h-5 rounded-full bg-teal-100  text-teal-800  text-[10px] flex items-center justify-center shrink-0">
                             {qIndex + 1}
                           </span>
-                          <span className="truncate">{q.text}</span>
+                          <span className="line-clamp-2">{q.text}</span>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
                           {q.difficultyTag && (
@@ -883,15 +882,15 @@ export const AiQuizWorkspace: React.FC<Props> = ({
 
             {/* Empty State before generating */}
             {!isLoading && !generatedQuiz && (
- <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 text-slate-400 ">
+ <div className="py-14 flex flex-col items-center justify-center text-center space-y-4 text-[var(--ink-soft)]">
  <div className="w-20 h-20 rounded-2xl bg-teal-50  border border-teal-200/80  flex items-center justify-center text-teal-600  shadow-xs">
                   <BookOpen className="w-10 h-10" />
                 </div>
                 <div className="space-y-1">
- <p className="font-semibold text-slate-600  text-sm">
+ <p className="text-[0.9375rem] font-semibold text-[var(--ink)]">
                     Kuis Anda Siap Dirancang
                   </p>
- <p className="text-xs text-slate-400  max-w-xs">
+ <p className="text-[0.8125rem] leading-relaxed text-[var(--ink-soft)] max-w-xs">
                     Ketik topik atau pilih salah satu inspirasi di sebelah kiri, lalu klik &quot;Mulai Kirim!&quot; untuk menghasilkan kuis interaktif berpenjelasan cerdas.
                   </p>
                 </div>
@@ -900,8 +899,8 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           </div>
 
           {/* Footer note in mockup */}
- <div className="pt-4 border-t border-slate-100  text-center">
- <p className="text-[11px] text-slate-400 ">
+ <div className="pt-4 border-t-2 border-[var(--line)] text-center">
+ <p className="text-[0.75rem] text-[var(--ink-soft)]">
               Kekuatan Google AI Studio • Terdeploy di Vercel via GitHub
             </p>
           </div>

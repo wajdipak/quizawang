@@ -150,26 +150,25 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
     : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       
       {/* Header bar */}
- <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 bg-white  p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-slate-200  shadow-xs transition-colors">
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div>
- <h1 className="text-lg sm:text-xl font-bold text-slate-800 ">
-              Rekap & Penilaian Otomatis Siswa
-            </h1>
- <p className="text-[11px] sm:text-xs text-slate-500 ">
-              Hasil penilaian terhitung otomatis berdasarkan jenis soal (Pilihan Ganda, Isian Singkat, dan Menjodohkan).
-            </p>
-          </div>
+ <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-5 bg-[var(--paper)] p-5 sm:p-7 border-2 border-[var(--line)]">
+        <div className="space-y-2">
+          <span className="poster-label text-[var(--ink-soft)]">04 / Rekap Nilai</span>
+          <h1 className="poster-display text-[clamp(1.9rem,4vw,2.9rem)]">
+            Rekap & Penilaian Otomatis Siswa
+          </h1>
+          <p className="lede">
+            Hasil penilaian terhitung otomatis berdasarkan jenis soal (Pilihan Ganda, Isian Singkat, dan Menjodohkan).
+          </p>
         </div>
 
         <button
           type="button"
           onClick={handleExportCSV}
           disabled={filtered.length === 0}
-          className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className="btn-ink w-full sm:w-auto px-4 py-2.5 text-[0.75rem] gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <FileSpreadsheet className="w-4 h-4" />
           <span>Ekspor Rekap CSV / Excel</span>
@@ -177,69 +176,69 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
- <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white  border border-slate-200/90  shadow-xs space-y-1 transition-colors">
- <span className="text-[11px] sm:text-xs font-semibold text-slate-400  block">Siswa Mengikuti</span>
-          <div className="flex items-baseline gap-1.5 sm:gap-2">
- <span className="text-xl sm:text-2xl font-black text-slate-800 ">{totalSubmissions}</span>
- <span className="text-xs text-slate-500 ">orang</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 border-2 border-[var(--line)]">
+ <div className="p-4 sm:p-5 border-r-2 border-b-2 border-[var(--line)] lg:border-b-0 bg-[var(--paper)] space-y-2">
+ <span className="poster-label block text-[var(--ink-soft)]">Siswa Mengikuti</span>
+          <div className="flex items-baseline gap-2">
+ <span className="stat-value">{totalSubmissions}</span>
+ <span className="text-[0.75rem] text-[var(--ink-soft)]">orang</span>
           </div>
         </div>
 
- <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white  border border-slate-200/90  shadow-xs space-y-1 transition-colors">
- <span className="text-[11px] sm:text-xs font-semibold text-slate-400  block">Rata-Rata Nilai</span>
-          <div className="flex items-baseline gap-1.5 sm:gap-2">
- <span className="text-xl sm:text-2xl font-black text-teal-700 ">{avgScore}</span>
- <span className="text-xs text-slate-500 ">/ 100</span>
+ <div className="p-4 sm:p-5 border-b-2 border-[var(--line)] lg:border-b-0 lg:border-r-2 bg-[var(--paper)] space-y-2">
+ <span className="poster-label block text-[var(--ink-soft)]">Rata-Rata Nilai</span>
+          <div className="flex items-baseline gap-2">
+ <span className="stat-value">{avgScore}</span>
+ <span className="text-[0.75rem] text-[var(--ink-soft)]">/ 100</span>
           </div>
         </div>
 
- <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white  border border-slate-200/90  shadow-xs space-y-1 transition-colors">
- <span className="text-[11px] sm:text-xs font-semibold text-slate-400  block">Nilai Tertinggi</span>
-          <div className="flex items-baseline gap-1.5 sm:gap-2">
- <span className="text-xl sm:text-2xl font-black text-amber-600 ">{highestScore}</span>
- <span className="text-xs text-slate-500 ">poin</span>
+ <div className="p-4 sm:p-5 border-r-2 border-[var(--line)] bg-[var(--paper)] space-y-2">
+ <span className="poster-label block text-[var(--ink-soft)]">Nilai Tertinggi</span>
+          <div className="flex items-baseline gap-2">
+ <span className="stat-value">{highestScore}</span>
+ <span className="text-[0.75rem] text-[var(--ink-soft)]">poin</span>
           </div>
         </div>
 
- <div className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white  border border-slate-200/90  shadow-xs space-y-1 transition-colors">
- <span className="text-[11px] sm:text-xs font-semibold text-slate-400  block">Tingkat Kelulusan (KKM)</span>
-          <div className="flex items-baseline gap-1.5 sm:gap-2">
- <span className="text-xl sm:text-2xl font-black text-emerald-600 ">{passRate}%</span>
- <span className="text-xs text-slate-500 ">({passedCount} lulus)</span>
+ <div className="p-4 sm:p-5 bg-[var(--paper)] space-y-2">
+ <span className="poster-label block text-[var(--ink-soft)]">Tingkat Kelulusan (KKM)</span>
+          <div className="flex items-baseline gap-2">
+ <span className="stat-value">{passRate}%</span>
+ <span className="text-[0.75rem] text-[var(--ink-soft)]">({passedCount} lulus)</span>
           </div>
         </div>
       </div>
 
       {/* Category Performance Analytics */}
       {Object.keys(categoryAggregates).length > 0 && (
- <div className="bg-white  p-5 rounded-3xl border border-slate-200  shadow-xs space-y-3 transition-colors">
-          <div className="flex items-center justify-between">
- <span className="text-xs font-bold uppercase tracking-wider text-slate-700  flex items-center gap-1.5">
- <Tag className="w-3.5 h-3.5 text-teal-600 " />
-              <span>Rata-rata Penguasaan Materi per Kategori:</span>
+ <div className="bg-[var(--paper)] p-5 border-2 border-[var(--line)] space-y-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+ <span className="poster-label flex items-center gap-2">
+ <Tag className="w-3.5 h-3.5" />
+              <span>Penguasaan Materi per Kategori</span>
             </span>
- <span className="text-xs text-slate-400 ">Analisis Otomatis Guru</span>
+ <span className="text-[0.75rem] text-[var(--ink-soft)]">Analisis otomatis guru</span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {Object.entries(categoryAggregates).map(([cat, agg]) => {
               const catAverage = Math.round(agg.totalPct / agg.count);
               return (
- <div key={cat} className="p-3.5 rounded-2xl bg-slate-50  border border-slate-200  space-y-1.5">
-                  <div className="flex items-center justify-between text-xs font-semibold">
- <span className="text-slate-800 ">{cat}</span>
- <span className={catAverage >= 70 ? 'text-emerald-700  font-bold' : 'text-amber-700  font-bold'}>
+ <div key={cat} className="p-3.5 bg-[var(--paper-2)] border-2 border-[var(--line)] space-y-2">
+                  <div className="tnum flex items-center justify-between gap-2 text-[0.8125rem] font-semibold">
+ <span className="truncate">{cat}</span>
+ <span className={`font-bold ${catAverage >= 70 ? 'text-[var(--ink)]' : 'text-[var(--danger-ink)]'}`}>
                       {catAverage}%
                     </span>
                   </div>
- <div className="w-full h-2 rounded-full bg-slate-200  overflow-hidden">
+ <div className="w-full h-2 bg-[var(--paper-3)] border border-[var(--line)] overflow-hidden">
                     <div
-                      className={`h-full ${catAverage >= 70 ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                      className={`h-full ${catAverage >= 70 ? 'bg-[var(--ink)]' : 'bg-[var(--danger)]'}`}
                       style={{ width: `${catAverage}%` }}
                     />
                   </div>
- <span className="text-[10px] text-slate-400  block">
+ <span className="tnum text-[0.6875rem] text-[var(--ink-soft)] block">
                     Berdasarkan {agg.count} lembar pengerjaan siswa
                   </span>
                 </div>
@@ -250,9 +249,9 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
       )}
 
       {/* Filter and Search Bar */}
- <div className="bg-white  p-4 rounded-3xl border border-slate-200  flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs transition-colors">
+ <div className="bg-[var(--paper)] p-4 border-2 border-[var(--line)] flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
  <Filter className="w-4 h-4 text-slate-400  shrink-0" />
             <select
               value={filterQuizId}
@@ -260,7 +259,7 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
                 setFilterQuizId(e.target.value);
                 setHasUserChangedFilter(true);
               }}
-              className="text-xs p-2 rounded-xl border border-slate-300  bg-slate-50  text-slate-700  focus:outline-none w-full sm:w-64"
+              className="text-sm p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] focus:outline-none w-full sm:w-72"
             >
               <option value="ALL">Semua Kuis Guru</option>
               {quizzes.map((q) => (
@@ -270,7 +269,7 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
               ))}
             </select>
             {filterQuizId !== 'ALL' && (
- <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-teal-50  text-teal-800  border border-teal-200  shrink-0">
+ <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-teal-50  text-teal-800  border border-teal-200  shrink-0 self-start sm:self-auto">
                 {filterQuizId === getLatestSubmittedQuizId() && !initialSelectedQuizId
                   ? 'Kuis Terakhir Dikerjakan'
                   : 'Filter Kuis Aktif'}
@@ -285,70 +284,66 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari nama siswa atau kelas..."
-              className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-slate-300  bg-white  text-slate-800  focus:outline-none"
+              className="w-full pl-9 pr-3 py-2.5 text-sm border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] focus:outline-none focus:border-[var(--ink)]"
             />
           </div>
         </div>
       </div>
 
       {/* Submissions Table */}
- <div className="bg-white  rounded-3xl border border-slate-200  overflow-hidden shadow-xs transition-colors">
+ <div className="bg-[var(--paper)] border-2 border-[var(--line)] overflow-hidden">
         {filtered.length === 0 ? (
           <div className="p-12 text-center space-y-2">
- <p className="font-bold text-slate-700  text-sm">Belum Ada Rekap Nilai Siswa</p>
- <p className="text-xs text-slate-500 ">
+ <p className="text-[0.9375rem] font-bold text-[var(--ink)]">Belum Ada Rekap Nilai Siswa</p>
+ <p className="text-[0.8125rem] leading-relaxed text-[var(--ink-soft)] max-w-md mx-auto">
               Bagikan PIN Kuis kepada siswa untuk mulai menerima hasil pengerjaan secara real-time.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full min-w-[880px] text-left border-collapse text-[0.8125rem]">
               <thead>
- <tr className="bg-slate-50/80  border-b border-slate-200  text-slate-500  uppercase tracking-wider font-bold">
-                  <th className="py-3.5 px-4">Peringkat</th>
-                  <th className="py-3.5 px-4">Nama Siswa</th>
-                  <th className="py-3.5 px-4">Kelas</th>
-                  <th className="py-3.5 px-4">Kode Kuis</th>
-                  <th className="py-3.5 px-4">Nilai</th>
-                  <th className="py-3.5 px-4">Poin</th>
-                  <th className="py-3.5 px-4">Status</th>
-                  <th className="py-3.5 px-4">Waktu</th>
-                  <th className="py-3.5 px-4">Aksi</th>
+ <tr className="bg-[var(--paper-2)] border-b-2 border-[var(--line)] text-[var(--ink)] text-[0.6875rem] uppercase tracking-[0.1em] font-bold">
+                  <th className="py-3.5 px-4 font-bold">Peringkat</th>
+                  <th className="py-3.5 px-4 font-bold">Nama Siswa</th>
+                  <th className="py-3.5 px-4 font-bold">Kelas</th>
+                  <th className="py-3.5 px-4 font-bold">Kode Kuis</th>
+                  <th className="py-3.5 px-4 font-bold">Nilai</th>
+                  <th className="py-3.5 px-4 font-bold">Poin</th>
+                  <th className="py-3.5 px-4 font-bold">Status</th>
+                  <th className="py-3.5 px-4 font-bold">Waktu</th>
+                  <th className="py-3.5 px-4 font-bold">Aksi</th>
                 </tr>
               </thead>
- <tbody className="divide-y divide-slate-100  text-slate-700 ">
+ <tbody className="divide-y-2 divide-[var(--line)] text-[var(--ink)]">
                 {filtered
                   .sort((a, b) => b.score - a.score)
                   .map((sub, idx) => {
                     return (
- <tr key={sub.id} className="hover:bg-slate-50/70  transition-colors">
+ <tr key={sub.id} className="hover:bg-[var(--paper-2)] transition-colors">
                         <td className="py-3 px-4 font-bold">
-                          {idx === 0 ? (
- <span className="w-6 h-6 rounded-full bg-amber-100  text-amber-800  border border-amber-300  inline-flex items-center justify-center text-xs font-black">
-
-                            </span>
-                          ) : idx === 1 ? (
- <span className="w-6 h-6 rounded-full bg-slate-200  text-slate-700  border border-slate-300  inline-flex items-center justify-center text-xs font-black">
-
-                            </span>
-                          ) : idx === 2 ? (
- <span className="w-6 h-6 rounded-full bg-amber-50  text-amber-700  border border-amber-200  inline-flex items-center justify-center text-xs font-black">
-
-                            </span>
-                          ) : (
- <span className="text-slate-400  pl-2">#{idx + 1}</span>
-                          )}
+                          <span
+                            className={`inline-flex w-6 h-6 items-center justify-center border-2 border-[var(--line)] text-xs font-black ${
+                              idx === 0
+                                ? 'bg-[var(--signal)] text-[var(--on-accent)]'
+                                : idx === 1
+                                ? 'bg-[var(--ink)] text-[var(--paper)]'
+                                : 'bg-[var(--paper-2)] text-[var(--ink)]'
+                            }`}
+                          >
+                            {idx + 1}
+                          </span>
                         </td>
-                        <td className="py-3 px-4">
- <div className="font-bold text-slate-900 ">{sub.studentName}</div>
+                        <td className="py-3.5 px-4">
+ <div className="text-[0.875rem] font-bold">{sub.studentName}</div>
                           {sub.studentNis && (
- <div className="text-[10px] text-slate-500  font-medium">No/NIS: {sub.studentNis}</div>
+ <div className="tnum text-[0.6875rem] text-[var(--ink-soft)] font-medium">No/NIS: {sub.studentNis}</div>
                           )}
                         </td>
- <td className="py-3 px-4 text-slate-600 ">
+ <td className="py-3.5 px-4">
                           {sub.studentClass}
                         </td>
- <td className="py-3 px-4 font-mono font-bold text-slate-700 ">
+ <td className="tnum py-3.5 px-4 font-mono font-bold">
                           {sub.quizCode}
                         </td>
                         <td className="py-3 px-4">
@@ -364,7 +359,7 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
                             {sub.score}
                           </span>
                         </td>
- <td className="py-3 px-4 font-semibold text-slate-600 ">
+ <td className="tnum py-3.5 px-4 font-semibold">
                           {sub.earnedPoints ?? sub.score} / {sub.totalPoints ?? 100}
                         </td>
                         <td className="py-3 px-4">
@@ -380,7 +375,7 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
                             </span>
                           )}
                         </td>
- <td className="py-3 px-4 text-slate-500  font-mono">
+ <td className="tnum py-3.5 px-4 font-mono text-[var(--ink-soft)]">
                           {formatTimeRemaining(sub.timeSpentSeconds)}
                         </td>
                         <td className="py-3 px-4">
@@ -423,13 +418,13 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
       {/* Inspect Student Paper Modal */}
       {inspectSubmission && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
- <div className="bg-white  rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200  animate-in fade-in zoom-in-95 my-auto transition-colors">
- <div className="p-6 border-b border-slate-100  flex items-center justify-between">
-              <div>
- <h3 className="font-bold text-base text-slate-800 ">
+ <div className="bg-[var(--paper)] max-w-2xl w-full max-h-[90vh] flex flex-col border-2 border-[var(--line)] my-auto">
+ <div className="p-5 sm:p-6 border-b-2 border-[var(--line)] flex items-start justify-between gap-3">
+              <div className="space-y-1">
+ <h3 className="text-[1.0625rem] text-[var(--ink)]">
                   Lembar Jawaban: {inspectSubmission.studentName}
                 </h3>
- <p className="text-xs text-slate-500 ">
+ <p className="tnum text-[0.8125rem] text-[var(--ink-soft)]">
                   {inspectSubmission.studentClass} • Kode {inspectSubmission.quizCode} • Skor: {inspectSubmission.score} / 100
                 </p>
               </div>
@@ -463,7 +458,7 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
                 const studentAns = inspectSubmission.answers[q.id];
 
                 return (
- <div key={q.id || idx} className="p-4 rounded-2xl bg-slate-50  border border-slate-200  text-xs space-y-2">
+ <div key={q.id || idx} className="p-4 bg-[var(--paper-2)] border-2 border-[var(--line)] text-[0.8125rem] space-y-2">
                     <div className="flex items-start justify-between">
  <span className="font-bold text-slate-800 ">
                         Soal {idx + 1} ({q.type === 'multiple_choice' ? 'Pilihan Ganda' : q.type === 'short_answer' ? 'Isian Singkat' : 'Menjodohkan'})

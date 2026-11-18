@@ -2,7 +2,7 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
     <script>
       (function() {
         // Intercept Vite HMR WebSocket so that sandbox preview proxy drops don't trigger error events
@@ -82,7 +82,24 @@
     <meta property="og:description" content="Platform kuis online interaktif bertenaga AI untuk guru membuat, mengedit, dan membagikan tugas kuis kepada siswa dengan rekap nilai otomatis." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" />
+    <script>
+      // The app switches theme with a class, not the OS setting, so the status
+      // bar colour has to follow html.dark instead of prefers-color-scheme.
+      (function () {
+        var meta = document.querySelector('meta[name="theme-color"]');
+        function sync() {
+          var dark = document.documentElement.classList.contains('dark');
+          if (meta) meta.setAttribute('content', dark ? '#0b0b0b' : '#ffffff');
+        }
+        new MutationObserver(sync).observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ['class']
+        });
+        sync();
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -95,7 +112,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="AwangQuiz" />
-    <link rel="apple-touch-icon" href="/pwa-192x192.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <script>
       if (window.location.pathname.startsWith('/siswa')) {
         document.write('<link rel="manifest" href="/manifest-siswa.json">');

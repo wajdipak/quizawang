@@ -128,7 +128,7 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
  <div className="p-4 sm:p-6 overflow-y-auto space-y-5 text-slate-800 ">
           
           {/* PIN & Direct Link Banner */}
- <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-50 via-cyan-50 to-sky-50    border border-teal-200  flex flex-col sm:flex-row items-center justify-between gap-3">
+ <div className="p-4 rounded-2xl bg-[var(--paper-2)]    border border-teal-200  flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="space-y-1 text-center sm:text-left">
  <span className="text-xs font-bold text-teal-900  block">
                 PIN Kuis & Link Pengerjaan Siswa (Dibuat Ulang Otomatis)
@@ -176,7 +176,7 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
  <h4 className="font-black text-sm sm:text-base text-slate-900  flex items-center gap-2">
                     <span>Status Sesi Ujian:</span>
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                      currentSession.isExamStarted ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-[var(--on-accent)]'
+                      currentSession.isExamStarted ? 'bg-[var(--signal)] text-[var(--on-accent)] border border-[var(--line)]' : 'bg-amber-200 text-[var(--on-accent)]'
                     }`}>
                       {currentSession.isExamStarted ? 'Ujian Telah Dimulai (Live)' : 'Menunggu / Belum Dimulai'}
                     </span>

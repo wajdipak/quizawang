@@ -137,19 +137,19 @@ export const AccessibilityFloatingWidget: React.FC = () => {
         aria-expanded={isOpen}
         aria-controls="accessibility-panel"
         aria-label="Buka Pengaturan Aksesibilitas dan Ukuran Font"
-        className="group relative flex items-center justify-center w-11 h-11 rounded-full bg-gradient-to-r from-teal-700 via-teal-800 to-cyan-900 text-white shadow-xl hover:shadow-teal-500/25 hover:scale-105 active:scale-95 transition-all duration-200 border border-teal-400/40 focus:outline-none focus:ring-4 focus:ring-teal-400/40 cursor-pointer select-none"
+        className="group relative flex items-center justify-center w-11 h-11 rounded-full bg-[var(--ink)] text-[var(--paper)] border-2 border-[var(--line)] hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ink)] cursor-pointer select-none"
         title="Pengaturan Aksesibilitas dan Tampilan"
       >
         <span className="relative flex items-center justify-center w-5 h-5 pointer-events-none">
           {isDark ? (
-            <Moon className="w-5 h-5 text-amber-300 transition-transform group-hover:rotate-12" />
+            <Moon className="w-5 h-5 text-[var(--paper)] transition-transform group-hover:rotate-12" />
           ) : (
-            <Sliders className="w-5 h-5 text-emerald-300 transition-transform group-hover:rotate-45" />
+            <Sliders className="w-5 h-5 text-[var(--paper)] transition-transform group-hover:rotate-45" />
           )}
           {/* Active indicator dot */}
           {(isDark || fontScale !== 100 || highContrast) && (
             <span
-              className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-teal-900"
+              className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[var(--signal)] ring-2 ring-[var(--ink)]"
               title="Pengaturan Aktif"
             />
           )}
@@ -165,19 +165,19 @@ export const AccessibilityFloatingWidget: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="acc-panel-title"
-            className="w-full max-w-lg bg-white  text-slate-800  rounded-3xl shadow-2xl border border-slate-200  p-5 sm:p-6 space-y-4 animate-in zoom-in-95 duration-200"
+            className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[var(--paper)] text-[var(--ink)] border-2 border-[var(--line)] p-5 sm:p-6 space-y-5"
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-100  pb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-teal-50  text-teal-700  border border-teal-200 ">
+            <div className="flex items-center justify-between gap-3 border-b-2 border-[var(--line)] pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 bg-[var(--paper-2)] border-2 border-[var(--line)]">
                   <Sliders className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 id="acc-panel-title" className="font-bold text-sm sm:text-base leading-tight">
-                    Aksesibilitas & Tampilan
+                  <h3 id="acc-panel-title" className="text-[0.9375rem] leading-tight">
+                    Aksesibilitas &amp; Tampilan
                   </h3>
-                  <p className="text-[11px] text-slate-500 ">
+                  <p className="text-[0.75rem] text-[var(--ink-soft)]">
                     Sesuaikan kenyamanan visual dan ukuran teks
                   </p>
                 </div>
@@ -195,8 +195,8 @@ export const AccessibilityFloatingWidget: React.FC = () => {
 
             {/* Section 1: Dark Mode / Light Mode Switch */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-700  uppercase tracking-wider block">
-                Tema Tampilan:
+              <label className="poster-label block">
+                Tema Tampilan
               </label>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -218,13 +218,13 @@ export const AccessibilityFloatingWidget: React.FC = () => {
                   onClick={() => setIsDark(true)}
                   className={`flex items-center justify-center gap-2 p-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                     isDark
-                      ? 'bg-indigo-950/80 border-indigo-700 text-indigo-200 shadow-xs ring-1 ring-indigo-500/50'
+                      ? 'bg-[var(--ink)] border-[var(--line)] text-[var(--paper)] ring-2 ring-[var(--paper)]'
                       : 'bg-slate-50  border-slate-200  text-slate-600  hover:bg-slate-100 '
                   }`}
                 >
-                  <Moon className={`w-4 h-4 ${isDark ? 'text-indigo-400' : 'text-slate-400'}`} />
+                  <Moon className={`w-4 h-4 ${isDark ? 'text-[var(--paper)]' : 'text-slate-400'}`} />
                   <span>Mode Gelap</span>
-                  {isDark && <Check className="w-3.5 h-3.5 text-indigo-400 ml-auto" />}
+                  {isDark && <Check className="w-3.5 h-3.5 text-[var(--paper)] ml-auto" />}
                 </button>
               </div>
             </div>
@@ -232,7 +232,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
             {/* Section 2: Font Size Slider */}
             <div className="space-y-2.5 pt-1">
               <div className="flex items-center justify-between">
-                <label htmlFor="font-size-slider" className="text-xs font-bold text-slate-700  uppercase tracking-wider flex items-center gap-1.5">
+                <label htmlFor="font-size-slider" className="poster-label flex items-center gap-1.5">
                   <Type className="w-3.5 h-3.5 text-teal-600 " />
                   <span>Ukuran Seluruh Font:</span>
                 </label>
@@ -309,11 +309,11 @@ export const AccessibilityFloatingWidget: React.FC = () => {
               </div>
 
               {/* Live font preview card */}
-              <div className="p-2.5 rounded-xl bg-slate-50  border border-slate-200/70 ">
-                <span className="text-[10px] font-bold text-slate-400  uppercase tracking-wider block mb-0.5">
+              <div className="p-2.5 bg-[var(--paper-2)] border-2 border-[var(--line)]">
+                <span className="poster-label block mb-1 text-[var(--ink-soft)]">
                   Pratinjau Teks:
                 </span>
-                <p className="text-xs sm:text-sm text-slate-700  leading-snug">
+                <p className="text-[0.8125rem] text-[var(--ink)] leading-relaxed">
                   Soal Kuis: &quot;Berapakah hasil dari 15 × 8?&quot;
                 </p>
               </div>

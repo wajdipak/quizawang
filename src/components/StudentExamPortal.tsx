@@ -1143,7 +1143,7 @@ export const StudentExamPortal: React.FC<Props> = ({
           </div>
 
           {/* Big Score Gauge */}
- <div className="inline-flex flex-col items-center justify-center w-32 h-32 sm:w-36 sm:h-36 rounded-full border-6 sm:border-8 border-teal-100  bg-gradient-to-b from-teal-50 to-white   shadow-inner">
+ <div className="inline-flex flex-col items-center justify-center w-32 h-32 sm:w-36 sm:h-36 rounded-full border-6 sm:border-8 border-teal-100  bg-[var(--paper-2)]   shadow-inner">
  <span className="text-3xl sm:text-4xl font-black text-teal-800 ">{result.score}</span>
  <span className="text-[10px] sm:text-[11px] font-bold text-slate-400  uppercase tracking-widest mt-0.5 sm:mt-1">
               Dari 100

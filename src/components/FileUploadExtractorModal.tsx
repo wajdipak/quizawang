@@ -584,9 +584,9 @@ LATIHAN SOAL EVALUASI:
           ) : (
             /* Result Preview of Extracted Quiz */
             <div className="space-y-4">
- <div className="p-4 rounded-2xl bg-gradient-to-r from-teal-50 to-emerald-50   border border-teal-200  space-y-2">
+ <div className="p-4 rounded-2xl bg-[var(--paper-2)]   border border-teal-200  space-y-2">
                 <div className="flex items-center justify-between">
- <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-teal-200  text-teal-800 ">
+ <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--signal)] text-[var(--on-accent)] ">
                     Ekstraksi Berhasil
                   </span>
  <span className="font-mono text-xs font-bold text-slate-700  bg-white  px-2 py-0.5 rounded-md border border-teal-200 ">

@@ -21,14 +21,14 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, savedQuizCoun
   return (
     <>
       {/* Masthead: one rule system, tab cells divided by ink lines. */}
-      <header className="sticky top-0 z-40 bg-[var(--paper)] border-b-2 border-[var(--line)]">
+      <header className="sticky top-0 z-40 bg-[var(--paper)] border-b-2 border-[var(--line)] pt-[env(safe-area-inset-top)]">
         <div className="max-w-[1400px] mx-auto">
-          <div className="flex items-stretch">
+          <div className="flex flex-wrap items-stretch">
             <button
               type="button"
               onClick={() => setActiveTab('beranda')}
               aria-label="Kembali ke Beranda Awang Long Quiz"
-              className="flex items-center gap-3 px-3 sm:px-5 py-2.5 sm:py-3 border-r-2 border-[var(--line)] cursor-pointer bg-[var(--paper)] hover:bg-[var(--signal)] transition-colors"
+              className="flex shrink-0 items-center gap-3 px-3.5 sm:px-6 py-3 sm:py-3.5 border-r-2 border-[var(--line)] cursor-pointer bg-[var(--paper)] hover:bg-[var(--signal)] transition-colors"
             >
               <img 
                 src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png" 
@@ -41,7 +41,11 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, savedQuizCoun
               </button>
 
             {/* Desktop tabs */}
-            <nav aria-label="Navigasi utama" className="hidden md:flex items-stretch flex-1">
+            {/* Tabs get their own full-width row until lg, where everything fits one row. */}
+            <nav
+              aria-label="Navigasi utama"
+              className="hidden md:flex items-stretch grow w-full lg:w-auto min-w-0 order-3 lg:order-2 border-t-2 lg:border-t-0 border-[var(--line)]"
+            >
               {TABS.map((tab) => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -51,14 +55,14 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, savedQuizCoun
                     onClick={() => setActiveTab(tab.id)}
                     aria-current={isActive ? 'page' : undefined}
                     title={tab.note}
-                    className={`flex-1 min-w-0 px-3 lg:px-4 py-2 text-left border-r-2 border-[var(--line)] transition-colors cursor-pointer ${
+                    className={`flex-1 min-w-0 px-3 lg:px-4 py-2.5 text-left border-r-2 border-[var(--line)] transition-colors cursor-pointer ${
                       isActive
                         ? 'bg-[var(--signal)] text-[#0a0a0a] font-extrabold'
                         : 'bg-[var(--paper)] text-[var(--ink)] hover:bg-[var(--paper-2)]'
                 }`}
               >
                     <span className="poster-label block truncate">{tab.label}</span>
-                    <span className="hidden xl:block text-[10px] uppercase tracking-[0.1em] opacity-70 truncate">
+                    <span className="hidden xl:block text-[11px] leading-tight uppercase tracking-[0.08em] opacity-70 truncate">
                       {isActive && tab.id === 'kuis-guru' && savedQuizCount > 0
                         ? `${savedQuizCount} kuis tersimpan`
                         : tab.note}
@@ -68,7 +72,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, savedQuizCoun
               })}
             </nav>
 
-            <div className="flex items-center gap-2 px-2 sm:px-3 ml-auto md:ml-0">
+            <div className="order-2 lg:order-3 flex shrink-0 items-center gap-2 px-2 sm:px-3 ml-auto">
               <FirebaseSyncBadge />
               <div className="hidden sm:flex items-center gap-2 border-2 border-[var(--line)] px-2 py-1">
                 <span className="w-2.5 h-2.5 bg-[var(--signal)] shrink-0" aria-hidden="true" />
@@ -82,7 +86,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, savedQuizCoun
       {/* Mobile navigation: same cells, pinned to the bottom edge. */}
       <nav 
         aria-label="Navigasi bawah"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--paper)] border-t-2 border-[var(--line)] pb-[env(safe-area-inset-bottom)]"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--paper)] border-t-2 border-[var(--line)] pb-[env(safe-area-inset-bottom,0px)]"
           >
         <div className="grid grid-cols-4">
           {TABS.map((tab) => {
@@ -93,13 +97,13 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, savedQuizCoun
             type="button"
                 onClick={() => setActiveTab(tab.id)}
                 aria-current={isActive ? 'page' : undefined}
-                className={`px-1 py-2.5 border-r-2 last:border-r-0 border-[var(--line)] transition-colors cursor-pointer ${
+                className={`flex min-h-[56px] items-center justify-center px-1 py-3 border-r-2 last:border-r-0 border-[var(--line)] transition-colors cursor-pointer active:bg-[var(--paper-3)] ${
                   isActive
                     ? 'bg-[var(--signal)] text-[#0a0a0a]'
-                    : 'bg-[var(--paper)] text-[var(--ink-soft)] hover:bg-[var(--paper-2)]'
+                    : 'bg-[var(--paper)] text-[var(--ink)]'
             }`}
           >
-                <span className="poster-label block text-[10px] leading-tight truncate">
+                <span className="poster-label block text-[11px] leading-none text-center truncate">
                   {tab.label}
             </span>
           </button>

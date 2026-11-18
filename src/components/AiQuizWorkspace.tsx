@@ -300,7 +300,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
 
  <div className="flex items-center gap-4 bg-[var(--paper-2)] border-2 border-[var(--line)] p-4 sm:p-5 w-full">
             <img 
-              src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png" 
+              src="/logo-awang-quiz.png" 
               alt="Logo Awang Long Quiz" 
               className={`w-14 h-14 sm:w-16 sm:h-16 ${isLoading ? 'animate-bounce' : ''} object-contain hover:scale-105 transition-transform   `}
             />

@@ -56,7 +56,7 @@ export const StudentPortalPWA: React.FC = () => {
         {/* Brand Asset Logo with Dark/Light Mode Filter */}
         <div className="flex justify-center">
           <img
-            src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png"
+            src="/logo-awang-quiz.png"
             alt="Logo Awang Long Quiz"
             className="w-14 h-14 object-contain hover:scale-105 transition-transform   "
           />

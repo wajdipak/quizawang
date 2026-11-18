@@ -31,7 +31,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, savedQuizCoun
               className="flex shrink-0 items-center gap-3 px-3.5 sm:px-6 py-3 sm:py-3.5 border-r-2 border-[var(--line)] cursor-pointer bg-[var(--paper)] hover:bg-[var(--signal)] transition-colors"
             >
               <img 
-                src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png" 
+                src="/logo-awang-quiz.png" 
                 alt="Logo Awang Long Quiz" 
                 className="w-8 h-8 sm:w-9 sm:h-9 object-contain  "
               />

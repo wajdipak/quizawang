@@ -129,7 +129,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
     // or bars while scrolling; from md up it floats in the gutter as before.
     <aside
       aria-label="Menu Aksesibilitas dan Tampilan"
-      className="z-40 fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] right-4 sm:right-6 md:bottom-20 md:right-6 pointer-events-none"
+      className="z-40 fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] right-4 sm:right-6 md:bottom-20 md:right-6"
     >
       {/* Fixed, Non-Draggable Trigger Button — ikon saja, posisi aman tidak tertumpuk nav bar */}
       <button
@@ -160,14 +160,14 @@ export const AccessibilityFloatingWidget: React.FC = () => {
 
       {/* Centered Modal Popover Panel */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-10 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-200">
           <div
             ref={panelRef}
             id="accessibility-panel"
             role="dialog"
             aria-modal="true"
             aria-labelledby="acc-panel-title"
-            className="w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[var(--paper)] text-[var(--ink)] border-2 border-[var(--line)] p-5 sm:p-6 space-y-5"
+            className="z-20 w-full max-w-lg max-h-[90dvh] overflow-y-auto bg-[var(--paper)] text-[var(--ink)] border-2 border-[var(--line)] p-5 sm:p-6 space-y-5"
           >
             {/* Header */}
             <div className="flex items-center justify-between gap-3 border-b-2 border-[var(--line)] pb-3.5">

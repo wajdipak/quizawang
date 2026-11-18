@@ -129,9 +129,9 @@ export const AccessibilityFloatingWidget: React.FC = () => {
     // or bars while scrolling; from md up it floats in the gutter as before.
     <aside
       aria-label="Menu Aksesibilitas dan Tampilan"
-      className="z-40 flex justify-end px-4 pt-4 pb-1 sm:px-6 md:block md:fixed md:bottom-20 md:right-6 md:p-0"
+      className="z-40 fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 sm:right-6 md:bottom-20 md:right-6 pointer-events-none"
     >
-      {/* Fixed, Non-Draggable Trigger Button */}
+      {/* Fixed, Non-Draggable Trigger Button — ikon saja, posisi aman tidak tertumpuk nav bar */}
       <button
         ref={triggerRef}
         type="button"
@@ -139,7 +139,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
         aria-expanded={isOpen}
         aria-controls="accessibility-panel"
         aria-label="Buka Pengaturan Aksesibilitas dan Ukuran Font"
-        className="group relative flex items-center justify-center gap-2 h-11 w-auto px-4 md:px-0 md:w-11 rounded-full bg-[var(--ink)] text-[var(--paper)] border-2 border-[var(--line)] hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ink)] cursor-pointer select-none"
+        className="group relative flex items-center justify-center gap-1 h-10 w-10 rounded-full bg-[var(--ink)] text-[var(--paper)] border-2 border-[var(--line)] hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ink)] cursor-pointer select-none pointer-events-auto"
         title="Pengaturan Aksesibilitas dan Tampilan"
       >
         <span className="relative flex items-center justify-center w-5 h-5 pointer-events-none">
@@ -155,9 +155,6 @@ export const AccessibilityFloatingWidget: React.FC = () => {
               title="Pengaturan Aktif"
             />
           )}
-        </span>
-        <span className="md:hidden text-[0.6875rem] font-bold uppercase tracking-[0.1em] leading-none">
-          Aksesibilitas
         </span>
       </button>
 

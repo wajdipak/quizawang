@@ -101,10 +101,10 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
           <div className="flex items-center gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/20 text-white border border-white/20">
+                <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/20 text-white border border-white/20">
                   {currentSession.gameMode} Session Control
                 </span>
- <span className="text-[10px] sm:text-xs font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-[var(--on-accent)] animate-pulse">
+ <span className="text-xs sm:text-sm font-mono font-black px-2.5 py-0.5 rounded-full bg-amber-400 text-[var(--on-accent)] animate-pulse">
                   PIN BARU: {currentSession.code}
                 </span>
               </div>
@@ -246,7 +246,7 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
                   Daftar Siswa Masuk ({currentSession.connectedStudents?.length || 0})
                 </h5>
               </div>
-              <span className="text-[10px] text-slate-400 font-mono">Real-Time Sync Active</span>
+              <span className="text-xs sm:text-sm text-slate-400 font-mono">Real-Time Sync Active</span>
             </div>
 
             {!currentSession.connectedStudents || currentSession.connectedStudents.length === 0 ? (
@@ -259,7 +259,7 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
  <div key={idx} className="p-2.5 rounded-xl bg-slate-50  border border-slate-200  flex items-center justify-between text-xs">
                     <div>
  <span className="font-bold text-slate-800 ">{student.name}</span>
-                      <span className="text-[10px] text-slate-500 ml-2">({student.class} • No. {student.nis})</span>
+                      <span className="text-xs sm:text-sm text-slate-500 ml-2">({student.class} • No. {student.nis})</span>
                     </div>
                   </div>
                 ))}
@@ -287,7 +287,7 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
  <span className="font-bold text-slate-800 ">{sub.studentName}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] ${
+                      <span className={`px-2 py-0.5 rounded-md font-bold text-xs sm:text-sm ${
                         sub.isPassed ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
                       }`}>
                         Skor: {sub.score}

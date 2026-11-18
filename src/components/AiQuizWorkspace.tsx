@@ -332,7 +332,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           >
             <div>
  <span className="block font-bold text-xs sm:text-sm text-slate-800 ">Pembuat Kuis</span>
- <span className="block text-[10px] sm:text-[11px] text-slate-500 ">Prompt & Topik</span>
+ <span className="block text-xs sm:text-sm text-slate-500 ">Prompt & Topik</span>
             </div>
           </button>
 
@@ -345,7 +345,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           >
             <div>
  <span className="block font-bold text-sm text-slate-800 ">Upload File</span>
- <span className="block text-[11px] text-slate-500 ">Ekstrak PDF/Foto</span>
+ <span className="block text-xs text-slate-500 ">Ekstrak PDF/Foto</span>
             </div>
           </button>
 
@@ -360,7 +360,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           >
             <div>
  <span className="block font-bold text-sm text-slate-800 ">Kuis Seru</span>
- <span className="block text-[11px] text-slate-500 ">Tantangan Cepat</span>
+ <span className="block text-xs text-slate-500 ">Tantangan Cepat</span>
             </div>
           </button>
 
@@ -375,7 +375,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           >
             <div>
  <span className="block font-bold text-sm text-slate-800 ">Asisten Belajar</span>
- <span className="block text-[11px] text-slate-500 ">Bimbingan Materi</span>
+ <span className="block text-xs text-slate-500 ">Bimbingan Materi</span>
             </div>
           </button>
 
@@ -390,7 +390,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
           >
             <div>
  <span className="block font-bold text-sm text-slate-800 ">Tanya Jawab</span>
- <span className="block text-[11px] text-slate-500 ">Eksplorasi Soal</span>
+ <span className="block text-xs text-slate-500 ">Eksplorasi Soal</span>
             </div>
           </button>
         </div>
@@ -485,11 +485,11 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                     <div className="flex items-center justify-between">
  <label htmlFor="custom-question-count-input" className="text-xs font-semibold text-slate-700  flex items-center gap-1.5">
                         <span>Jumlah Soal:</span>
- <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-teal-100  text-teal-800 ">
+ <span className="text-xs font-bold px-1.5 py-0.5 rounded-md bg-teal-100  text-teal-800 ">
                           Bebas Ketik Langsung
                         </span>
                       </label>
- <span className="text-[11px] font-bold text-teal-700  bg-teal-50  px-2 py-0.5 rounded-md border border-teal-200 ">
+ <span className="text-xs font-bold text-teal-700  bg-teal-50  px-2 py-0.5 rounded-md border border-teal-200 ">
                         {questionCount} Soal
                       </span>
                     </div>
@@ -699,7 +699,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
               <div className="space-y-4 pt-2">
  <div className="bg-[var(--paper-2)] p-4 border-2 border-[var(--line)] space-y-2.5">
                   <div className="flex items-center justify-between">
- <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[var(--signal)] text-[var(--on-accent)] ">
+ <span className="text-xs uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-[var(--signal)] text-[var(--on-accent)] ">
                       {generatedQuiz.subject} • {generatedQuiz.gradeLevel}
                     </span>
                     <div className="flex items-center gap-1.5">
@@ -740,7 +740,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
  <span className="text-xs font-bold text-slate-600  uppercase tracking-wider">
                         Kisi-kisi:
                       </span>
- <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100  text-emerald-800  border border-emerald-300 ">
+ <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100  text-emerald-800  border border-emerald-300 ">
                          Total {generatedQuiz.questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0)} / 100 Poin
                       </span>
                     </div>
@@ -758,7 +758,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                   </div>
 
                   {smartScoreNote && (
- <div className="p-2 rounded-lg bg-teal-50  border border-teal-200  text-teal-800  text-[11px] flex items-center justify-between gap-1.5">
+ <div className="p-2 rounded-lg bg-teal-50  border border-teal-200  text-teal-800  text-xs sm:text-sm flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-teal-600 shrink-0" />
                         <span>{smartScoreNote}</span>
@@ -798,7 +798,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                           {q.options.map((opt, oIdx) => (
                             <div
                               key={oIdx}
-                              className={`px-2 py-1 rounded-lg text-[11px] truncate ${
+                              className={`px-2 py-1 rounded-lg text-xs sm:text-sm truncate ${
                                 oIdx === q.correctOption
                                   ? 'bg-emerald-100  text-emerald-900  font-semibold border border-emerald-300 '
                                   : 'bg-white  text-slate-600  border border-slate-200 '
@@ -810,7 +810,7 @@ export const AiQuizWorkspace: React.FC<Props> = ({
                         </div>
                       )}
                       {q.acceptedAnswers && q.acceptedAnswers.length > 0 && (
- <div className="pl-6 pt-1 text-[11px] text-teal-700  font-medium">
+ <div className="pl-6 pt-1 text-xs sm:text-sm text-teal-700  font-medium">
  <span className="bg-teal-50  px-2 py-0.5 rounded border border-teal-200 ">
                             Kunci Jawaban: {q.acceptedAnswers.join(', ')}
                           </span>

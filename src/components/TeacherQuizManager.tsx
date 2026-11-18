@@ -87,6 +87,14 @@ export const TeacherQuizManager: React.FC<Props> = ({
     setTimeout(() => setCopiedLinkId(null), 2000);
   };
 
+  const handleCopyExamLinkKey = (quiz: Quiz) => {
+    handleCopyExamLink(quiz, { stopPropagation: () => {} } as React.MouseEvent);
+  };
+
+  const handleCopyCodeKey = (quiz: Quiz) => {
+    handleCopyCode(quiz, { stopPropagation: () => {} } as React.MouseEvent);
+  };
+
   return (
     <div className="space-y-6">
       
@@ -258,34 +266,51 @@ export const TeacherQuizManager: React.FC<Props> = ({
               >
                 {/* Card Top Stripe */}
                 <div className="p-5 pb-3 space-y-3">
-                  <div className="flex items-center justify-between">
- <span className="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-teal-50  text-teal-800  border border-teal-200  flex items-center">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    {/* Subject pill */}
+                    <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] flex items-center shrink-0">
                       {quiz.subject || 'Umum'}
                     </span>
 
-                    {/* PIN Pill with Copy */}
-                    <div className="flex flex-wrap items-center gap-1.5">
+                    {/* PIN & Link row */}
+                    <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
                       <button
                         type="button"
                         onClick={(e) => handleCopyExamLink(quiz, e)}
-                        className="flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg bg-cyan-100  text-cyan-900  transition-colors border border-cyan-300  cursor-pointer hover:bg-cyan-200  w-[190px] shrink-0"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleCopyExamLinkKey(quiz);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] hover:bg-[var(--signal)] hover:text-[#0a0a0a] transition-colors cursor-pointer shrink-0 min-w-[120px]"
                         title="Salin Link Langsung Siswa"
                       >
- <Link className="w-3 h-3 text-cyan-700  shrink-0" />
-                        <span className="truncate">{copiedLinkId === quiz.id ? 'Link Disalin!' : 'Link Siswa'}</span>
+ <Link className="w-3 h-3 shrink-0" />
+                        <span className="truncate min-w-0">{copiedLinkId === quiz.id ? 'Link Disalin!' : 'Link Siswa'}</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={(e) => handleCopyCode(quiz, e)}
-                        className="flex items-center gap-1 text-xs font-mono font-bold px-2 py-0.5 rounded-lg bg-slate-100  hover:bg-slate-200  text-slate-700  transition-colors border border-slate-200  cursor-pointer"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleCopyCodeKey(quiz);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="flex items-center gap-1 text-xs font-mono font-bold px-2.5 py-0.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] hover:bg-[var(--paper-2)] transition-colors cursor-pointer shrink-0"
                         title="Klik untuk salin Kode PIN Kuis"
                       >
                         <span>PIN: {quiz.code}</span>
                         {copiedCodeId === quiz.id ? (
- <Check className="w-3 h-3 text-emerald-600 " />
+                          <Check className="w-3 h-3 text-[var(--ink)]" />
                         ) : (
- <Copy className="w-3 h-3 text-slate-400 " />
+                          <Copy className="w-3 h-3 text-[var(--ink-soft)]" />
                         )}
                       </button>
                     </div>
@@ -302,91 +327,134 @@ export const TeacherQuizManager: React.FC<Props> = ({
 
                   {/* Categories Pills */}
                   {quiz.categories && quiz.categories.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {quiz.categories.map((c) => (
- <span key={c} className="text-[10px] bg-slate-100  text-slate-600  px-2 py-0.5 rounded-md font-medium border border-slate-200 ">
-                           {c}
+                        <span
+                          key={c}
+                          className="text-xs border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink-soft)] px-2.5 py-0.5 font-medium"
+                        >
+                          {c}
                         </span>
                       ))}
                     </div>
                   )}
 
                   {/* Metadata Chips */}
- <div className="tnum flex flex-wrap items-center gap-1.5 pt-1 text-[0.75rem] text-[var(--ink-soft)]">
- <span className="flex items-center gap-1 bg-slate-50  px-2 py-0.5 rounded-md border border-slate-100 ">
-                       {quiz.questions.length} Soal
+                  <div className="flex flex-wrap items-center gap-1.5 pt-1 text-sm text-[var(--ink-soft)] tabular-nums">
+                    <span className="flex items-center gap-1 border-2 border-[var(--line)] bg-[var(--paper)] px-2.5 py-0.5">
+                      {quiz.questions.length} Soal
                     </span>
- <span className="flex items-center gap-1 bg-slate-50  px-2 py-0.5 rounded-md border border-slate-100 ">
-                       {quiz.durationMinutes > 0 ? `${quiz.durationMinutes}m` : 'Bebas'}
+                    <span className="flex items-center gap-1 border-2 border-[var(--line)] bg-[var(--paper)] px-2.5 py-0.5">
+                      {quiz.durationMinutes > 0 ? `${quiz.durationMinutes}m` : 'Bebas'}
                     </span>
- <span className="flex items-center gap-1 bg-slate-50  px-2 py-0.5 rounded-md border border-slate-100 ">
-                       KKM: {quiz.passingGrade}
+                    <span className="flex items-center gap-1 border-2 border-[var(--line)] bg-[var(--paper)] px-2.5 py-0.5">
+                      KKM: {quiz.passingGrade}
                     </span>
                   </div>
                 </div>
 
                 {/* Submissions summary stats */}
- <div className="px-5 py-3 bg-[var(--paper-2)] border-y-2 border-[var(--line)] flex items-center justify-between gap-2 text-[0.8125rem]">
- <div className="flex items-center gap-1.5 text-[var(--ink)]">
- <Users className="w-3.5 h-3.5 text-slate-400 " />
+                <div className="px-5 py-3 bg-[var(--paper-2)] border-y-2 border-[var(--line)] flex items-center justify-between gap-2 text-[0.8125rem]">
+                  <div className="flex items-center gap-1.5 text-[var(--ink)]">
+                    <Users className="w-3.5 h-3.5 text-[var(--ink-soft)]" />
                     <span>{quizSubs.length} Siswa Mengerjakan</span>
                   </div>
                   {quizSubs.length > 0 && (
- <span className="font-semibold text-emerald-700  bg-emerald-50  px-2 py-0.5 rounded-md border border-emerald-200  text-[11px]">
+                    <span className="font-semibold border-2 border-[var(--line)] bg-[var(--paper)] px-2.5 py-0.5 text-[var(--ink)] text-[11px]">
                       Rata-rata: {avgScore}
                     </span>
                   )}
                 </div>
 
                 {/* Card Actions Bottom */}
- <div className="p-4 border-t-2 border-[var(--line)] flex flex-col gap-2">
-                  <div className="flex items-center justify-between gap-1.5">
+                <div className="p-4 border-t-2 border-[var(--line)] flex flex-col gap-2">
+                  <div className="flex flex-col sm:flex-row items-start sm:justify-between gap-2 sm:gap-1.5">
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => onEditQuiz(quiz)}
-                        className="p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] hover:bg-[var(--paper-3)] transition-colors cursor-pointer"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onEditQuiz(quiz);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="p-3 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] hover:bg-[var(--signal)] hover:text-[#0a0a0a] focus-visible:outline-2 focus-visible:outline-[var(--ink)] focus-visible:outline-offset-2 transition-colors cursor-pointer"
                         title="Edit / Tambah Soal Kuis"
                       >
-                        <Edit2 className="w-3.5 h-3.5" />
+                        <Edit2 className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
                         onClick={() => onViewSubmissions(quiz.id)}
-                        className="p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] hover:bg-[var(--signal)] hover:text-[#0a0a0a] transition-colors cursor-pointer"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onViewSubmissions(quiz.id);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="p-3 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] hover:bg-[var(--signal)] hover:text-[#0a0a0a] focus-visible:outline-2 focus-visible:outline-[var(--ink)] focus-visible:outline-offset-2 transition-colors cursor-pointer"
                         title="Lihat Rekap Nilai Siswa"
                       >
-                        <Award className="w-3.5 h-3.5" />
+                        <Award className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                       <button
                         type="button"
                         onClick={() => setDeleteConfirmId(quiz.id)}
-                        className="p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--danger-ink)] hover:bg-[var(--danger-pale)] transition-colors cursor-pointer"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setDeleteConfirmId(quiz.id);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="p-3 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--danger-ink)] hover:bg-[var(--danger-pale)] focus-visible:outline-2 focus-visible:outline-[var(--ink)] focus-visible:outline-offset-2 transition-colors cursor-pointer"
                         title="Hapus Kuis"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                       </button>
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex flex-col gap-1.5 w-full sm:w-auto">
                       <button
                         type="button"
                         onClick={() => onShareQuiz(quiz)}
-                        className="px-3 py-2 border-2 border-[var(--line)] bg-[var(--paper)] hover:bg-[var(--paper-3)] font-bold text-[0.75rem] flex items-center gap-1.5 transition-colors cursor-pointer"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onShareQuiz(quiz);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="w-full sm:w-auto p-2.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] font-bold text-sm flex items-center justify-center gap-1.5 hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--ink)] focus-visible:outline-offset-2 transition-colors cursor-pointer"
                         title="Mulai & Bagikan Link Siswa"
                       >
- <Share2 className="w-3.5 h-3.5 text-teal-600 " />
-                        <span>Bagikan Link</span>
+ <Share2 className="w-3.5 h-3.5 shrink-0 text-[var(--ink)]" aria-hidden="true" />
+                        <span className="min-w-0">Bagikan Link</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setSelectedQuizForMode(quiz)}
-                        className="btn-signal px-3.5 py-2 text-[0.75rem] gap-1.5"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setSelectedQuizForMode(quiz);
+                          }
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="w-full sm:w-auto btn-signal text-sm gap-1.5 focus-visible:outline-2 focus-visible:outline-[var(--ink)] focus-visible:outline-offset-2"
                         title="Pilih Format Mode & Uji Coba Kuis"
                       >
-                        <Play className="w-3.5 h-3.5" />
-                        <span>Uji Soal</span>
+                        <Play className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span className="min-w-0">Uji Soal</span>
                       </button>
                     </div>
                   </div>

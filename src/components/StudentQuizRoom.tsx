@@ -210,7 +210,7 @@ export const StudentQuizRoom: React.FC<Props> = ({
                 className="w-full text-center font-mono font-black text-2xl sm:text-3xl tracking-[0.18em] py-3 px-4 border-2 border-[var(--line)] bg-[var(--paper-2)] text-[var(--ink)] focus:outline-2 focus:outline-[var(--ink)] focus:outline-offset-2 uppercase placeholder:text-[var(--ink-soft)] placeholder:text-lg placeholder:tracking-[0.1em]"
               />
             </div>
- <p className="text-[11px] text-center text-slate-400 ">
+ <p className="text-xs sm:text-sm text-center text-slate-400 ">
               Kode PIN baru dibuat otomatis oleh guru untuk setiap mode kuis.
             </p>
           </div>
@@ -244,7 +244,7 @@ export const StudentQuizRoom: React.FC<Props> = ({
  <span className="font-bold text-xs text-slate-800  group-hover:text-teal-700  transition-colors block">
                       {quiz.title}
                     </span>
- <span className="text-[11px] text-slate-500 ">
+ <span className="text-xs sm:text-sm text-slate-500 ">
                       {quiz.subject} • {quiz.questions.length} Butir Soal • KKM {quiz.passingGrade}
                     </span>
                   </div>

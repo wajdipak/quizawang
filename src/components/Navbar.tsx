@@ -62,7 +62,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, savedQuizCoun
                 }`}
               >
                     <span className="poster-label block truncate">{tab.label}</span>
-                    <span className="hidden xl:block text-[11px] leading-tight uppercase tracking-[0.08em] opacity-70 truncate">
+                    <span className="hidden xl:block text-xs leading-tight uppercase tracking-[0.08em] opacity-70 truncate">
                       {isActive && tab.id === 'kuis-guru' && savedQuizCount > 0
                         ? `${savedQuizCount} kuis tersimpan`
                         : tab.note}
@@ -103,7 +103,7 @@ export const Navbar: React.FC<Props> = ({ activeTab, setActiveTab, savedQuizCoun
                     : 'bg-[var(--paper)] text-[var(--ink)]'
             }`}
           >
-                <span className="poster-label block text-[11px] leading-none text-center truncate">
+                <span className="poster-label block text-xs leading-none text-center truncate">
                   {tab.label}
             </span>
           </button>

@@ -464,7 +464,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-dvh bg-[var(--paper)] text-[var(--ink)] flex flex-col font-sans antialiased selection:bg-teal-200 transition-colors duration-200">
+    <div className="min-h-dvh bg-[var(--paper)] text-[var(--ink)] flex flex-col font-sans antialiased selection:bg-teal-200 transition-colors duration-200 pb-[env(safe-area-inset-bottom)]">
       
       {/* Top Navigation Bar with Teacher Portal Focus */}
       <Navbar

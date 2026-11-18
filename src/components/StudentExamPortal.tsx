@@ -922,7 +922,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                     placeholder="Ketik kata kunci jawaban yang tepat..."
                     className="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-300  bg-white  focus:outline-none focus:ring-2 focus:ring-teal-400 font-medium text-slate-800  placeholder:text-slate-400 "
                   />
- <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] sm:text-[11px] text-slate-500  pt-1">
+ <div className="flex flex-wrap items-center justify-between gap-1 text-xs sm:text-sm text-slate-500  pt-1">
  <span> Tips: Jawaban tidak membedakan huruf besar/kecil.</span>
                     {(answers[currentQ.id] as string)?.trim() && (
  <span className="text-emerald-700  font-bold flex items-center gap-1">
@@ -1209,7 +1209,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                         style={{ width: `${val.percentage}%` }}
                       />
                     </div>
- <div className="text-[10px] text-slate-500 ">
+ <div className="text-xs sm:text-sm text-slate-500 ">
                       Poin: {val.earned} / {val.total} ({val.questionCount} Soal)
                     </div>
                   </div>
@@ -1297,7 +1297,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                   </div>
 
                   <span
-                    className={`font-bold px-2.5 py-1 rounded-xl text-[11px] shrink-0 ${
+                    className={`font-bold px-2.5 py-1 rounded-xl text-xs shrink-0 ${
                       b.isCorrect
                         ? 'bg-emerald-100  text-emerald-900  border border-emerald-300 '
                         : b.isPartial
@@ -1319,7 +1319,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                   {b.matchingDetails && (
                     <div className="space-y-1 pt-1">
                       {b.matchingDetails.map((md, mIdx) => (
-                        <div key={mIdx} className="text-[11px] flex items-center gap-2">
+                        <div key={mIdx} className="text-xs flex items-center gap-2">
  <span>{md.isMatched ? '' : ''}</span>
  <span className="font-semibold text-slate-800 ">{md.left}</span>
  <span className="text-slate-400 ">→</span>
@@ -1335,7 +1335,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                   )}
 
                   {b.explanation && (
- <div className="pt-2 text-[11px] text-slate-600  bg-white/70  p-2.5 rounded-xl border border-slate-200/60  leading-relaxed">
+ <div className="pt-2 text-xs sm:text-sm text-slate-600  bg-white/70  p-2.5 rounded-xl border border-slate-200/60  leading-relaxed">
  <strong>Pembahasan:</strong> {b.explanation}
                     </div>
                   )}

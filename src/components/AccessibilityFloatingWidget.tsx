@@ -215,7 +215,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
                 >
                   <Sun className={`w-4 h-4 ${!isDark ? 'text-amber-600 animate-spin-slow' : 'text-slate-400'}`} />
                   <span>Mode Terang</span>
-                  {!isDark && <Check className="w-3.5 h-3.5 text-amber-600 ml-auto" />}
+                  <Check className={`w-3.5 h-3.5 text-amber-600 ${!isDark ? 'opacity-100' : 'opacity-0'}`} />
                 </button>
 
                 <button
@@ -229,7 +229,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
                 >
                   <Moon className={`w-4 h-4 ${isDark ? 'text-[var(--paper)]' : 'text-slate-400'}`} />
                   <span>Mode Gelap</span>
-                  {isDark && <Check className="w-3.5 h-3.5 text-[var(--paper)] ml-auto" />}
+                  <Check className={`w-3.5 h-3.5 text-[var(--paper)] ${isDark ? 'opacity-100' : 'opacity-0'}`} />
                 </button>
               </div>
             </div>
@@ -271,7 +271,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
                     className="w-full h-2 bg-slate-200  rounded-lg appearance-none cursor-pointer accent-teal-600  focus:outline-none"
                     aria-label="Slider ukuran font aplikasi"
                   />
-                  <div className="flex justify-between text-[10px] text-slate-400  mt-1">
+                  <div className="flex justify-between text-xs sm:text-sm text-slate-400  mt-1">
                     <span>80%</span>
                     <span className="font-semibold text-teal-600 ">100% (Normal)</span>
                     <span>140%</span>
@@ -302,7 +302,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
                     key={preset.val}
                     type="button"
                     onClick={() => setFontScale(preset.val)}
-                    className={`py-1 px-2 rounded-lg text-[11px] font-medium border text-center transition-all cursor-pointer ${
+                    className={`py-1 px-2 rounded-lg text-xs sm:text-sm font-medium border text-center transition-all cursor-pointer ${
                       fontScale === preset.val
                         ? 'bg-teal-600 text-white border-teal-600 font-bold shadow-xs'
                         : 'bg-white  border-slate-200  text-slate-600  hover:bg-slate-50 '
@@ -331,7 +331,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
                   <Eye className="w-4 h-4 text-slate-600 " />
                   <div>
                     <span className="text-xs font-semibold block">Kontras Tajam</span>
-                    <span className="text-[10px] text-slate-500 ">Tingkatkan kontras warna teks</span>
+                    <span className="text-xs sm:text-sm text-slate-500 ">Tingkatkan kontras warna teks</span>
                   </div>
                 </div>
                 <input

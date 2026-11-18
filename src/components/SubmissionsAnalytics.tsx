@@ -269,7 +269,7 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
               ))}
             </select>
             {filterQuizId !== 'ALL' && (
- <span className="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-teal-50  text-teal-800  border border-teal-200  shrink-0 self-start sm:self-auto">
+ <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-teal-50  text-teal-800  border border-teal-200  shrink-0 self-start sm:self-auto">
                 {filterQuizId === getLatestSubmittedQuizId() && !initialSelectedQuizId
                   ? 'Kuis Terakhir Dikerjakan'
                   : 'Filter Kuis Aktif'}
@@ -463,7 +463,7 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
  <span className="font-bold text-slate-800 ">
                         Soal {idx + 1} ({q.type === 'multiple_choice' ? 'Pilihan Ganda' : q.type === 'short_answer' ? 'Isian Singkat' : 'Menjodohkan'})
                       </span>
- <span className="text-[10px] bg-white  px-2 py-0.5 rounded-md border border-slate-200  text-slate-600  font-semibold">
+ <span className="text-xs bg-white  px-2 py-0.5 rounded-md border border-slate-200  text-slate-600  font-semibold">
                          {q.category || 'Umum'}
                       </span>
                     </div>
@@ -485,7 +485,7 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
                       </div>
 
                       {q.explanation && (
- <p className="text-[11px] text-slate-500  italic pt-1">
+ <p className="text-xs sm:text-sm text-slate-500  italic pt-1">
                            Pembahasan: {q.explanation}
                         </p>
                       )}

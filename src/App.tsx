@@ -377,7 +377,7 @@ export default function App() {
   // TEMPORARY: teacher login is switched off so the teacher workspace can be reviewed
   // in preview without a Firebase account. Flip to true to restore the gate.
   // LoginPage.tsx and the checks below are untouched.
-  const TEACHER_LOGIN_ENABLED = false;
+  const TEACHER_LOGIN_ENABLED = true;
 
   if (TEACHER_LOGIN_ENABLED && !user) {
     return <LoginPage />;

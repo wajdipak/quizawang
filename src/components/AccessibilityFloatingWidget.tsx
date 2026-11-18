@@ -125,9 +125,11 @@ export const AccessibilityFloatingWidget: React.FC = () => {
   };
 
   return (
+    // Below md the trigger stays in the page flow so it never covers table rows
+    // or bars while scrolling; from md up it floats in the gutter as before.
     <aside
       aria-label="Menu Aksesibilitas dan Tampilan"
-      className="fixed z-40 bottom-24 right-4 sm:bottom-20 sm:right-6"
+      className="z-40 flex justify-end px-4 pt-4 pb-1 sm:px-6 md:block md:fixed md:bottom-20 md:right-6 md:p-0"
     >
       {/* Fixed, Non-Draggable Trigger Button */}
       <button
@@ -137,7 +139,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
         aria-expanded={isOpen}
         aria-controls="accessibility-panel"
         aria-label="Buka Pengaturan Aksesibilitas dan Ukuran Font"
-        className="group relative flex items-center justify-center w-11 h-11 rounded-full bg-[var(--ink)] text-[var(--paper)] border-2 border-[var(--line)] hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ink)] cursor-pointer select-none"
+        className="group relative flex items-center justify-center gap-2 h-11 w-auto px-4 md:px-0 md:w-11 rounded-full bg-[var(--ink)] text-[var(--paper)] border-2 border-[var(--line)] hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[var(--ink)] cursor-pointer select-none"
         title="Pengaturan Aksesibilitas dan Tampilan"
       >
         <span className="relative flex items-center justify-center w-5 h-5 pointer-events-none">
@@ -153,6 +155,9 @@ export const AccessibilityFloatingWidget: React.FC = () => {
               title="Pengaturan Aktif"
             />
           )}
+        </span>
+        <span className="md:hidden text-[0.6875rem] font-bold uppercase tracking-[0.1em] leading-none">
+          Aksesibilitas
         </span>
       </button>
 

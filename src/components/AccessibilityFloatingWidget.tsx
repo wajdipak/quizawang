@@ -129,7 +129,7 @@ export const AccessibilityFloatingWidget: React.FC = () => {
     // or bars while scrolling; from md up it floats in the gutter as before.
     <aside
       aria-label="Menu Aksesibilitas dan Tampilan"
-      className="z-40 fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 sm:right-6 md:bottom-20 md:right-6 pointer-events-none"
+      className="z-40 fixed bottom-[calc(env(safe-area-inset-bottom)+1.5rem)] right-4 sm:right-6 md:bottom-20 md:right-6 pointer-events-none"
     >
       {/* Fixed, Non-Draggable Trigger Button — ikon saja, posisi aman tidak tertumpuk nav bar */}
       <button

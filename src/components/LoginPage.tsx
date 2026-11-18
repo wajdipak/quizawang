@@ -53,7 +53,7 @@ export function LoginPage() {
         <div className="max-w-[1400px] mx-auto flex items-stretch">
           <div className="flex items-center gap-3 px-4 sm:px-6 py-3 border-r-2 border-[var(--line)]">
             <img
-              src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png"
+              src="/logo-awang-quiz.png"
               alt="Logo Awang Long Quiz"
               className="w-9 h-9 object-contain  "
             />

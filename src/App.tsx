@@ -330,7 +330,7 @@ export default function App() {
           <div className="flex items-stretch">
             <div className="flex items-center gap-3 px-4 py-3 border-r-2 border-[var(--line)]">
               <img
-                src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png"
+                src="/logo-awang-quiz.png"
                 alt=""
                 className="w-8 h-8 object-contain"
               />
@@ -419,7 +419,7 @@ export default function App() {
           <div className="flex items-stretch">
             <div className="flex items-center gap-3 px-4 py-3 border-r-2 border-[var(--line)]">
               <img
-                src="/assets/aistudio/Quiz_20261023_131259_0000_ee40cbac.png"
+                src="/logo-awang-quiz.png"
                 alt=""
                 className="w-8 h-8 object-contain"
               />

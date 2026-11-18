@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { signInWithPopup, signInWithRedirect, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
+import { AccessibilityFloatingWidget } from './AccessibilityFloatingWidget.js';
 
 export function LoginPage() {
   const [loading, setLoading] = useState(false);
@@ -172,6 +173,9 @@ export function LoginPage() {
           </div>
         </div>
       </main>
+
+      {/* Floating Accessibility Controls (bottom-right, safe from navbar) */}
+      <AccessibilityFloatingWidget />
     </div>
   );
 }

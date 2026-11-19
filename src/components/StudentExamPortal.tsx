@@ -26,7 +26,10 @@ import {
   ChevronRight,
   Share2,
   Copy,
-  ExternalLink
+  ExternalLink,
+  X,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 import {
   Quiz,
@@ -78,6 +81,9 @@ export const StudentExamPortal: React.FC<Props> = ({
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [timeSpentSeconds, setTimeSpentSeconds] = useState(0);
+
+  // Gambar materi: penampil dengan tombol perbesar / perkecil
+  const [imageViewer, setImageViewer] = useState<{ src: string; title: string; scale: number } | null>(null);
 
   // Sesi 3: Result State
   const [result, setResult] = useState<QuizResultCalculation | null>(null);
@@ -478,6 +484,12 @@ export const StudentExamPortal: React.FC<Props> = ({
       return match && match[2].length === 11 ? `https://www.youtube.com/embed/${match[2]}` : null;
     };
 
+    const getGoogleSlidesEmbedUrl = (url?: string) => {
+      if (!url) return null;
+      const match = url.match(/\/presentation\/d\/(?:e\/)?([a-zA-Z0-9_-]+)/);
+      return match ? `https://docs.google.com/presentation/d/${match[1]}/embed?start=false&loop=false` : null;
+    };
+
     const materialsList = quiz.materials && quiz.materials.length > 0
       ? quiz.materials
       : [
@@ -512,6 +524,7 @@ export const StudentExamPortal: React.FC<Props> = ({
           <div className="space-y-6">
             {materialsList.map((mat, idx) => {
               const ytEmbed = mat.type === 'youtube' ? getYouTubeEmbedUrl(mat.youtubeUrl) : null;
+              const slidesEmbed = mat.type === 'gslides' ? getGoogleSlidesEmbedUrl(mat.slidesUrl) : null;
               return (
  <div key={mat.id || idx} className="p-5 sm:p-6 rounded-2xl bg-slate-50  border border-slate-200  space-y-4">
  <div className="flex items-center justify-between gap-2 border-b border-slate-200/60  pb-3">
@@ -524,7 +537,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                       </h3>
                     </div>
  <span className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-lg bg-teal-100  text-teal-800  border border-teal-200 ">
-                      {mat.type === 'text' ? 'Teks Ringkasan' : mat.type === 'pdf' ? 'Dokumen PDF' : mat.type === 'ppt' ? 'Presentasi PPT' : '▶ Video YouTube'}
+                      {mat.type === 'text' ? 'Teks Ringkasan' : mat.type === 'pdf' ? 'Dokumen PDF' : mat.type === 'ppt' ? 'Presentasi PPT' : mat.type === 'gslides' ? 'Google Slides' : mat.type === 'image' ? 'Gambar' : '▶ Video YouTube'}
                     </span>
                   </div>
 
@@ -545,6 +558,68 @@ export const StudentExamPortal: React.FC<Props> = ({
                           allowFullScreen
                         />
                       </div>
+                    </div>
+                  )}
+
+                  {mat.type === 'image' && mat.imageUrl && (
+                    <div className="space-y-3">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageViewer({
+                            src: mat.imageUrl as string,
+                            title: mat.title || 'Gambar Materi',
+                            scale: 1
+                          })
+                        }
+                        className="block w-full rounded-2xl overflow-hidden border border-slate-200  bg-white shadow-sm cursor-zoom-in"
+                        title="Klik untuk memperbesar gambar"
+                      >
+                        <img
+                          src={mat.imageUrl}
+                          alt={mat.title || 'Gambar materi pembelajaran'}
+                          className="w-full max-h-96 object-contain"
+                        />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setImageViewer({
+                            src: mat.imageUrl as string,
+                            title: mat.title || 'Gambar Materi',
+                            scale: 1
+                          })
+                        }
+                        className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <ZoomIn className="w-4 h-4" />
+                        <span>Perbesar / Perkecil Gambar</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {mat.type === 'gslides' && (
+                    <div className="space-y-2">
+                      {slidesEmbed ? (
+                        <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-slate-200  bg-black">
+                          <iframe
+                            src={slidesEmbed}
+                            title={mat.title || 'Presentasi Google Slides'}
+                            className="w-full h-full"
+                            allow="fullscreen"
+                            allowFullScreen
+                          />
+                        </div>
+                      ) : (
+                        <a
+                          href={mat.slidesUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition-colors"
+                        >
+                          Buka Presentasi Google Slides
+                        </a>
+                      )}
                     </div>
                   )}
 
@@ -616,6 +691,76 @@ export const StudentExamPortal: React.FC<Props> = ({
           </div>
 
         </div>
+
+        {imageViewer && (
+          <div
+            className="fixed inset-0 z-50 bg-slate-900/85 backdrop-blur-sm flex flex-col p-3 sm:p-6"
+            onClick={() => setImageViewer(null)}
+          >
+            <div
+              className="flex items-center justify-between gap-2 pb-3 text-white"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className="font-bold text-sm truncate">{imageViewer.title}</span>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImageViewer((v) =>
+                      v ? { ...v, scale: Math.max(0.5, Math.round((v.scale - 0.25) * 100) / 100) } : v
+                    )
+                  }
+                  className="p-2 rounded-xl bg-white/15 hover:bg-white/25 transition-colors cursor-pointer"
+                  title="Perkecil"
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </button>
+                <span className="text-xs font-bold w-12 text-center tabular-nums">
+                  {Math.round(imageViewer.scale * 100)}%
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImageViewer((v) =>
+                      v ? { ...v, scale: Math.min(4, Math.round((v.scale + 0.25) * 100) / 100) } : v
+                    )
+                  }
+                  className="p-2 rounded-xl bg-white/15 hover:bg-white/25 transition-colors cursor-pointer"
+                  title="Perbesar"
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageViewer((v) => (v ? { ...v, scale: 1 } : v))}
+                  className="px-3 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-xs font-bold transition-colors cursor-pointer"
+                  title="Kembalikan ke ukuran normal"
+                >
+                  100%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImageViewer(null)}
+                  className="p-2 rounded-xl bg-white/15 hover:bg-white/25 transition-colors cursor-pointer"
+                  title="Tutup"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <div
+              className="flex-1 overflow-auto flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={imageViewer.src}
+                alt={imageViewer.title}
+                style={{ transform: `scale(${imageViewer.scale})` }}
+                className="max-w-full max-h-full object-contain transition-transform duration-150 origin-center"
+              />
+            </div>
+          </div>
+        )}
       </div>
     );
   }

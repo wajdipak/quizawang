@@ -29,12 +29,14 @@ export interface Question {
 
 export interface QuizMaterial {
   id: string;
-  type: 'text' | 'pdf' | 'ppt' | 'youtube';
+  type: 'text' | 'pdf' | 'ppt' | 'youtube' | 'gslides' | 'image';
   title: string;
   content?: string; // for text
   fileUrl?: string; // for pdf/ppt data url
   fileName?: string; // for pdf/ppt filename
   youtubeUrl?: string; // for youtube video url
+  slidesUrl?: string; // for google slides share url
+  imageUrl?: string; // for image data url
 }
 
 export interface Quiz {
@@ -53,7 +55,7 @@ export interface Quiz {
   categories: string[];
   materials?: QuizMaterial[]; // Multiple learning materials (text, pdfs, videos)
   materialContent?: string; // Legacy fallback
-  materialType?: 'text' | 'pdf' | 'ppt' | 'youtube';
+  materialType?: 'text' | 'pdf' | 'ppt' | 'youtube' | 'gslides' | 'image';
   materialFileUrl?: string;
   materialFileName?: string;
   materialYoutubeUrl?: string;

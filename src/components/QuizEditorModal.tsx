@@ -377,15 +377,26 @@ export const QuizEditorModal: React.FC<Props> = ({
     setQuestions(next);
   };
 
-  const handleAddMaterial = (type: 'text' | 'pdf' | 'ppt' | 'youtube') => {
+  const handleAddMaterial = (type: 'text' | 'pdf' | 'ppt' | 'youtube' | 'gslides' | 'image') => {
     const newMat: QuizMaterial = {
       id: `mat-${Date.now()}-${materials.length + 1}`,
       type,
-      title: type === 'text' ? `Materi Teks ${materials.length + 1}` : type === 'pdf' || type === 'ppt' ? `Dokumen Materi ${materials.length + 1}` : `Video YouTube ${materials.length + 1}`,
+      title:
+        type === 'text'
+          ? `Materi Teks ${materials.length + 1}`
+          : type === 'pdf' || type === 'ppt'
+          ? `Dokumen Materi ${materials.length + 1}`
+          : type === 'gslides'
+          ? `Presentasi Google Slides ${materials.length + 1}`
+          : type === 'image'
+          ? `Gambar Materi ${materials.length + 1}`
+          : `Video YouTube ${materials.length + 1}`,
       content: '',
       fileUrl: '',
       fileName: '',
-      youtubeUrl: ''
+      youtubeUrl: '',
+      slidesUrl: '',
+      imageUrl: ''
     };
     setMaterials([...materials, newMat]);
   };
@@ -411,6 +422,27 @@ export const QuizEditorModal: React.FC<Props> = ({
                 ...m,
                 type: fileType,
                 fileUrl: reader.result as string,
+                fileName: file.name,
+                title: m.title && m.title.trim() ? m.title : file.name
+              }
+            : m
+        )
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleMaterialImageUpload = (id: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setMaterials(
+        materials.map((m) =>
+          m.id === id
+            ? {
+                ...m,
+                imageUrl: reader.result as string,
                 fileName: file.name,
                 title: m.title && m.title.trim() ? m.title : file.name
               }
@@ -580,6 +612,20 @@ export const QuizEditorModal: React.FC<Props> = ({
                     >
                       <span>+ Tambah Video</span>
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddMaterial('gslides')}
+                      className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+                    >
+                      <span>+ Tambah Google Slides</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAddMaterial('image')}
+                      className="px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition-colors shadow-xs cursor-pointer flex items-center gap-1"
+                    >
+                      <span>+ Tambah Gambar</span>
+                    </button>
                   </div>
                 </div>
 
@@ -610,7 +656,7 @@ export const QuizEditorModal: React.FC<Props> = ({
                         </div>
                         <div className="flex items-center gap-2">
  <span className="text-[10px] font-bold uppercase px-2 py-1 rounded-lg bg-teal-50  text-teal-700  border border-teal-200 ">
-                            {mat.type === 'text' ? 'Teks' : mat.type === 'pdf' ? 'PDF' : mat.type === 'ppt' ? 'PPT' : '▶ YouTube'}
+                            {mat.type === 'text' ? 'Teks' : mat.type === 'pdf' ? 'PDF' : mat.type === 'ppt' ? 'PPT' : mat.type === 'gslides' ? 'Google Slides' : mat.type === 'image' ? 'Gambar' : '▶ YouTube'}
                           </span>
                           <button
                             type="button"
@@ -660,6 +706,42 @@ export const QuizEditorModal: React.FC<Props> = ({
                           placeholder="Link Video YouTube (Contoh: https://www.youtube.com/watch?v=xxxxx)"
                           className="w-full text-xs p-3 rounded-xl border border-slate-300  bg-slate-50  text-slate-800  focus:outline-none focus:ring-2 focus:ring-teal-400"
                         />
+                      )}
+
+                      {mat.type === 'image' && (
+                        <div className="space-y-2">
+                          <label className="flex items-center justify-center gap-2 p-3 rounded-xl border border-dashed border-teal-300  bg-slate-50  hover:bg-teal-50/50 transition-colors cursor-pointer text-xs font-semibold text-teal-800 ">
+                            <span>{mat.fileName ? ` Gambar Terpilih: ${mat.fileName}` : 'Unggah Gambar (JPG, PNG, WebP)'}</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleMaterialImageUpload(mat.id, e)}
+                              className="hidden"
+                            />
+                          </label>
+                          {mat.imageUrl && (
+                            <img
+                              src={mat.imageUrl}
+                              alt={mat.title || 'Pratinjau gambar materi'}
+                              className="w-full max-h-48 object-contain rounded-xl border border-slate-200  bg-white"
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      {mat.type === 'gslides' && (
+                        <div className="space-y-1.5">
+                          <input
+                            type="url"
+                            value={mat.slidesUrl || ''}
+                            onChange={(e) => handleUpdateMaterial(mat.id, { slidesUrl: e.target.value })}
+                            placeholder="Tempel link Google Slides (Contoh: https://docs.google.com/presentation/d/xxxxx/edit?usp=sharing)"
+                            className="w-full text-xs p-3 rounded-xl border border-slate-300  bg-slate-50  text-slate-800  focus:outline-none focus:ring-2 focus:ring-teal-400"
+                          />
+                          <p className="text-[11px] text-teal-700/80 ">
+                            Pastikan presentasi dibagikan dengan akses "Siapa saja yang memiliki link" agar bisa tampil di halaman materi siswa.
+                          </p>
+                        </div>
                       )}
                     </div>
                   ))}

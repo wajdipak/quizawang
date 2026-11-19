@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { MatchingAnswerBoard } from './MatchingAnswerBoard.js';
 import confetti from 'canvas-confetti';
 import {
   Zap,
@@ -1226,40 +1227,20 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
           {/* MATCHING PAIRS */}
           {currentQuestion.type === 'matching' && currentQuestion.matchingPairs && (
-            <div className="pt-2 space-y-2">
+            <div className="pt-2 space-y-3">
               <span className="text-xs font-bold text-slate-500">Pasangkan Jawaban yang Tepat:</span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                {currentQuestion.matchingPairs.map((pair, pIdx) => (
-                  <div
-                    key={pIdx}
-                    className="p-3 rounded-xl bg-slate-50  border border-slate-200  space-y-1.5"
-                  >
- <span className="font-bold text-slate-800  block">
-                      {pair.left}
-                    </span>
-                    <select
-                      disabled={showImmediateFeedback}
-                      value={((answers[currentQuestion.id] as Record<string, string>) || {})[pair.left] || ''}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const currMap = ((answers[currentQuestion.id] as Record<string, string>) || {}) as Record<string, string>;
-                        const updated = { ...currMap, [pair.left]: val };
-                        setAnswers((prev) => ({ ...prev, [currentQuestion.id]: updated }));
-                      }}
-                      className="w-full p-2 rounded-lg bg-white  border border-slate-300  font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
-                    >
-                      <option value="">-- Pilih Pasangan --</option>
-                      {currentQuestion.matchingPairs?.map((item, idx) => (
-                        <option key={idx} value={item.right}>
-                          {item.right}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ))}
-              </div>
 
-              <div className="pt-2">
+              <MatchingAnswerBoard
+                pairs={currentQuestion.matchingPairs}
+                value={(answers[currentQuestion.id] as Record<string, string>) || {}}
+                onChange={(next) => {
+                  setAnswers((prev) => ({ ...prev, [currentQuestion.id]: next }));
+                  if (!showImmediateFeedback) triggerAudio('select');
+                }}
+                disabled={showImmediateFeedback}
+              />
+
+              <div className="pt-1">
                 <button
                   type="button"
                   disabled={showImmediateFeedback}

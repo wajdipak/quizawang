@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { MatchingAnswerBoard } from './MatchingAnswerBoard.js';
 import confetti from 'canvas-confetti';
 import {
   Clock,
@@ -211,26 +212,6 @@ export const StudentExamPortal: React.FC<Props> = ({
       ...prev,
       [questionId]: text
     }));
-  };
-
-  // Matching Answer
-  const handleMatchingSelect = (questionId: string, leftText: string, rightText: string) => {
-    setAnswers((prev) => {
-      const currentMap = ((prev[questionId] as Record<string, string>) || {}) as Record<string, string>;
-      const updated = { ...currentMap };
-
-      if (!rightText) {
-        delete updated[leftText];
-      } else {
-        updated[leftText] = rightText;
-      }
-
-      return {
-        ...prev,
-        [questionId]: updated
-      };
-    });
-    if (soundEnabled) playSelectSound();
   };
 
   // Toggle Flag / Ragu-ragu
@@ -649,7 +630,6 @@ export const StudentExamPortal: React.FC<Props> = ({
 
     // Matching helper data
     const matchingPairs = currentQ?.matchingPairs || [];
-    const availableRightOptions = Array.from(new Set(matchingPairs.map((p) => p.right)));
     const studentMatchingMap = ((answers[currentQ?.id] as Record<string, string>) || {}) as Record<string, string>;
 
     const currentAnswer = answers[currentQ?.id];
@@ -937,48 +917,18 @@ export const StudentExamPortal: React.FC<Props> = ({
             {/* ANSWER INPUT: MENJODOHKAN */}
             {currentQ.type === 'matching' && (
               <div className="space-y-2.5 sm:space-y-3 pt-1 sm:pt-2">
- <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-indigo-50/60  border border-indigo-200  text-xs text-indigo-900 ">
-                  <span className="font-bold">Instruksi Menjodohkan:</span> Pilih pasangan yang paling tepat di kolom sebelah kanan untuk setiap butir pernyataan di kolom sebelah kiri.
+                <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-indigo-50/60 border border-indigo-200 text-xs text-indigo-900">
+                  <span className="font-bold">Instruksi Menjodohkan:</span> Hubungkan setiap pernyataan di kolom kiri dengan jawaban yang tepat di kolom kanan dengan menarik garis dari titik ke titik.
                 </div>
 
-                <div className="space-y-2">
-                  {matchingPairs.map((pair, pIdx) => {
-                    const selectedRight = studentMatchingMap[pair.left] || '';
-
-                    return (
-                      <div
-                        key={pair.id || pIdx}
-                        className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl border border-slate-200  bg-slate-50  flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3"
-                      >
-                        <div className="flex items-center gap-2 sm:w-1/2">
- <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-indigo-100  text-indigo-800  font-bold text-xs flex items-center justify-center shrink-0">
-                            {pIdx + 1}
-                          </span>
- <span className="text-xs font-semibold text-slate-800 ">{pair.left}</span>
-                        </div>
-
-                        <div className="sm:w-1/2">
-                          <select
-                            value={selectedRight}
-                            onChange={(e) => handleMatchingSelect(currentQ.id, pair.left, e.target.value)}
-                            className={`w-full text-xs p-2 sm:p-2.5 rounded-xl border font-medium focus:outline-none focus:ring-2 focus:ring-indigo-400 ${
-                              selectedRight
-                                ? 'bg-indigo-50/80  border-indigo-300  text-indigo-950  font-bold'
-                                : 'bg-white  border-slate-300  text-slate-600 '
-                            }`}
-                          >
-                            <option value="">-- Pilih Pasangan yang Cocok --</option>
-                            {availableRightOptions.map((opt, oIdx) => (
- <option key={oIdx} value={opt} className="bg-white  text-slate-800 ">
-                                {opt}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <MatchingAnswerBoard
+                  pairs={matchingPairs}
+                  value={studentMatchingMap}
+                  onChange={(next) => {
+                    setAnswers((prev) => ({ ...prev, [currentQ.id]: next }));
+                    if (soundEnabled) playSelectSound();
+                  }}
+                />
               </div>
             )}
 

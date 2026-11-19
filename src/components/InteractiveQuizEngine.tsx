@@ -1231,6 +1231,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
               <span className="text-xs font-bold text-slate-500">Pasangkan Jawaban yang Tepat:</span>
 
               <MatchingAnswerBoard
+                resetKey={currentQuestion.id}
                 pairs={currentQuestion.matchingPairs}
                 value={(answers[currentQuestion.id] as Record<string, string>) || {}}
                 onChange={(next) => {

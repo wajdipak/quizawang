@@ -7,6 +7,8 @@ interface MatchingAnswerBoardProps {
   value: Record<string, string>;
   onChange: (next: Record<string, string>) => void;
   disabled?: boolean;
+  /** Ganti nilai ini (mis. id soal) supaya pilihan & tarikan lama dibersihkan. */
+  resetKey?: string | number;
 }
 
 type Side = 'left' | 'right';
@@ -14,6 +16,15 @@ type Side = 'left' | 'right';
 interface Dot {
   side: Side;
   text: string;
+}
+
+interface DragPress {
+  side: Side;
+  text: string;
+  pointerId: number;
+  startX: number;
+  startY: number;
+  moved: boolean;
 }
 
 interface DotLine {
@@ -69,6 +80,27 @@ const PALETTE = [
 
 const paletteFor = (index: number) => PALETTE[Math.max(index, 0) % PALETTE.length];
 
+// Jarak magnet dari titik tujuan, dalam px. Sentuhan butuh area lebih lebar.
+const MAGNET_MOUSE = 30;
+const MAGNET_TOUCH = 56;
+
+const dotKey = (dot: Dot) => `${dot.side}:${dot.text}`;
+
+const parseDotKey = (key: string): Dot => {
+  const sep = key.indexOf(':');
+  return { side: key.slice(0, sep) as Side, text: key.slice(sep + 1) };
+};
+
+/** Satu pilihan kanan hanya boleh dipakai satu butir kiri. */
+const applyConnection = (current: Record<string, string>, leftText: string, rightText: string) => {
+  const next: Record<string, string> = { ...current };
+  Object.keys(next).forEach((key) => {
+    if (key !== leftText && next[key] === rightText) delete next[key];
+  });
+  next[leftText] = rightText;
+  return next;
+};
+
 function hashString(text: string): number {
   let hash = 2166136261;
   for (let i = 0; i < text.length; i++) {
@@ -104,18 +136,28 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
   pairs,
   value,
   onChange,
-  disabled = false
+  disabled = false,
+  resetKey
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
   const dotRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const dragRef = useRef<DragPress | null>(null);
+  const selectedRef = useRef<Dot | null>(null);
 
-  const [selected, setSelected] = useState<Dot | null>(null);
+  const [selected, setSelectedState] = useState<Dot | null>(null);
   const [drag, setDrag] = useState<Dot | null>(null);
   const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
-  const [hoverDot, setHoverDot] = useState<string | null>(null);
+  const [magnet, setMagnet] = useState<Dot | null>(null);
+  const [hoverKey, setHoverKey] = useState<string | null>(null);
   const [lines, setLines] = useState<DotLine[]>([]);
   const [previewLine, setPreviewLine] = useState<DotLine | null>(null);
   const [layoutTick, setLayoutTick] = useState(0);
+
+  const selectDot = (next: Dot | null) => {
+    selectedRef.current = next;
+    setSelectedState(next);
+  };
 
   const rightItems = useMemo(() => {
     const unique = Array.from(new Set(pairs.map((pair) => pair.right)));
@@ -134,14 +176,64 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
 
   const leftIndexOf = (leftText: string) => pairs.findIndex((pair) => pair.left === leftText);
 
+  const latestRef = useRef({ value, onChange, pairs, disabled });
+  useEffect(() => {
+    latestRef.current = { value, onChange, pairs, disabled };
+  }, [value, onChange, pairs, disabled]);
+
+  const pairSignature = useMemo(
+    () => pairs.map((pair) => `${pair.left}\u0000${pair.right}`).join('\u0001'),
+    [pairs]
+  );
+
+  // Saat soal berganti, buang pilihan, tarikan, dan garis sementara yang tertinggal.
+  useEffect(() => {
+    dragRef.current = null;
+    selectedRef.current = null;
+    setSelectedState(null);
+    setDrag(null);
+    setCursor(null);
+    setMagnet(null);
+    setHoverKey(null);
+    setPreviewLine(null);
+  }, [resetKey, pairSignature]);
+
+  const toLocal = (clientX: number, clientY: number) => {
+    const svg = svgRef.current;
+    if (!svg) return { x: 0, y: 0 };
+    const box = svg.getBoundingClientRect();
+    return { x: clientX - box.left, y: clientY - box.top };
+  };
+
+  // Titik terdekat di sisi seberang: dipakai untuk magnet saat melepas jari.
+  const nearestDot = (clientX: number, clientY: number, from: Side, radius: number): Dot | null => {
+    if (radius <= 0) return null;
+
+    let best: Dot | null = null;
+    let bestDistance = radius;
+
+    for (const [key, el] of Object.entries(dotRefs.current)) {
+      if (!el) continue;
+      const dot = parseDotKey(key);
+      if (dot.side === from) continue;
+
+      const box = el.getBoundingClientRect();
+      const distance = Math.hypot(
+        clientX - (box.left + box.width / 2),
+        clientY - (box.top + box.height / 2)
+      );
+
+      if (distance <= bestDistance) {
+        bestDistance = distance;
+        best = dot;
+      }
+    }
+
+    return best;
+  };
+
   const connect = (leftText: string, rightText: string) => {
-    const next: Record<string, string> = { ...value };
-    // Satu pilihan kanan hanya boleh dipakai satu butir kiri.
-    Object.keys(next).forEach((key) => {
-      if (key !== leftText && next[key] === rightText) delete next[key];
-    });
-    next[leftText] = rightText;
-    onChange(next);
+    onChange(applyConnection(value, leftText, rightText));
   };
 
   const disconnect = (leftText: string) => {
@@ -150,12 +242,12 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
     onChange(next);
   };
 
-  // Ukur posisi titik lalu gambar garis penghubung.
+  // Ukur posisi titik lalu gambar garis penghubung (relatif ke kotak SVG).
   useLayoutEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const svg = svgRef.current;
+    if (!svg) return;
 
-    const containerRect = container.getBoundingClientRect();
+    const box = svg.getBoundingClientRect();
     const measured: DotLine[] = [];
 
     pairs.forEach((pair, index) => {
@@ -166,15 +258,15 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
       const rightEl = dotRefs.current[`right:${rightText}`];
       if (!leftEl || !rightEl) return;
 
-      const leftRect = leftEl.getBoundingClientRect();
-      const rightRect = rightEl.getBoundingClientRect();
+      const leftBox = leftEl.getBoundingClientRect();
+      const rightBox = rightEl.getBoundingClientRect();
 
       measured.push({
         key: pair.left,
-        x1: leftRect.left + leftRect.width / 2 - containerRect.left,
-        y1: leftRect.top + leftRect.height / 2 - containerRect.top,
-        x2: rightRect.left + rightRect.width / 2 - containerRect.left,
-        y2: rightRect.top + rightRect.height / 2 - containerRect.top,
+        x1: leftBox.left + leftBox.width / 2 - box.left,
+        y1: leftBox.top + leftBox.height / 2 - box.top,
+        x2: rightBox.left + rightBox.width / 2 - box.left,
+        y2: rightBox.top + rightBox.height / 2 - box.top,
         color: paletteFor(index).line
       });
     });
@@ -182,124 +274,225 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
     setLines(measured);
   }, [pairs, value, layoutTick, rightItems]);
 
-  // Garis putus-putus sementara saat siswa menarik.
+  // Garis putus-putus sementara saat siswa menarik (menempel ke titik magnet).
   useLayoutEffect(() => {
-    if (!drag || !cursor || disabled) {
+    if (!drag || disabled) {
       setPreviewLine(null);
       return;
     }
 
-    const container = containerRef.current;
-    const sourceEl = dotRefs.current[`${drag.side}:${drag.text}`];
-    if (!container || !sourceEl) {
+    const svg = svgRef.current;
+    const sourceEl = dotRefs.current[dotKey(drag)];
+    if (!svg || !sourceEl) {
       setPreviewLine(null);
       return;
     }
 
-    const containerRect = container.getBoundingClientRect();
-    const sourceRect = sourceEl.getBoundingClientRect();
+    const box = svg.getBoundingClientRect();
+    const sourceBox = sourceEl.getBoundingClientRect();
     const index =
       drag.side === 'left'
         ? leftIndexOf(drag.text)
         : pairs.findIndex((pair) => pair.right === drag.text);
 
+    const targetEl = magnet ? dotRefs.current[dotKey(magnet)] : null;
+    let x2: number;
+    let y2: number;
+
+    if (targetEl) {
+      const targetBox = targetEl.getBoundingClientRect();
+      x2 = targetBox.left + targetBox.width / 2 - box.left;
+      y2 = targetBox.top + targetBox.height / 2 - box.top;
+    } else if (cursor) {
+      x2 = cursor.x;
+      y2 = cursor.y;
+    } else {
+      setPreviewLine(null);
+      return;
+    }
+
     setPreviewLine({
       key: 'preview',
-      x1: sourceRect.left + sourceRect.width / 2 - containerRect.left,
-      y1: sourceRect.top + sourceRect.height / 2 - containerRect.top,
-      x2: cursor.x,
-      y2: cursor.y,
+      x1: sourceBox.left + sourceBox.width / 2 - box.left,
+      y1: sourceBox.top + sourceBox.height / 2 - box.top,
+      x2,
+      y2,
       color: paletteFor(index).line,
       dashed: true,
       opacity: 0.6
     });
-  }, [drag, cursor, disabled, layoutTick, pairs]);
+  }, [drag, cursor, magnet, disabled, layoutTick, pairs]);
 
+  // Ukur ulang saat ukuran papan, tiap kartu, atau font berubah.
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || typeof ResizeObserver === 'undefined') return;
+    if (typeof ResizeObserver === 'undefined') return;
 
-    const observer = new ResizeObserver(() => setLayoutTick((tick) => tick + 1));
-    observer.observe(container);
+    const bump = () => setLayoutTick((tick) => tick + 1);
+    const observer = new ResizeObserver(bump);
 
-    return () => observer.disconnect();
-  }, []);
+    if (containerRef.current) observer.observe(containerRef.current);
+    Object.values(dotRefs.current).forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    window.addEventListener('resize', bump);
+
+    let cancelled = false;
+    document.fonts?.ready
+      .then(() => {
+        if (!cancelled) bump();
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+      observer.disconnect();
+      window.removeEventListener('resize', bump);
+    };
+  }, [pairs, rightItems]);
 
   useEffect(() => {
     if (!drag) return;
 
     const handleMove = (event: PointerEvent) => {
-      const container = containerRef.current;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      setCursor({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+      const press = dragRef.current;
+      if (!press || event.pointerId !== press.pointerId) return;
+
+      if (Math.hypot(event.clientX - press.startX, event.clientY - press.startY) > 5) {
+        press.moved = true;
+      }
+
+      setCursor(toLocal(event.clientX, event.clientY));
+
+      const radius = event.pointerType === 'touch' ? MAGNET_TOUCH : MAGNET_MOUSE;
+      const target = nearestDot(event.clientX, event.clientY, press.side, radius);
+      setMagnet(target);
+      setHoverKey(target ? dotKey(target) : dotKey(press));
     };
 
-    const handleEnd = () => {
+    const handleEnd = (event: PointerEvent) => {
+      const press = dragRef.current;
+      if (!press || event.pointerId !== press.pointerId) return;
+
+      dragRef.current = null;
       setDrag(null);
       setCursor(null);
+      setMagnet(null);
+      setHoverKey(null);
+
+      const { value: currentValue, onChange: commit } = latestRef.current;
+      const releaseRadius = event.pointerType === 'touch' ? MAGNET_TOUCH + 12 : MAGNET_MOUSE;
+      const target = press.moved
+        ? nearestDot(event.clientX, event.clientY, press.side, releaseRadius)
+        : null;
+
+      // Tarik garis: sambungkan ke titik yang menempel.
+      if (target) {
+        const leftText = press.side === 'left' ? press.text : target.text;
+        const rightText = press.side === 'left' ? target.text : press.text;
+        commit(applyConnection(currentValue, leftText, rightText));
+        selectDot(null);
+        return;
+      }
+
+      if (press.moved) return;
+
+      // Ketuk tanpa geser: titik kiri lalu titik kanan.
+      const tapped: Dot = { side: press.side, text: press.text };
+      const previous = selectedRef.current;
+
+      if (!previous) {
+        selectDot(tapped);
+        return;
+      }
+
+      if (previous.side === press.side) {
+        selectDot(previous.text === press.text ? null : tapped);
+        return;
+      }
+
+      const leftText = press.side === 'left' ? press.text : previous.text;
+      const rightText = press.side === 'left' ? previous.text : press.text;
+      commit(applyConnection(currentValue, leftText, rightText));
+      selectDot(null);
+    };
+
+    const handleCancel = () => {
+      dragRef.current = null;
+      setDrag(null);
+      setCursor(null);
+      setMagnet(null);
+      setHoverKey(null);
     };
 
     window.addEventListener('pointermove', handleMove);
     window.addEventListener('pointerup', handleEnd);
-    window.addEventListener('pointercancel', handleEnd);
+    window.addEventListener('pointercancel', handleCancel);
 
     return () => {
       window.removeEventListener('pointermove', handleMove);
       window.removeEventListener('pointerup', handleEnd);
-      window.removeEventListener('pointercancel', handleEnd);
+      window.removeEventListener('pointercancel', handleCancel);
     };
-  }, [drag]);
+  }, [drag, disabled, pairs]);
 
   if (totalPairs === 0) return null;
 
   const handleDotPointerDown = (side: Side, text: string) => (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    const container = containerRef.current;
-    if (container) {
-      const rect = container.getBoundingClientRect();
-      setCursor({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+    if (disabled || dragRef.current) return;
+    event.preventDefault();
+
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      /* pointer capture opsional */
     }
+
+    dragRef.current = {
+      side,
+      text,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false
+    };
+
+    setCursor(toLocal(event.clientX, event.clientY));
+    setMagnet(null);
     setDrag({ side, text });
+    setHoverKey(`${side}:${text}`);
   };
 
-  const handleDotPointerUp = (side: Side, text: string) => (event: React.PointerEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    event.stopPropagation();
+  // Pelepasan jari ditangani di level window (lihat efek pointer di atas), sebab
+  // pada layar sentuh pointerup tetap milik titik asal, bukan titik tujuan.
+  const handleDotClick = (side: Side, text: string) => (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled || event.detail !== 0) return; // hanya aktivasi keyboard
 
-    if (drag && drag.side !== side) {
-      const leftText = drag.side === 'left' ? drag.text : text;
-      const rightText = drag.side === 'left' ? text : drag.text;
-      connect(leftText, rightText);
-      setSelected(null);
-    }
+    const tapped: Dot = { side, text };
+    const previous = selectedRef.current;
 
-    setDrag(null);
-    setCursor(null);
-  };
-
-  const handleDotClick = (side: Side, text: string) => () => {
-    if (disabled) return;
-
-    if (!selected) {
-      setSelected({ side, text });
+    if (!previous) {
+      selectDot(tapped);
       return;
     }
 
-    if (selected.side === side) {
-      setSelected(selected.text === text ? null : { side, text });
+    if (previous.side === side) {
+      selectDot(previous.text === text ? null : tapped);
       return;
     }
 
-    const leftText = side === 'left' ? text : selected.text;
-    const rightText = side === 'left' ? selected.text : text;
+    const leftText = side === 'left' ? text : previous.text;
+    const rightText = side === 'left' ? previous.text : text;
     connect(leftText, rightText);
-    setSelected(null);
+    selectDot(null);
   };
 
   const isSource = (side: Side, text: string) =>
     (selected !== null && selected.side === side && selected.text === text) ||
     (drag !== null && drag.side === side && drag.text === text);
+
+  const isMagnet = (side: Side, text: string) =>
+    magnet !== null && magnet.side === side && magnet.text === text;
 
   const rowCount = Math.max(pairs.length, rightItems.length);
 
@@ -308,7 +501,10 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-start gap-1.5 text-[11px] font-semibold text-slate-600">
           <MousePointer2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-teal-600" />
-          <span>Tarik garis dari titik kiri ke titik kanan. Bisa juga klik titik kiri lalu titik kanan.</span>
+          <span>
+            Tarik garis dari titik kiri ke titik kanan; garis akan menempel ke titik terdekat. Bisa juga
+            ketuk titik kiri lalu titik kanan.
+          </span>
         </div>
 
         <span
@@ -332,6 +528,7 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
         }}
       >
         <svg
+          ref={svgRef}
           className="pointer-events-none absolute inset-0 z-0 h-full w-full"
           xmlns="http://www.w3.org/2000/svg"
           aria-hidden="true"
@@ -379,8 +576,8 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
               : null;
             const rightPalette = paletteFor(matchedLeft ? leftIndexOf(matchedLeft) : 0);
             const rightActive = Boolean(rightText) && isSource('right', rightText as string);
-            const rightHovered = Boolean(rightText) && hoverDot === `right:${rightText}` && drag?.side === 'left';
-            const leftHovered = Boolean(leftText) && hoverDot === `left:${leftText}` && drag?.side === 'right';
+            const rightHovered = Boolean(rightText) && hoverKey === `right:${rightText}`;
+            const leftHovered = Boolean(leftText) && hoverKey === `left:${leftText}`;
 
             return (
               <React.Fragment key={rowIdx}>
@@ -426,15 +623,16 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
                         dotRefs.current[`left:${leftText}`] = el;
                       }}
                       onPointerDown={handleDotPointerDown('left', leftText)}
-                      onPointerUp={handleDotPointerUp('left', leftText)}
                       onClick={handleDotClick('left', leftText)}
-                      onPointerEnter={() => setHoverDot(`left:${leftText}`)}
-                      onPointerLeave={() => setHoverDot(null)}
+                      onPointerEnter={() => setHoverKey(`left:${leftText}`)}
+                      onPointerLeave={() => setHoverKey(null)}
                       disabled={disabled}
                       aria-label={`Titik hubung ${leftText}`}
-                      className={`absolute top-1/2 right-0 z-10 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 translate-x-1/2 touch-none rounded-full border-2 shadow-sm transition-transform cursor-pointer ${
+                      className={`absolute top-1/2 right-0 z-10 h-4 w-4 sm:h-4 sm:w-4 -translate-y-1/2 translate-x-1/2 touch-none rounded-full border-2 shadow-sm transition-transform cursor-pointer before:absolute before:-inset-2.5 before:content-[''] before:rounded-full ${
                         isLeftConnected ? leftPalette.dotOn : 'border-slate-400 bg-white hover:border-teal-500'
-                      } ${isSource('left', leftText) ? 'scale-125 ring-4 ring-teal-300/60' : ''}`}
+                      } ${isSource('left', leftText) ? 'scale-125 ring-4 ring-teal-300/60' : ''} ${
+                        isMagnet('left', leftText) ? 'scale-150 ring-4 ring-teal-400/70 shadow-teal-500/40' : ''
+                      }`}
                     />
                   </div>
                 ) : (
@@ -459,15 +657,16 @@ export const MatchingAnswerBoard: React.FC<MatchingAnswerBoardProps> = ({
                         dotRefs.current[`right:${rightText}`] = el;
                       }}
                       onPointerDown={handleDotPointerDown('right', rightText)}
-                      onPointerUp={handleDotPointerUp('right', rightText)}
                       onClick={handleDotClick('right', rightText)}
-                      onPointerEnter={() => setHoverDot(`right:${rightText}`)}
-                      onPointerLeave={() => setHoverDot(null)}
+                      onPointerEnter={() => setHoverKey(`right:${rightText}`)}
+                      onPointerLeave={() => setHoverKey(null)}
                       disabled={disabled}
                       aria-label={`Titik hubung ${rightText}`}
-                      className={`absolute top-1/2 left-0 z-10 h-3.5 w-3.5 sm:h-4 sm:w-4 -translate-y-1/2 -translate-x-1/2 touch-none rounded-full border-2 shadow-sm transition-transform cursor-pointer ${
-                        matchedLeft ? rightPalette.dotOn : 'border-slate-400 bg-white hover:border-teal-500'
-                      } ${isSource('right', rightText) ? 'scale-125 ring-4 ring-teal-300/60' : ''}`}
+                      className={`absolute top-1/2 left-0 z-10 h-4 w-4 sm:h-4 sm:w-4 -translate-y-1/2 -translate-x-1/2 touch-none rounded-full border-2 shadow-sm transition-transform cursor-pointer before:absolute before:-inset-2.5 before:content-[''] before:rounded-full ${
+                        matchedLeft ? rightPalette.dotOn : 'border-slate-400 bg-white hover:bg-teal-50'
+                      } ${isSource('right', rightText) ? 'scale-125 ring-4 ring-teal-300/60' : ''} ${
+                        isMagnet('right', rightText) ? 'scale-150 ring-4 ring-teal-400/70 shadow-teal-500/40' : ''
+                      }`}
                     />
 
                     <span className="flex-1 min-w-0 self-center py-2 pl-3.5 pr-1.5 text-[11px] sm:text-[13px] font-bold leading-snug text-slate-800">

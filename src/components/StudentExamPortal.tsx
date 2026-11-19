@@ -922,6 +922,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                 </div>
 
                 <MatchingAnswerBoard
+                  resetKey={currentQ.id}
                   pairs={matchingPairs}
                   value={studentMatchingMap}
                   onChange={(next) => {

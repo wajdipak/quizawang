@@ -749,15 +749,25 @@ export const StudentExamPortal: React.FC<Props> = ({
               </div>
             </div>
             <div
-              className="flex-1 overflow-auto flex items-center justify-center"
+              className="flex-1 overflow-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <img
-                src={imageViewer.src}
-                alt={imageViewer.title}
-                style={{ transform: `scale(${imageViewer.scale})` }}
-                className="max-w-full max-h-full object-contain transition-transform duration-150 origin-center"
-              />
+              {/* Kotak dalam ikut membesar agar seluruh bagian gambar bisa digeser, bukan hanya sisi kanannya. */}
+              <div
+                className="flex"
+                style={{
+                  width: `${imageViewer.scale * 100}%`,
+                  height: `${imageViewer.scale * 100}%`,
+                  minWidth: '100%',
+                  minHeight: '100%'
+                }}
+              >
+                <img
+                  src={imageViewer.src}
+                  alt={imageViewer.title}
+                  className="m-auto max-w-full max-h-full object-contain"
+                />
+              </div>
             </div>
           </div>
         )}

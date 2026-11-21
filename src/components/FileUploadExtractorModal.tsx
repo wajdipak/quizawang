@@ -18,6 +18,14 @@ import { Quiz, Question, QuestionType } from '../types/quiz.js';
 import { generateQuizCode } from '../utils/quizLogic.js';
 import { GeminiUsageWidget } from './GeminiUsageWidget.js';
 
+type QuestionTypeValue = 'multiple_choice' | 'short_answer' | 'matching';
+
+const QUESTION_TYPE_OPTIONS: { value: QuestionTypeValue; label: string; hint: string }[] = [
+  { value: 'multiple_choice', label: 'Pilihan Ganda', hint: '4 opsi jawaban' },
+  { value: 'short_answer', label: 'Isian Singkat', hint: 'jawaban kata kunci' },
+  { value: 'matching', label: 'Menjodohkan', hint: 'pasangan kiri-kanan' }
+];
+
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -87,7 +95,16 @@ export const FileUploadExtractorModal: React.FC<Props> = ({
     setTargetCount(next);
     setTargetCountInput(next.toString());
   };
-  const [preferredType, setPreferredType] = useState('campuran');
+  const [typeSelection, setTypeSelection] = useState<Record<QuestionTypeValue, boolean>>({
+    multiple_choice: true,
+    short_answer: true,
+    matching: true
+  });
+  const [typeCounts, setTypeCounts] = useState<Record<QuestionTypeValue, string>>({
+    multiple_choice: '',
+    short_answer: '',
+    matching: ''
+  });
   const [gradeLevel, setGradeLevel] = useState('SD');
   const [additionalNote, setAdditionalNote] = useState('');
 
@@ -161,6 +178,16 @@ LATIHAN SOAL EVALUASI:
     processFile(sampleFile);
   };
 
+  const typePreferences = QUESTION_TYPE_OPTIONS.filter((opt) => typeSelection[opt.value]).map((opt) => {
+    const raw = typeCounts[opt.value].trim();
+    const parsed = Number(raw);
+    return { type: opt.value, count: raw !== '' && !isNaN(parsed) && parsed > 0 ? Math.max(1, Math.floor(parsed)) : null };
+  });
+
+  const toggleQuestionType = (type: QuestionTypeValue) => {
+    setTypeSelection((prev) => ({ ...prev, [type]: !prev[type] }));
+  };
+
   const handleExtract = async () => {
     if (!selectedFile) {
       setErrorMessage('Silakan pilih atau unggah file dokumen/gambar terlebih dahulu.');
@@ -186,7 +213,8 @@ LATIHAN SOAL EVALUASI:
           fileName: selectedFile.name,
           targetCount: extractionMode === 'unlimited' ? 0 : targetCount,
           isUnlimited: extractionMode === 'unlimited',
-          preferredType,
+          preferredType: typePreferences.length === 1 ? typePreferences[0].type : 'campuran',
+          typePreferences,
           gradeLevel,
           additionalNote
         })
@@ -448,7 +476,7 @@ LATIHAN SOAL EVALUASI:
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs pt-1">
                   {/* Question count input if custom mode */}
                   {extractionMode === 'custom' ? (
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 sm:col-span-2">
                       <div className="flex items-center justify-between">
  <label htmlFor="file-target-count-input" className="font-semibold text-slate-700 ">
                           Target Soal:
@@ -517,7 +545,7 @@ LATIHAN SOAL EVALUASI:
                       </div>
                     </div>
                   ) : (
- <div className="p-3 rounded-xl bg-teal-50/80  border border-teal-200  text-teal-900  flex flex-col justify-center gap-1">
+ <div className="sm:col-span-2 p-3 rounded-xl bg-teal-50/80  border border-teal-200  text-teal-900  flex flex-col justify-center gap-1">
                       <span className="font-bold text-[11px] flex items-center gap-1">
  <span> Mode Otomatis</span>
                       </span>
@@ -526,22 +554,6 @@ LATIHAN SOAL EVALUASI:
                       </p>
                     </div>
                   )}
-
-                  <div>
- <label className="font-semibold text-slate-600  block mb-1">
-                      Preferensi Tipe Soal:
-                    </label>
-                    <select
-                      value={preferredType}
-                      onChange={(e) => setPreferredType(e.target.value)}
-                      className="w-full p-2 rounded-xl border border-slate-300  bg-white  text-slate-800  focus:outline-none"
-                    >
-                      <option value="campuran">Campuran (PG, Isian, Jodoh)</option>
-                      <option value="multiple_choice">Pilihan Ganda Saja</option>
-                      <option value="short_answer">Isian Singkat Saja</option>
-                      <option value="matching">Menjodohkan Saja</option>
-                    </select>
-                  </div>
 
                   <div>
  <label className="font-semibold text-slate-600  block mb-1">
@@ -557,6 +569,55 @@ LATIHAN SOAL EVALUASI:
                       <option value="SMA">SMA / SMK</option>
                       <option value="Umum">Umum</option>
                     </select>
+                  </div>
+
+                  <div className="sm:col-span-3 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-1">
+ <label className="font-semibold text-slate-600  block">
+                        Preferensi Tipe Soal:
+                      </label>
+ <span className="text-[10px] text-slate-500 ">
+                        Kosongkan jumlah → AI deteksi otomatis dari file
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {QUESTION_TYPE_OPTIONS.map((opt) => {
+                        const active = typeSelection[opt.value];
+                        return (
+                          <div
+                            key={opt.value}
+                            className={`rounded-xl border p-2.5 space-y-1.5 transition-colors ${
+                              active
+                                ? 'border-teal-400 bg-teal-50/70  '
+                                : 'border-slate-200  bg-white  '
+                            }`}
+                          >
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={active}
+                                onChange={() => toggleQuestionType(opt.value)}
+                                className="w-3.5 h-3.5 accent-teal-600 cursor-pointer"
+                              />
+                              <span className={`text-[11px] font-bold ${active ? 'text-teal-900 ' : 'text-slate-500 '}`}>
+                                {opt.label}
+                              </span>
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              inputMode="numeric"
+                              disabled={!active}
+                              value={typeCounts[opt.value]}
+                              onChange={(e) => setTypeCounts((prev) => ({ ...prev, [opt.value]: e.target.value }))}
+                              placeholder={active ? `Jumlah (otomatis)` : 'Tidak dipakai'}
+                              title={opt.hint}
+                              className="w-full p-1.5 rounded-lg border border-slate-300  bg-white  text-slate-800  text-xs font-semibold focus:outline-none focus:border-teal-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -594,8 +655,8 @@ LATIHAN SOAL EVALUASI:
                   </span>
                 </div>
 
- <h3 className="font-bold text-base text-slate-900 ">{extractedQuiz.title}</h3>
- <p className="text-xs text-slate-600 ">{extractedQuiz.description}</p>
+ <h3 className="font-bold text-base text-slate-900 break-words">{extractedQuiz.title}</h3>
+ <p className="text-xs text-slate-600 break-words">{extractedQuiz.description}</p>
 
  <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-500 ">
  <span className="bg-white  px-2 py-0.5 rounded-md border border-teal-200  font-semibold text-teal-800 ">

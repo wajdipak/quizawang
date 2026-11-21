@@ -71,6 +71,57 @@ interface GeminiCallRecord {
   errorMessage?: string;
 }
 
+// Coerce a generated question into the requested type, keeping it usable in the quiz player.
+function coerceQuestionType(q: any, type: string): any {
+  if (type === 'multiple_choice') {
+    return {
+      ...q,
+      type,
+      options: Array.isArray(q.options) && q.options.length >= 2 ? q.options.slice(0, 4) : ['Jawaban benar', 'Pilihan B', 'Pilihan C', 'Pilihan D'],
+      correctOption: typeof q.correctOption === 'number' ? q.correctOption : 0,
+      acceptedAnswers: undefined,
+      matchingPairs: undefined
+    };
+  }
+  if (type === 'short_answer') {
+    const fromOptions = q.options?.[typeof q.correctOption === 'number' ? q.correctOption : 0];
+    return {
+      ...q,
+      type,
+      options: undefined,
+      correctOption: undefined,
+      matchingPairs: undefined,
+      acceptedAnswers: Array.isArray(q.acceptedAnswers) && q.acceptedAnswers.length ? q.acceptedAnswers : [String(fromOptions || 'jawaban')],
+      caseSensitive: false
+    };
+  }
+  return {
+    ...q,
+    type,
+    options: undefined,
+    correctOption: undefined,
+    acceptedAnswers: undefined,
+    matchingPairs: Array.isArray(q.matchingPairs) && q.matchingPairs.length
+      ? q.matchingPairs
+      : [{ id: 'p1', left: 'Istilah A', right: 'Pasangan A' }, { id: 'p2', left: 'Istilah B', right: 'Pasangan B' }]
+  };
+}
+
+// Build a question list that follows the teacher's checklist (explicit counts + auto-detected types).
+function applyTypePreferences(questions: any[], prefs: { type: string; count: number | null }[]): any[] {
+  if (!prefs.length) return questions;
+  const explicitOrder = prefs
+    .filter((p) => p.count)
+    .flatMap((p) => Array<string>(Math.min(p.count as number, 200)).fill(p.type));
+  const autoTypes = prefs.filter((p) => p.count === null).map((p) => p.type);
+  const autoSlots = autoTypes.length
+    ? Array.from({ length: Math.max(questions.length - explicitOrder.length, autoTypes.length) }, (_, i) => autoTypes[i % autoTypes.length])
+    : [];
+  const order = [...explicitOrder, ...autoSlots].slice(0, 200);
+  if (!order.length) return questions;
+  return order.map((type, idx) => coerceQuestionType(questions[idx % questions.length], type));
+}
+
 const geminiCallHistory: GeminiCallRecord[] = [];
 
 function recordGeminiCall(model: string, action: string, status: 'success' | 'retry' | 'failed', errorMessage?: string) {
@@ -607,6 +658,7 @@ app.post('/api/extract-quiz-from-file', async (req: Request, res: Response) => {
     targetCount = 0,
     isUnlimited = false,
     preferredType = 'campuran',
+    typePreferences = [],
     gradeLevel = 'SMP'
   } = req.body;
 
@@ -615,11 +667,30 @@ app.post('/api/extract-quiz-from-file', async (req: Request, res: Response) => {
   const count = unlimitedMode ? null : Math.max(rawNum, 1);
   const activeAI = await determineActiveAI();
 
+  const TYPE_LABELS: Record<string, string> = {
+    multiple_choice: 'Pilihan Ganda',
+    short_answer: 'Isian Singkat',
+    matching: 'Menjodohkan'
+  };
+
+  // Checklist tipe soal dari guru: count null = AI mendeteksi jumlahnya otomatis dari file
+  const typePrefs: { type: string; count: number | null }[] = (Array.isArray(typePreferences) ? typePreferences : [])
+    .filter((p: any) => p && TYPE_LABELS[p?.type])
+    .map((p: any) => {
+      const n = Number(p.count);
+      return { type: String(p.type), count: Number.isFinite(n) && n > 0 ? Math.max(1, Math.floor(n)) : null };
+    });
+  const explicitTypeTotal = typePrefs.reduce((sum, p) => sum + (p.count || 0), 0);
+  const autoTypeCount = typePrefs.filter((p) => p.count === null).length;
+
   if (activeAI === 'fallback') {
     // Intelligent fallback for demo when no AI key is provided
     const topicExtracted = fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-    const effectiveCount = unlimitedMode ? 10 : count!;
-    const fallback = getFallbackQuestions(topicExtracted, effectiveCount);
+    const effectiveCount = explicitTypeTotal > 0
+      ? explicitTypeTotal + autoTypeCount * 2
+      : unlimitedMode ? 10 : count!;
+    const baseFallback = getFallbackQuestions(topicExtracted, effectiveCount);
+    const fallback = applyTypePreferences(baseFallback, typePrefs);
 
     return res.json({
       title: `Kuis dari File: ${fileName.replace(/\.[^/.]+$/, '')}`,
@@ -633,7 +704,19 @@ app.post('/api/extract-quiz-from-file', async (req: Request, res: Response) => {
   }
 
   try {
-    const questionGoal = unlimitedMode
+    const typeSpecification = typePrefs.length === 0
+      ? `- Preferensi Tipe Soal: ${preferredType} (Jika 'campuran', sertakan kombinasi variatif: 'multiple_choice', 'short_answer', dan 'matching').`
+      : [
+          `- Tipe soal yang dipilih guru (checklist aktif): ${typePrefs.map((p) => `${TYPE_LABELS[p.type]} ('${p.type}')`).join(', ')}. JANGAN membuat tipe soal di luar daftar ini.`,
+          ...typePrefs.map((p) => p.count
+            ? `  • ${TYPE_LABELS[p.type]} ('${p.type}'): buat TEPAT ${p.count} butir soal.`
+            : `  • ${TYPE_LABELS[p.type]} ('${p.type}'): jumlah tidak ditentukan guru — deteksi otomatis: hitung dan ekstrak seluruh soal tipe ini yang benar-benar ada di file; bila file berisi materi bacaan tanpa soal jadi, tentukan jumlah yang wajar dan proporsional.`)
+        ].join('\n');
+
+    const questionGoal = explicitTypeTotal > 0
+      ? `TUGAS UTAMA: Analisis file dokumen/gambar yang dilampirkan bernama "${fileName}".
+Ekstrak/susun butir soal dengan tipe dan jumlah sesuai rincian pada Spesifikasi Kuis di bawah. Untuk tipe yang jumlahnya tidak ditentukan, deteksi otomatis dari isi file.`
+      : unlimitedMode
       ? `TUGAS UTAMA: Analisis file dokumen/gambar yang dilampirkan bernama "${fileName}".
 Ekstrak SELURUH butir soal, latihan evaluasi, dan pertanyaan yang terdapat dalam dokumen tersebut secara lengkap dan tuntas TANPA BATASAN JUMLAH (ekstrak 100% semua soal yang ada dalam file, berapapun jumlahnya).
 Jika dokumen berupa modul/materi ajar bacaan (bukan lembar soal jadi), buatkan butir-butir soal komprehensif yang menguji setiap bab, sub-topik, dan konsep penting secara mendalam tanpa memotong atau membatasi jumlah butir soal.`
@@ -645,7 +728,7 @@ ${questionGoal}
 
 Spesifikasi Kuis:
 - Target Jenjang: ${gradeLevel}
-- Preferensi Tipe Soal: ${preferredType} (Jika 'campuran', sertakan kombinasi variatif: 'multiple_choice', 'short_answer', dan 'matching').
+${typeSpecification}
 - Untuk 'multiple_choice': Wajib 4 pilihan options (A, B, C, D) dan correctOption (indeks 0, 1, 2, atau 3).
 - Untuk 'short_answer': Wajib acceptedAnswers (array kata kunci jawaban benar yang fleksibel).
 - Untuk 'matching': Wajib matchingPairs (array objek { id, left, right } minimal 2-4 pasang).

@@ -526,27 +526,89 @@ export const QuizEditorModal: React.FC<Props> = ({
     setQuestions(next);
   };
 
-  // Gambar per butir soal (diunggah atau ditempel guru). Batas 800 KB agar dokumen kuis tetap muat disimpan.
-  const MAX_QUESTION_IMAGE_BYTES = 800 * 1024;
+  // Gambar per butir soal (diunggah atau ditempel guru). Gambar diperkecil & dikompres di klien
+  // agar data URL-nya tidak membuat dokumen kuis melewati batas ~1 MB Firestore.
+  const MAX_QUESTION_IMAGE_FILE_BYTES = 15 * 1024 * 1024;
+  const MAX_QUESTION_IMAGE_DATA_URL_LENGTH = 300 * 1024;
+  const QUESTION_IMAGE_ATTEMPTS = [
+    { maxDimension: 1280, quality: 0.82 },
+    { maxDimension: 1024, quality: 0.75 },
+    { maxDimension: 800, quality: 0.65 },
+    { maxDimension: 640, quality: 0.55 },
+    { maxDimension: 480, quality: 0.45 }
+  ];
 
-  const readQuestionImageFile = (qIndex: number, file: File) => {
+  const loadQuestionImageElement = (file: File) =>
+    new Promise<HTMLImageElement>((resolve, reject) => {
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(img);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        reject(new Error('Gambar tidak dapat dibaca.'));
+      };
+      img.src = objectUrl;
+    });
+
+  const compressQuestionImage = async (file: File) => {
+    const img = await loadQuestionImageElement(file);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Peramban tidak mendukung pengolahan gambar.');
+
+    let lastDataUrl = '';
+    for (const attempt of QUESTION_IMAGE_ATTEMPTS) {
+      const scale = Math.min(1, attempt.maxDimension / Math.max(img.width, img.height));
+      const width = Math.max(1, Math.round(img.width * scale));
+      const height = Math.max(1, Math.round(img.height * scale));
+
+      canvas.width = width;
+      canvas.height = height;
+      // Latar putih agar transparansi (PNG screenshot) tidak menjadi hitam saat dikonversi ke JPEG.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(img, 0, 0, width, height);
+
+      let dataUrl = canvas.toDataURL('image/webp', attempt.quality);
+      if (!dataUrl.startsWith('data:image/webp')) {
+        dataUrl = canvas.toDataURL('image/jpeg', attempt.quality);
+      }
+      lastDataUrl = dataUrl;
+      if (dataUrl.length <= MAX_QUESTION_IMAGE_DATA_URL_LENGTH) return dataUrl;
+    }
+    return lastDataUrl;
+  };
+
+  const readQuestionImageFile = async (qIndex: number, file: File) => {
     if (!file.type.startsWith('image/')) {
       setErrorMessage('Berkas gambar soal harus berupa gambar (PNG, JPG, WebP, atau GIF).');
       return;
     }
-    if (file.size > MAX_QUESTION_IMAGE_BYTES) {
-      setErrorMessage('Ukuran gambar soal maksimal 800 KB. Perkecil gambar lalu unggah kembali.');
+    if (file.size > MAX_QUESTION_IMAGE_FILE_BYTES) {
+      setErrorMessage('Ukuran berkas gambar soal maksimal 15 MB. Perkecil gambar lalu unggah kembali.');
       return;
     }
     setErrorMessage(null);
-    const reader = new FileReader();
-    reader.onload = () => handleQuestionFieldChange(qIndex, { imageUrl: reader.result as string });
-    reader.readAsDataURL(file);
+    try {
+      const dataUrl = await compressQuestionImage(file);
+      if (dataUrl.length > MAX_QUESTION_IMAGE_DATA_URL_LENGTH) {
+        setErrorMessage(
+          'Gambar soal tetap melebihi 300 KB setelah dikompres otomatis. Potong bagian pentingnya atau perkecil gambar lalu unggah kembali.'
+        );
+        return;
+      }
+      handleQuestionFieldChange(qIndex, { imageUrl: dataUrl });
+    } catch {
+      setErrorMessage('Gambar soal gagal diproses. Coba simpan sebagai PNG atau JPG lalu unggah kembali.');
+    }
   };
 
   const handleQuestionImageUpload = (qIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) readQuestionImageFile(qIndex, file);
+    if (file) void readQuestionImageFile(qIndex, file);
     e.target.value = '';
   };
 
@@ -554,7 +616,7 @@ export const QuizEditorModal: React.FC<Props> = ({
     const file = Array.from(e.clipboardData?.files || []).find((f) => f.type.startsWith('image/'));
     if (!file) return;
     e.preventDefault();
-    readQuestionImageFile(qIndex, file);
+    void readQuestionImageFile(qIndex, file);
   };
 
   // Multiple Choice Helpers
@@ -1403,7 +1465,7 @@ export const QuizEditorModal: React.FC<Props> = ({
                         onChange={(e) => handleQuestionImageUpload(qIdx, e)}
                       />
  <span className="text-[11px] text-slate-500 ">
-                        Opsional. Tempel (Ctrl+V) di kotak pertanyaan untuk gambar dari papan klip.
+                        Opsional. Tempel (Ctrl+V) di kotak pertanyaan untuk gambar dari papan klip. Gambar otomatis diperkecil dan dikompres (maksimal 300 KB) agar kuis tetap tersimpan.
                       </span>
                     </div>
 

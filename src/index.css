@@ -344,7 +344,7 @@ html.dark {
     /* Panel headings are 18-24px, where 0.9 leading crushes a wrapped line.
        Large display runs override this with .poster-display. */
     line-height: 1.02;
-    letter-spacing: 0.005em;
+    letter-spacing: 0.03em;
   }
 
   h3,
@@ -430,7 +430,7 @@ html.dark {
   font-family: var(--font-display);
   font-size: clamp(1.9rem, 4vw, 2.75rem);
   line-height: 0.85;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -458,7 +458,20 @@ html.dark {
   font-weight: 400;
   text-transform: uppercase;
   line-height: 0.9;
-  letter-spacing: -0.015em;
+  letter-spacing: 0.03em;
+}
+
+/* Anton ships one cut (400) and reads as a heavy face already. Heading-level
+   utilities such as font-black or tracking-tight were synthesizing a bolder
+   face and pulling the capitals together, so display headings hold the loaded
+   weight and their tracking here, outside the layers Tailwind utilities win.
+   Utilities in [class*="tracking-"] would otherwise override the base rules. */
+h1,
+h2,
+h1 [class*="tracking-"],
+h2 [class*="tracking-"] {
+  font-weight: 400;
+  letter-spacing: 0.03em;
 }
 
 .poster-cell {

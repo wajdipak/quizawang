@@ -98,9 +98,9 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
         
         {/* Header */}
         <div className="p-4 sm:p-6 bg-gradient-to-r from-teal-600 via-cyan-600 to-indigo-700 text-white flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div>
-              <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/20 text-white border border-white/20">
                   {currentSession.gameMode} Session Control
                 </span>
@@ -108,7 +108,7 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
                   PIN BARU: {currentSession.code}
                 </span>
               </div>
-              <h2 className="text-base sm:text-lg font-black tracking-tight leading-snug mt-0.5">
+              <h2 className="text-base sm:text-lg font-black leading-snug mt-0.5 break-words">
                 Ruang Kontrol Guru: {quiz.title}
               </h2>
             </div>
@@ -138,11 +138,11 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
               </p>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex w-full flex-wrap items-center justify-center gap-2 sm:w-auto sm:justify-end">
               <button
                 type="button"
                 onClick={handleCopyPin}
-                className="px-3.5 py-2 rounded-xl bg-white  hover:bg-slate-100  font-mono font-bold text-xs border border-slate-200  flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-white  hover:bg-slate-100  font-mono font-bold text-xs border border-slate-200  flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <span>PIN: {currentSession.code}</span>
                 {copiedPin ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-400" />}
@@ -151,7 +151,7 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={handleCopyLink}
-                className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs cursor-pointer"
+                className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
               >
                 <span>{copiedLink ? 'Link Disalin!' : 'Salin Link Siswa'}</span>
                 <Share2 className="w-3.5 h-3.5" />
@@ -166,14 +166,14 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
               : 'bg-amber-50  border-amber-300 '
           }`}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
+              <div className="flex min-w-0 items-center gap-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white text-base shadow-sm ${
                   currentSession.isExamStarted ? 'bg-emerald-600' : 'bg-amber-500'
                 }`}>
                   {currentSession.isExamStarted ? '' : ''}
                 </div>
-                <div>
- <h4 className="font-black text-sm sm:text-base text-slate-900  flex items-center gap-2">
+                <div className="min-w-0">
+ <h4 className="font-black text-sm sm:text-base text-slate-900  flex flex-wrap items-center gap-2">
                     <span>Status Sesi Ujian:</span>
                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
                       currentSession.isExamStarted ? 'bg-[var(--signal)] text-[var(--on-accent)] border border-[var(--line)]' : 'bg-amber-200 text-[var(--on-accent)]'
@@ -189,13 +189,13 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                 {currentSession.isExamStarted ? (
                   <button
                     type="button"
                     disabled={isUpdating}
                     onClick={() => handleToggleExamStarted(false)}
-                    className="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+                    className="w-full px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-center font-bold text-xs shadow-xs transition-all cursor-pointer sm:w-auto"
                   >
                     Tunda / Hentikan Ujian
                   </button>
@@ -204,7 +204,7 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
                     type="button"
                     disabled={isUpdating}
                     onClick={() => handleToggleExamStarted(true)}
-                    className="flex-1 sm:flex-none px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer animate-bounce"
+                    className="w-full px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-center font-bold text-xs shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer animate-bounce sm:w-auto"
                   >
                     <Play className="w-4 h-4 fill-current" />
                     <span>Mulai Ujian Sekarang (Real-Time)</span>
@@ -302,7 +302,7 @@ export const TeacherLiveSessionModal: React.FC<Props> = ({
         </div>
 
         {/* Footer */}
- <div className="p-4 bg-slate-50  border-t border-slate-200  flex items-center justify-between shrink-0">
+ <div className="p-4 bg-slate-50  border-t border-slate-200  flex flex-wrap items-center justify-between gap-2 shrink-0">
           <button
             type="button"
             onClick={() => onStartTeacherEngine(quiz, currentSession.settings)}

@@ -12,7 +12,9 @@ import {
   Tag,
   ListOrdered,
   Type,
-  Shuffle
+  Shuffle,
+  ShieldCheck,
+  ScanSearch
 } from 'lucide-react';
 import { Quiz, Question, QuestionType, MatchingPair, QuizMaterial } from '../types/quiz.js';
 import { validateQuizData, generateQuizCode } from '../utils/quizLogic.js';
@@ -24,6 +26,21 @@ interface Props {
   onAddNewCategory: (category: string) => void;
   onSave: (quiz: Quiz) => void;
   onClose: () => void;
+}
+
+type KeyCheckStatus = 'sesuai' | 'mencurigakan' | 'ambigu';
+
+interface KeyCheckResult {
+  status: KeyCheckStatus;
+  confidence?: string;
+  reason: string;
+  suggestedCorrectOption?: number;
+  suggestedAcceptedAnswers?: string[];
+  suggestedPairs?: { left: string; right: string }[];
+  suggestedExplanation?: string;
+  applied?: boolean;
+  // Snapshot teks soal saat diperiksa, agar hasil tidak nyangkut ke soal lain/setelah soal diedit
+  forText?: string;
 }
 
 export const QuizEditorModal: React.FC<Props> = ({
@@ -87,6 +104,14 @@ export const QuizEditorModal: React.FC<Props> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAiScoring, setIsAiScoring] = useState(false);
   const [aiScoringFeedback, setAiScoringFeedback] = useState<string | null>(null);
+
+  // AI Answer-Key Correction (result is only a suggestion until the teacher applies it)
+  const [keyCheckResults, setKeyCheckResults] = useState<Record<string, KeyCheckResult>>({});
+  const [keyCheckErrors, setKeyCheckErrors] = useState<Record<string, string>>({});
+  const [checkingKeyIds, setCheckingKeyIds] = useState<Record<string, boolean>>({});
+  const [isCheckingAllKeys, setIsCheckingAllKeys] = useState(false);
+  const [keyCheckProgress, setKeyCheckProgress] = useState<string | null>(null);
+  const [keyCheckBanner, setKeyCheckBanner] = useState<string | null>(null);
 
   const totalPoints = questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0);
 
@@ -205,6 +230,192 @@ export const QuizEditorModal: React.FC<Props> = ({
     } finally {
       setIsAiScoring(false);
     }
+  };
+
+  const questionKey = (q: Question, idx: number) => q.id || `idx-${idx}`;
+
+  const hasKeySuggestion = (q: Question, result: KeyCheckResult) => {
+    if (q.type === 'multiple_choice') {
+      return (
+        typeof result.suggestedCorrectOption === 'number' && result.suggestedCorrectOption !== q.correctOption
+      );
+    }
+    if (q.type === 'short_answer') {
+      const suggested = result.suggestedAcceptedAnswers || [];
+      if (!suggested.length) return false;
+      const current = (q.acceptedAnswers || []).map((a) => a.trim().toLowerCase()).filter(Boolean);
+      const next = suggested.map((a) => a.trim().toLowerCase()).filter(Boolean);
+      return next.length !== current.length || next.some((a) => !current.includes(a));
+    }
+    if (q.type === 'matching') {
+      const suggested = result.suggestedPairs || [];
+      if (!suggested.length) return false;
+      return suggested.some((s) => {
+        const match = (q.matchingPairs || []).find(
+          (p) => p.left.trim().toLowerCase() === s.left.trim().toLowerCase()
+        );
+        return match ? match.right.trim().toLowerCase() !== s.right.trim().toLowerCase() : false;
+      });
+    }
+    return false;
+  };
+
+  const describeKeySuggestion = (q: Question, result: KeyCheckResult) => {
+    if (q.type === 'multiple_choice' && typeof result.suggestedCorrectOption === 'number') {
+      const optionText = (q.options || [])[result.suggestedCorrectOption] || '';
+      return `Saran kunci: ${String.fromCharCode(65 + result.suggestedCorrectOption)}. ${optionText}`.
+        trim();
+    }
+    if (q.type === 'short_answer' && result.suggestedAcceptedAnswers?.length) {
+      return `Saran jawaban: ${result.suggestedAcceptedAnswers.join(' / ')}`;
+    }
+    if (q.type === 'matching' && result.suggestedPairs?.length) {
+      return `Saran pasangan: ${result.suggestedPairs.map((p) => `${p.left} → ${p.right}`).join('; ')}`;
+    }
+    return '';
+  };
+
+  const runKeyCheck = async (indices: number[]) => {
+    const targets = indices.filter((i) => (questions[i]?.text || '').trim().length > 0);
+    if (!targets.length) {
+      setKeyCheckBanner('Isi teks pertanyaan terlebih dahulu sebelum meminta koreksi kunci AI.');
+      return;
+    }
+
+    const chunkSize = 10;
+    let checked = 0;
+    let sesuai = 0;
+    let mencurigakan = 0;
+    let ambigu = 0;
+
+    setKeyCheckBanner(null);
+    setIsCheckingAllKeys(targets.length > 1);
+
+    const setLoading = (on: boolean, keys: string[]) =>
+      setCheckingKeyIds((prev) => {
+        const next = { ...prev };
+        keys.forEach((k) => {
+          if (on) next[k] = true;
+          else delete next[k];
+        });
+        return next;
+      });
+
+    try {
+      for (let start = 0; start < targets.length; start += chunkSize) {
+        const chunkIdx = targets.slice(start, start + chunkSize);
+        const chunkKeys = chunkIdx.map((i) => questionKey(questions[i], i));
+        setLoading(true, chunkKeys);
+        setKeyCheckProgress(
+          `Memeriksa kunci ${start + 1}-${start + chunkIdx.length} dari ${targets.length} soal...`
+        );
+
+        try {
+          const res = await fetch('/api/verify-answer-keys', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subject,
+              gradeLevel,
+              quizTitle: title,
+              questions: chunkIdx.map((i) => {
+                const q = questions[i];
+                return {
+                  id: q.id,
+                  type: q.type,
+                  text: q.text,
+                  options: q.options,
+                  correctOption: q.correctOption,
+                  acceptedAnswers: q.acceptedAnswers,
+                  matchingPairs: q.matchingPairs,
+                  explanation: q.explanation
+                };
+              })
+            })
+          });
+
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data?.error || 'Gagal memeriksa kunci jawaban.');
+
+          const results: (KeyCheckResult & { index?: number })[] = Array.isArray(data.results)
+            ? data.results
+            : [];
+          if (!results.length) throw new Error('AI tidak mengembalikan hasil pemeriksaan.');
+
+          const merge: Record<string, KeyCheckResult> = {};
+          results.forEach((item) => {
+            const localIdx = Number(item.index);
+            if (!Number.isInteger(localIdx) || !chunkIdx[localIdx]) return;
+            const sourceQuestion = questions[chunkIdx[localIdx]];
+            merge[questionKey(sourceQuestion, chunkIdx[localIdx])] = { ...item, forText: sourceQuestion.text };
+            checked += 1;
+            if (item.status === 'sesuai') sesuai += 1;
+            else if (item.status === 'mencurigakan') mencurigakan += 1;
+            else ambigu += 1;
+          });
+
+          setKeyCheckResults((prev) => ({ ...prev, ...merge }));
+          setKeyCheckErrors((prev) => {
+            const next = { ...prev };
+            chunkKeys.forEach((k) => delete next[k]);
+            return next;
+          });
+        } catch (err: any) {
+          const message = err?.message || 'Gagal memeriksa kunci jawaban.';
+          setKeyCheckErrors((prev) => {
+            const next = { ...prev };
+            chunkKeys.forEach((k) => {
+              next[k] = message;
+            });
+            return next;
+          });
+        } finally {
+          setLoading(false, chunkKeys);
+        }
+      }
+
+      if (checked > 0) {
+        setKeyCheckBanner(
+          `AI memeriksa ${checked} butir soal: ${sesuai} sesuai, ${mencurigakan} mencurigakan, ${ambigu} ambigu. Tekan "Terapkan Koreksi" pada soal yang ingin diperbaiki.`
+        );
+      }
+    } finally {
+      setIsCheckingAllKeys(false);
+      setKeyCheckProgress(null);
+    }
+  };
+
+  const applyKeySuggestion = (qIdx: number) => {
+    const current = questions[qIdx];
+    if (!current) return;
+    const key = questionKey(current, qIdx);
+    const result = keyCheckResults[key];
+    if (!result) return;
+
+    const updated: Question = { ...current };
+
+    if (current.type === 'multiple_choice' && typeof result.suggestedCorrectOption === 'number') {
+      updated.correctOption = result.suggestedCorrectOption;
+    }
+    if (current.type === 'short_answer' && result.suggestedAcceptedAnswers?.length) {
+      updated.acceptedAnswers = result.suggestedAcceptedAnswers;
+    }
+    if (current.type === 'matching' && result.suggestedPairs?.length) {
+      updated.matchingPairs = (current.matchingPairs || []).map((pair) => {
+        const suggested = result.suggestedPairs!.find(
+          (s) => s.left.trim().toLowerCase() === pair.left.trim().toLowerCase()
+        );
+        return suggested ? { ...pair, right: suggested.right } : pair;
+      });
+    }
+    if (!(updated.explanation || '').trim() && result.suggestedExplanation) {
+      updated.explanation = result.suggestedExplanation;
+    }
+
+    const next = [...questions];
+    next[qIdx] = updated;
+    setQuestions(next);
+    setKeyCheckResults((prev) => ({ ...prev, [key]: { ...result, applied: true } }));
   };
 
   // Category addition
@@ -916,6 +1127,18 @@ export const QuizEditorModal: React.FC<Props> = ({
                   <Sparkles className={`w-4 h-4 ${isAiScoring ? 'animate-spin' : ''}`} />
                   <span>{isAiScoring ? 'AI Sedang Menganalisis Kesulitan & Skor 100...' : 'Atur Poin Pintar AI (Total 100 Poin)'}</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => runKeyCheck(questions.map((_, i) => i))}
+                  disabled={isCheckingAllKeys || isAiScoring || questions.length === 0}
+                  title="AI memeriksa apakah kunci jawaban setiap butir soal sudah benar. Hasil hanya saran dan tidak diterapkan otomatis."
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm hover:shadow-md flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <ShieldCheck className={`w-4 h-4 ${isCheckingAllKeys ? 'animate-pulse' : ''}`} />
+                  <span>
+                    {isCheckingAllKeys ? keyCheckProgress || 'Memeriksa kunci jawaban...' : 'Koreksi Semua Kunci'}
+                  </span>
+                </button>
               </div>
             </div>
 
@@ -930,6 +1153,23 @@ export const QuizEditorModal: React.FC<Props> = ({
                   type="button"
                   onClick={() => setAiScoringFeedback(null)}
                   className="text-teal-600 hover:text-teal-900  p-0.5 rounded cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* AI Answer-Key Correction Feedback Alert */}
+            {keyCheckBanner && (
+              <div className="p-3 sm:p-3.5 rounded-xl bg-slate-100  border border-slate-300  text-slate-800  text-xs flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2">
+                  <ShieldCheck className="w-4 h-4 text-slate-600  shrink-0 mt-0.5" />
+                  <span className="font-medium">{keyCheckBanner}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setKeyCheckBanner(null)}
+                  className="text-slate-500 hover:text-slate-900  p-0.5 rounded cursor-pointer shrink-0"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -1069,6 +1309,19 @@ export const QuizEditorModal: React.FC<Props> = ({
 
                       <button
                         type="button"
+                        onClick={() => runKeyCheck([qIdx])}
+                        disabled={Boolean(checkingKeyIds[questionKey(q, qIdx)]) || isCheckingAllKeys}
+                        title="Minta AI memeriksa apakah kunci jawaban soal ini benar. Saran tidak diterapkan otomatis."
+                        className="px-2 py-1.5 rounded-lg bg-teal-50  hover:bg-teal-100  text-teal-800  font-bold text-[11px] inline-flex items-center gap-1 border border-teal-200  transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        <ScanSearch className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">
+                          {checkingKeyIds[questionKey(q, qIdx)] ? 'Memeriksa...' : 'Koreksi Kunci (AI)'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => handleRemoveQuestion(qIdx)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600  hover:bg-rose-50  transition-colors cursor-pointer"
                         title="Hapus Soal"
@@ -1098,6 +1351,81 @@ export const QuizEditorModal: React.FC<Props> = ({
                       className="w-full text-xs p-2.5 rounded-xl border border-slate-300  bg-slate-50/50  focus:bg-white  focus:outline-none focus:ring-2 focus:ring-teal-400/40 font-medium text-slate-800  placeholder:text-slate-400"
                     />
                   </div>
+
+                  {/* AI Answer-Key Correction Result */}
+                  {(() => {
+                    const key = questionKey(q, qIdx);
+                    const stored = keyCheckResults[key];
+                    // Abaikan hasil lama bila teks soal sudah berubah sejak diperiksa
+                    const result = stored && stored.forText === q.text ? stored : undefined;
+                    const error = keyCheckErrors[key];
+                    if (!result && !error) return null;
+
+                    if (!result && error) {
+                      return (
+                        <div className="p-3 rounded-xl bg-rose-50  border border-rose-200  text-rose-800  text-[11px] flex items-start gap-2">
+                          <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                          <span className="font-medium">{error}</span>
+                        </div>
+                      );
+                    }
+
+                    const r = result as KeyCheckResult;
+                    const canApply = !r.applied && hasKeySuggestion(q, r);
+                    const suggestion = describeKeySuggestion(q, r);
+                    const isOk = r.applied || r.status === 'sesuai';
+                    const boxClass = isOk
+                      ? 'bg-emerald-50/80  border-emerald-300  text-emerald-900 '
+                      : r.status === 'mencurigakan'
+                      ? 'bg-rose-50/80  border-rose-300  text-rose-900 '
+                      : 'bg-amber-50/80  border-amber-300  text-amber-900 ';
+                    const title = r.applied
+                      ? 'Koreksi AI Sudah Diterapkan'
+                      : r.status === 'sesuai'
+                      ? 'Kunci Jawaban Sesuai'
+                      : r.status === 'mencurigakan'
+                      ? 'Kunci Jawaban Mungkin Keliru'
+                      : 'Kunci Perlu Ditinjau Guru';
+
+                    return (
+                      <div className={`p-3 rounded-xl border text-[11px] space-y-1.5 ${boxClass}`}>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 font-bold">
+                            <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                            <span>
+                              {title}
+                              {r.confidence ? ` (keyakinan AI: ${r.confidence})` : ''}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setKeyCheckResults((prev) => {
+                                const next = { ...prev };
+                                delete next[key];
+                                return next;
+                              })
+                            }
+                            className="opacity-60 hover:opacity-100 cursor-pointer shrink-0"
+                            title="Tutup hasil pemeriksaan"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        <p className="font-medium leading-relaxed">{r.reason}</p>
+                        {suggestion && <p className="font-semibold leading-relaxed">{suggestion}</p>}
+                        {canApply && (
+                          <button
+                            type="button"
+                            onClick={() => applyKeySuggestion(qIdx)}
+                            className="mt-1 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-700 text-white font-bold text-[11px] cursor-pointer"
+                          >
+                            Terapkan Koreksi
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
 
                   {/* TYPE A: PILIHAN GANDA (Multiple Choice) */}
                   {q.type === 'multiple_choice' && (

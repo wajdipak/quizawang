@@ -1169,6 +1169,187 @@ Keluarkan HANYA JSON array:
   });
 });
 
+// AI Answer-Key Verification Endpoint
+// Memeriksa apakah kunci jawaban tiap butir soal benar. Hasil hanya SARAN; guru yang memutuskan.
+type AnswerKeyStatus = 'sesuai' | 'mencurigakan' | 'ambigu';
+
+interface VerifiedAnswerKey {
+  index: number;
+  status: AnswerKeyStatus;
+  confidence: 'tinggi' | 'sedang' | 'rendah';
+  reason: string;
+  suggestedCorrectOption?: number;
+  suggestedAcceptedAnswers?: string[];
+  suggestedPairs?: { left: string; right: string }[];
+  suggestedExplanation?: string;
+}
+
+app.post('/api/verify-answer-keys', async (req: Request, res: Response) => {
+  const { questions = [], subject = '', gradeLevel = '', quizTitle = '' } = req.body || {};
+
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return res.status(400).json({ error: 'Tidak ada butir soal yang dikirim untuk diperiksa.' });
+  }
+  if (questions.length > 15) {
+    return res.status(400).json({ error: 'Maksimal 15 butir soal per pemeriksaan. Kirim dalam beberapa batch.' });
+  }
+
+  // Resolusi AI disamakan dengan pembuat soal: AI_PROVIDER + kunci dari environment
+  // (Vercel Environment Variables / .env lokal). Tidak ada kunci yang ditulis di file aplikasi.
+  const activeAI = await determineActiveAI();
+  if (activeAI === 'fallback') {
+    return res.status(503).json({
+      error:
+        'Mesin AI belum tersedia. Pastikan GEMINI_API_KEY sudah diisi pada environment server (Vercel Environment Variables / .env lokal).'
+    });
+  }
+
+  const payload = questions.map((q: any, index: number) => {
+    const options: string[] = Array.isArray(q.options) ? q.options : [];
+    const pairs: any[] = Array.isArray(q.matchingPairs) ? q.matchingPairs : [];
+    const accepted: string[] = Array.isArray(q.acceptedAnswers) ? q.acceptedAnswers : [];
+
+    return {
+      index,
+      type: q.type,
+      question: String(q.text || ''),
+      ...(q.type === 'multiple_choice'
+        ? {
+            options: options.map((opt, i) => `${String.fromCharCode(65 + i)}. ${opt}`),
+            currentKey:
+              typeof q.correctOption === 'number' && options[q.correctOption] !== undefined
+                ? `${String.fromCharCode(65 + q.correctOption)}. ${options[q.correctOption]}`
+                : 'belum ditentukan'
+          }
+        : {}),
+      ...(q.type === 'short_answer' ? { currentAcceptedAnswers: accepted } : {}),
+      ...(q.type === 'matching'
+        ? { currentPairs: pairs.map((p: any) => ({ left: String(p.left || ''), right: String(p.right || '') })) }
+        : {}),
+      explanation: String(q.explanation || '')
+    };
+  });
+
+  const prompt = `Anda adalah pemeriksa kunci jawaban asesmen pendidikan yang teliti dan konservatif.
+Verifikasi apakah kunci jawaban setiap butir soal berikut benar, memakai pengetahuan faktual bidang "${subject || 'umum'}" untuk jenjang ${gradeLevel || 'umum'}${quizTitle ? ` pada kuis "${quizTitle}"` : ''}.
+
+BUTIR SOAL:
+${JSON.stringify(payload, null, 2)}
+
+ATURAN PENILAIAN:
+- "sesuai": kunci sudah benar dan tidak ada opsi/jawaban lain yang lebih tepat.
+- "mencurigakan": kunci tampak keliru, atau ada opsi/jawaban lain yang jelas lebih tepat.
+- "ambigu": soal atau kunci cacat (lebih dari satu jawaban benar, tidak ada jawaban benar, opsi rancu, informasi kurang) sehingga guru harus meninjau.
+- Gunakan "mencurigakan" HANYA bila Anda yakin; bila ragu gunakan "ambigu".
+- suggestedCorrectOption = indeks 0-based opsi yang benar (hanya untuk type "multiple_choice").
+- suggestedAcceptedAnswers = daftar variasi jawaban benar yang bisa diterima (hanya untuk type "short_answer"), maksimal 6.
+- suggestedPairs = pasangan kiri-kanan yang benar untuk SEMUA item kiri (hanya untuk type "matching").
+- suggestedExplanation = penjelasan singkat mengapa jawaban itu benar (opsional, bahasa Indonesia).
+- reason = alasan singkat dalam bahasa Indonesia, maksimal 2 kalimat.
+
+Keluarkan HANYA JSON array valid (tanpa markdown) berisi satu objek per soal, urut sesuai index:
+[
+  {
+    "index": 0,
+    "status": "sesuai" | "mencurigakan" | "ambigu",
+    "confidence": "tinggi" | "sedang" | "rendah",
+    "reason": "alasan singkat",
+    "suggestedCorrectOption": 1,
+    "suggestedAcceptedAnswers": ["variasi 1", "variasi 2"],
+    "suggestedPairs": [{ "left": "item kiri", "right": "pasangan benar" }],
+    "suggestedExplanation": "penjelasan singkat"
+  }
+]`;
+
+  try {
+    const responseText =
+      activeAI === 'ollama'
+        ? await callOllama(prompt)
+        : await generateGeminiWithRetry(
+            getGeminiClient()!,
+            {
+              contents: prompt,
+              config: { responseMimeType: 'application/json' },
+              action: 'verify-answer-keys'
+            },
+            ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']
+          );
+
+    const cleaned = responseText
+      .trim()
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/```$/i, '')
+      .trim();
+    const parsed = JSON.parse(cleaned);
+    const rawResults: any[] = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.results) ? parsed.results : [];
+
+    const results: VerifiedAnswerKey[] = [];
+
+    for (const raw of rawResults) {
+      const index = Number(raw?.index);
+      if (!Number.isInteger(index) || index < 0 || index >= questions.length) continue;
+
+      const question: any = questions[index];
+      const status: AnswerKeyStatus = ['sesuai', 'mencurigakan', 'ambigu'].includes(raw?.status)
+        ? raw.status
+        : 'ambigu';
+      const confidence = ['tinggi', 'sedang', 'rendah'].includes(raw?.confidence) ? raw.confidence : 'sedang';
+
+      const result: VerifiedAnswerKey = {
+        index,
+        status,
+        confidence,
+        reason: String(raw?.reason || '').trim().slice(0, 400)
+      };
+
+      if (question?.type === 'multiple_choice') {
+        const optionCount = Array.isArray(question.options) ? question.options.length : 0;
+        const suggested = Number(raw?.suggestedCorrectOption);
+        if (Number.isInteger(suggested) && suggested >= 0 && suggested < optionCount) {
+          result.suggestedCorrectOption = suggested;
+        }
+      }
+
+      if (question?.type === 'short_answer' && Array.isArray(raw?.suggestedAcceptedAnswers)) {
+        const list = raw.suggestedAcceptedAnswers
+          .map((a: any) => String(a || '').trim())
+          .filter((a: string) => a.length > 0)
+          .slice(0, 6);
+        if (list.length) result.suggestedAcceptedAnswers = list;
+      }
+
+      if (question?.type === 'matching' && Array.isArray(raw?.suggestedPairs)) {
+        const pairs = raw.suggestedPairs
+          .map((p: any) => ({ left: String(p?.left || '').trim(), right: String(p?.right || '').trim() }))
+          .filter((p: { left: string; right: string }) => p.left && p.right)
+          .slice(0, 30);
+        if (pairs.length) result.suggestedPairs = pairs;
+      }
+
+      const suggestedExplanation = String(raw?.suggestedExplanation || '').trim();
+      if (suggestedExplanation) result.suggestedExplanation = suggestedExplanation.slice(0, 600);
+
+      if (!result.reason) {
+        result.reason = result.status === 'sesuai' ? 'Kunci jawaban sesuai.' : 'Perlu ditinjau ulang oleh guru.';
+      }
+
+      results.push(result);
+    }
+
+    if (results.length === 0) {
+      return res.status(502).json({ error: 'AI tidak mengembalikan hasil pemeriksaan yang valid. Coba lagi.' });
+    }
+
+    return res.json({ success: true, results });
+  } catch (err: any) {
+    console.error('Gemini API error in verify-answer-keys:', err?.message || err);
+    return res.status(502).json({
+      error: 'Gagal memeriksa kunci jawaban dengan AI. Periksa koneksi/kuota Gemini lalu coba lagi.'
+    });
+  }
+});
+
 // Setup Vite middleware in dev or static files in production
 async function startServer() {
   if (!isProd) {

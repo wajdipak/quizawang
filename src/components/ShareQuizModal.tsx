@@ -17,7 +17,7 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
     ? `${window.location.origin}${window.location.pathname}?exam=${quiz.code}`
     : `https://awanglongquiz.app?exam=${quiz.code}`;
 
-  const shareText = `Halo siswa! Silakan kerjakan tugas kuis online "${quiz.title}".\n\n Alur Ujian Siswa:\n1. Sesi 1: Masukkan data diri (Nama Lengkap, Kelas, Nomor Absen/NIS)\n2. Sesi 2: Pengerjaan soal interaktif (1 soal per halaman dengan navigasi nomor soal & tombol submit)\n\n Link Tugas Siswa: ${shareUrl}\natau masukkan Kode PIN Kuis: ${quiz.code}`;
+  const shareText = `Halo siswa! Silakan kerjakan tugas kuis online "${quiz.title}".\n\n Alur Ujian Siswa:\n1. Sesi 1: Masukkan data diri (Nama Lengkap dan Kelas)\n2. Sesi 2: Pengerjaan soal interaktif (1 soal per halaman dengan navigasi nomor soal & tombol submit)\n\n Link Tugas Siswa: ${shareUrl}\natau masukkan Kode PIN Kuis: ${quiz.code}`;
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(quiz.code);
@@ -106,7 +106,7 @@ export const ShareQuizModal: React.FC<Props> = ({ quiz, onClose, onPlay }) => {
  <span> Alur Pengerjaan Siswa:</span>
             </div>
  <p className="text-teal-900/90  leading-relaxed">
-              • <strong>Sesi 1:</strong> Siswa mengisi Nama, No. Absen/NIS, dan Kelas.<br />
+              • <strong>Sesi 1:</strong> Siswa mengisi Nama dan Kelas.<br />
               • <strong>Sesi 2:</strong> Hanya menampilkan <strong>1 soal per halaman</strong> dengan nomor soal klikable & tombol submit di akhir saat siswa merasa yakin.
             </p>
           </div>

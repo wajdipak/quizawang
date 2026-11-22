@@ -19,7 +19,6 @@ import {
   Flag,
   User,
   GraduationCap,
-  Hash,
   AlertTriangle,
   FileCheck,
   Check,
@@ -153,11 +152,6 @@ export const StudentExamPortal: React.FC<Props> = ({
 
     if (!studentName.trim()) {
       setInfoError('Silakan masukkan Nama Lengkap siswa.');
-      return;
-    }
-
-    if (!studentNis.trim()) {
-      setInfoError('Silakan masukkan Nomor Absen atau NIS siswa.');
       return;
     }
 
@@ -394,23 +388,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* NIS / No. Absen */}
-                  <div className="space-y-1">
- <label className="text-xs font-bold text-slate-700  flex items-center gap-1.5">
- <Hash className="w-3.5 h-3.5 text-teal-600 " />
-                      <span>Nomor Absen / NIS: <span className="text-rose-500">*</span></span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={studentNis}
-                      onChange={(e) => setStudentNis(e.target.value)}
-                      placeholder="Contoh: Absen 18 / 20241029"
-                      className="w-full text-xs p-3 rounded-xl border border-slate-300  bg-white  text-slate-800  focus:outline-none focus:ring-2 focus:ring-teal-400/50 transition-colors"
-                    />
-                  </div>
-
+                <div className="space-y-3.5">
                   {/* Kelas */}
                   <div className="space-y-1">
  <label className="text-xs font-bold text-slate-700  flex items-center gap-1.5">
@@ -810,7 +788,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                     {studentName}
                   </span>
  <span                       className="text-[10px] sm:text-xs px-1.5 py-0.5 rounded-full bg-slate-100  text-slate-600  font-semibold shrink-0">
-                    {studentClass} • No. {studentNis}
+                    {studentClass}
                   </span>
                 </div>
  <p className="text-[10px] sm:text-[11px] text-teal-700  font-medium truncate max-w-xs">
@@ -1268,8 +1246,6 @@ export const StudentExamPortal: React.FC<Props> = ({
  <span> <strong>{studentName}</strong></span>
             <span>•</span>
  <span> {studentClass}</span>
-            <span>•</span>
- <span> No. Absen: {studentNis}</span>
           </div>
 
           {/* Quick Metrics */}

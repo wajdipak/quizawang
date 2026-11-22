@@ -908,7 +908,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                   key={q.id || idx}
                   type="button"
                   onClick={() => setCurrentIndex(idx)}
-                  className={`relative min-w-8 h-8 sm:min-w-9 sm:h-9 md:min-w-10 md:h-10 px-1 rounded-xl sm:rounded-2xl font-bold text-xs transition-all flex items-center justify-center gap-0.5 cursor-pointer ${
+                  className={`relative min-w-8 h-8 sm:min-w-9 sm:h-9 md:min-w-10 md:h-10 px-1 rounded-xl sm:rounded-2xl font-black text-sm sm:text-base transition-all flex items-center justify-center gap-0.5 cursor-pointer ${
                     isCurrent
                       ? 'ring-2 ring-teal-400 bg-teal-600 text-white shadow-md scale-105 z-10'
                       : isFlagged
@@ -960,7 +960,7 @@ export const StudentExamPortal: React.FC<Props> = ({
             {/* Top Badges for Current Question */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
- <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-teal-50  text-teal-800  font-black text-xs border border-teal-200 ">
+ <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50  text-teal-800  font-black text-sm sm:text-base border border-teal-200 ">
                   <span>Nomor {currentIndex + 1} dari {totalQuestions}</span>
                 </span>
 

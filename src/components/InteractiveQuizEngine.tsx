@@ -1119,7 +1119,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
           {/* Question Subheader */}
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
- <span className="font-bold px-2.5 py-0.5 rounded-full bg-teal-100  text-teal-800 ">
+ <span className="font-black text-sm sm:text-base px-3 py-1 rounded-full bg-teal-100  text-teal-800 ">
                 Soal #{mode === 'MASTERY' ? masteryCurrentQueueIndex + 1 : currentIndex + 1}
               </span>
               <span className="text-slate-400">|</span>

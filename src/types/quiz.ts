@@ -11,6 +11,7 @@ export interface Question {
   type: QuestionType;
   text: string;
   imageUrl?: string; // data URL gambar pendukung soal (diunggah/ditempel guru)
+  needsImage?: boolean; // true bila soal merujuk gambar pada dokumen asli yang belum ditambahkan
   category: string;
   points: number; // default e.g. 10
   explanation?: string;

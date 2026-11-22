@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Quiz, Question, QuestionType } from '../types/quiz.js';
 import { generateQuizCode } from '../utils/quizLogic.js';
+import { questionRefersToImage } from '../utils/questionImageDetection.js';
 import { GeminiUsageWidget } from './GeminiUsageWidget.js';
 
 type QuestionTypeValue = 'multiple_choice' | 'short_answer' | 'matching';
@@ -32,6 +33,136 @@ interface Props {
   onQuizExtracted: (quiz: Quiz) => void;
   existingCodes: string[];
 }
+
+// Batas aman body request (serverless ±4,5 MB) agar unggahan tidak ditolak 413.
+const MAX_REQUEST_DATA_URL_LENGTH = 3.5 * 1024 * 1024;
+const IMAGE_COMPRESS_THRESHOLD_BYTES = 1024 * 1024;
+const IMAGE_COMPRESSION_ATTEMPTS = [
+  { maxDimension: 2000, quality: 0.85 },
+  { maxDimension: 1600, quality: 0.75 },
+  { maxDimension: 1200, quality: 0.65 },
+  { maxDimension: 1000, quality: 0.55 }
+];
+
+const readFileAsText = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string) || '');
+    reader.onerror = () => reject(reader.error || new Error('Berkas gagal dibaca.'));
+    reader.readAsText(file);
+  });
+
+const readFileAsDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve((reader.result as string) || '');
+    reader.onerror = () => reject(reader.error || new Error('Berkas gagal dibaca.'));
+    reader.readAsDataURL(file);
+  });
+
+const isDocxFile = (file: File) => /\.docx$/i.test(file.name) || file.type.includes('wordprocessingml');
+
+const inflateRaw = async (data: Uint8Array) => {
+  const bytes = data.slice();
+  const stream = new Blob([bytes.buffer as ArrayBuffer]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+};
+
+// Membaca teks .docx di klien: docx adalah arsip ZIP, cukup ambil word/document.xml.
+// Dengan begitu berkas Word 3 MB tidak perlu dikirim sebagai base64 (penyebab galat 413).
+const extractDocxText = async (file: File) => {
+  const buffer = new Uint8Array(await file.arrayBuffer());
+  const view = new DataView(buffer.buffer);
+
+  let endOfCentralDirectory = -1;
+  for (let i = buffer.length - 22; i >= Math.max(0, buffer.length - 66000); i--) {
+    if (view.getUint32(i, true) === 0x06054b50) {
+      endOfCentralDirectory = i;
+      break;
+    }
+  }
+  if (endOfCentralDirectory < 0) throw new Error('Berkas .docx tidak valid.');
+
+  const entryCount = view.getUint16(endOfCentralDirectory + 10, true);
+  let pointer = view.getUint32(endOfCentralDirectory + 16, true);
+  let documentXml: Uint8Array | null = null;
+
+  for (let i = 0; i < entryCount; i++) {
+    if (pointer + 46 > buffer.length || view.getUint32(pointer, true) !== 0x02014b50) break;
+    const method = view.getUint16(pointer + 10, true);
+    const compressedSize = view.getUint32(pointer + 20, true);
+    const nameLength = view.getUint16(pointer + 28, true);
+    const extraLength = view.getUint16(pointer + 30, true);
+    const commentLength = view.getUint16(pointer + 32, true);
+    const localOffset = view.getUint32(pointer + 42, true);
+    const name = new TextDecoder().decode(buffer.subarray(pointer + 46, pointer + 46 + nameLength));
+
+    if (name === 'word/document.xml') {
+      const localNameLength = view.getUint16(localOffset + 26, true);
+      const localExtraLength = view.getUint16(localOffset + 28, true);
+      const dataStart = localOffset + 30 + localNameLength + localExtraLength;
+      const raw = buffer.subarray(dataStart, dataStart + compressedSize);
+      documentXml = method === 0 ? raw : await inflateRaw(raw);
+      break;
+    }
+
+    pointer += 46 + nameLength + extraLength + commentLength;
+  }
+
+  if (!documentXml) throw new Error('Isi teks dokumen .docx tidak ditemukan.');
+
+  const parsed = new DOMParser().parseFromString(new TextDecoder().decode(documentXml), 'application/xml');
+  const lines = Array.from(parsed.getElementsByTagName('w:p')).map((paragraph) =>
+    Array.from(paragraph.getElementsByTagName('w:t'))
+      .map((node) => node.textContent || '')
+      .join('')
+      .trimEnd()
+  );
+
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+};
+
+const loadImageElement = (file: File) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error('Gambar gagal dibaca.'));
+    };
+    img.src = objectUrl;
+  });
+
+// Foto lembar soal dari ponsel sering >3 MB. Perkecil dulu agar tetap bisa dibaca AI.
+const prepareImageDataUrl = async (file: File) => {
+  if (file.size <= IMAGE_COMPRESS_THRESHOLD_BYTES) return readFileAsDataUrl(file);
+
+  const img = await loadImageElement(file);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return readFileAsDataUrl(file);
+
+  let lastDataUrl = '';
+  for (const attempt of IMAGE_COMPRESSION_ATTEMPTS) {
+    const scale = Math.min(1, attempt.maxDimension / Math.max(img.width, img.height));
+    const width = Math.max(1, Math.round(img.width * scale));
+    const height = Math.max(1, Math.round(img.height * scale));
+
+    canvas.width = width;
+    canvas.height = height;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(img, 0, 0, width, height);
+
+    lastDataUrl = canvas.toDataURL('image/jpeg', attempt.quality);
+    if (lastDataUrl.length <= MAX_REQUEST_DATA_URL_LENGTH) return lastDataUrl;
+  }
+  return lastDataUrl;
+};
 
 function adjustPointsTo100(questions: Question[]): Question[] {
   if (!questions || questions.length === 0) return [];
@@ -109,6 +240,7 @@ export const FileUploadExtractorModal: React.FC<Props> = ({
   const [additionalNote, setAdditionalNote] = useState('');
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isPreparingFile, setIsPreparingFile] = useState(false);
   const [statusStep, setStatusStep] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [extractedQuiz, setExtractedQuiz] = useState<Quiz | null>(null);
@@ -117,33 +249,65 @@ export const FileUploadExtractorModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
+  const questionsNeedingImage = extractedQuiz
+    ? extractedQuiz.questions.filter((q) => q.needsImage).length
+    : 0;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    processFile(file);
+    void processFile(file);
   };
 
-  const processFile = (file: File) => {
+  const processFile = async (file: File) => {
     setSelectedFile(file);
     setErrorMessage(null);
     setExtractedQuiz(null);
+    setFileBase64('');
+    setTextContent('');
+    setIsPreparingFile(true);
 
-    const reader = new FileReader();
+    try {
+      if (isDocxFile(file)) {
+        const docxText = await extractDocxText(file);
+        if (!docxText) {
+          setErrorMessage(
+            'Dokumen .docx ini tidak berisi teks soal yang bisa dibaca. Bila soal tertulis di dalam gambar, unggah halaman tersebut sebagai foto (PNG/JPG).'
+          );
+          return;
+        }
+        setTextContent(docxText);
+        return;
+      }
 
-    if (file.type === 'text/plain') {
-      reader.onload = () => {
-        setTextContent(reader.result as string);
-        setFileBase64('');
-      };
-      reader.readAsText(file);
-    } else {
-      // For PDF, images, etc.
-      reader.onload = () => {
-        setFileBase64(reader.result as string);
-        setTextContent('');
-      };
-      reader.readAsDataURL(file);
+      if (/\.doc$/i.test(file.name)) {
+        setErrorMessage('Format .doc lama belum didukung. Simpan dokumen sebagai .docx atau PDF lalu unggah kembali.');
+        return;
+      }
+
+      if (file.type === 'text/plain') {
+        setTextContent(await readFileAsText(file));
+        return;
+      }
+
+      const dataUrl = file.type.startsWith('image/')
+        ? await prepareImageDataUrl(file)
+        : await readFileAsDataUrl(file);
+
+      if (dataUrl.length > MAX_REQUEST_DATA_URL_LENGTH) {
+        setErrorMessage(
+          `Berkas ${(file.size / 1024 / 1024).toFixed(1)} MB terlalu besar untuk dikirim ke server. ` +
+            'Kompres, potong, atau pecah berkas menjadi beberapa bagian lalu unggah kembali.'
+        );
+        return;
+      }
+
+      setFileBase64(dataUrl);
+    } catch {
+      setErrorMessage('Berkas gagal dibaca. Pastikan file tidak rusak lalu coba lagi.');
+    } finally {
+      setIsPreparingFile(false);
     }
   };
 
@@ -175,7 +339,7 @@ LATIHAN SOAL EVALUASI:
 
     const blob = new Blob([sampleText], { type: 'text/plain' });
     const sampleFile = new File([blob], 'Modul_Ajar_Sejarah_Pahlawan_Awang_Long.txt', { type: 'text/plain' });
-    processFile(sampleFile);
+    void processFile(sampleFile);
   };
 
   const typePreferences = QUESTION_TYPE_OPTIONS.filter((opt) => typeSelection[opt.value]).map((opt) => {
@@ -191,6 +355,11 @@ LATIHAN SOAL EVALUASI:
   const handleExtract = async () => {
     if (!selectedFile) {
       setErrorMessage('Silakan pilih atau unggah file dokumen/gambar terlebih dahulu.');
+      return;
+    }
+
+    if (!fileBase64 && !textContent.trim()) {
+      setErrorMessage('Berkas belum selesai dibaca. Tunggu sebentar lalu klik Ekstrak Soal dengan AI.');
       return;
     }
 
@@ -221,16 +390,19 @@ LATIHAN SOAL EVALUASI:
       });
 
       if (!response.ok) {
-        let errMessage = `Server returned status: ${response.status}`;
+        let errMessage = '';
         try {
           const errData = await response.json();
-          if (errData?.error || errData?.message) {
-            errMessage = errData.error || errData.message;
-          }
+          errMessage = errData?.error || errData?.message || '';
         } catch {
           // ignore json parse error
         }
-        throw new Error(errMessage);
+        setErrorMessage(
+          response.status === 413
+            ? 'Berkas terlalu besar untuk dikirim ke server (413). Kompres, potong, atau pecah berkas menjadi beberapa bagian lalu coba lagi.'
+            : errMessage || `Server menolak permintaan (status ${response.status}). Coba lagi beberapa saat atau gunakan berkas lain.`
+        );
+        return;
       }
 
       setStatusStep('Menyusun format kuis multi-tipe dan kategori...');
@@ -253,18 +425,24 @@ LATIHAN SOAL EVALUASI:
         categories: data.categories && data.categories.length > 0 ? data.categories : ['Hasil Ekstraksi'],
         materialContent: data.materialContent || textContent || `Bahan bacaan dan materi ringkasan dari dokumen ${selectedFile.name}.`,
         questions: adjustPointsTo100(
-          (data.questions || []).map((q: any, idx: number) => ({
-            id: q.id || `q-ext-${idx + 1}`,
-            type: q.type || (idx % 3 === 0 ? 'multiple_choice' : idx % 3 === 1 ? 'short_answer' : 'matching'),
-            category: q.category || 'Materi Dokumen',
-            points: q.points || 20,
-            text: q.text,
-            options: q.options || (q.type === 'multiple_choice' ? ['A', 'B', 'C', 'D'] : undefined),
-            correctOption: typeof q.correctOption === 'number' ? q.correctOption : 0,
-            acceptedAnswers: q.acceptedAnswers,
-            matchingPairs: q.matchingPairs,
-            explanation: q.explanation || 'Pembahasan materi dari dokumen.'
-          }))
+          (data.questions || []).map((q: any, idx: number) => {
+            const questionText = String(q.text || '');
+            return {
+              id: q.id || `q-ext-${idx + 1}`,
+              type: q.type || (idx % 3 === 0 ? 'multiple_choice' : idx % 3 === 1 ? 'short_answer' : 'matching'),
+              category: q.category || 'Materi Dokumen',
+              points: q.points || 20,
+              text: questionText,
+              // Teks tetap diambil apa adanya; soal yang merujuk gambar ditandai
+              // agar guru mengunggah gambarnya manual di editor.
+              needsImage: questionRefersToImage(questionText) ? true : undefined,
+              options: q.options || (q.type === 'multiple_choice' ? ['A', 'B', 'C', 'D'] : undefined),
+              correctOption: typeof q.correctOption === 'number' ? q.correctOption : 0,
+              acceptedAnswers: q.acceptedAnswers,
+              matchingPairs: q.matchingPairs,
+              explanation: q.explanation || 'Pembahasan materi dari dokumen.'
+            };
+          })
         )
       };
 
@@ -275,7 +453,7 @@ LATIHAN SOAL EVALUASI:
       setErrorMessage(
         err?.message?.includes('503') || err?.message?.includes('high demand')
           ? 'Server model AI sedang mengalami lonjakan trafik (503). Sistem telah mencoba kembali, silakan coba klik Ekstrak sekali lagi.'
-          : 'Terjadi kendala saat mengekstrak soal dari file. Silakan periksa ukuran file dan coba kembali.'
+          : 'Terjadi kendala saat mengekstrak soal dari file. Periksa koneksi internet Anda, lalu coba klik Ekstrak sekali lagi.'
       );
     } finally {
       setIsLoading(false);
@@ -337,7 +515,7 @@ LATIHAN SOAL EVALUASI:
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  accept=".pdf,.txt,.png,.jpg,.jpeg,.webp,.doc,.docx"
+                  accept=".pdf,.txt,.png,.jpg,.jpeg,.webp,.docx"
                   className="hidden"
                 />
 
@@ -353,12 +531,12 @@ LATIHAN SOAL EVALUASI:
  <p className="font-bold text-sm text-slate-800 ">
                         Klik untuk Memilih File atau Tarik File ke Sini
                       </p>
- <p className="text-xs text-slate-500  mt-1">
-                        Mendukung dokumen <strong>PDF</strong>, teks <strong>TXT</strong>, serta foto lembar soal <strong>PNG/JPG</strong>
+                       <p className="text-xs text-slate-500  mt-1">
+                        Mendukung dokumen <strong>PDF</strong>, Word <strong>.docx</strong>, teks <strong>TXT</strong>, serta foto lembar soal <strong>PNG/JPG</strong>
                       </p>
                     </div>
  <span className="inline-block text-[11px] text-teal-700  font-semibold px-3 py-1 rounded-full bg-white  border border-teal-200  shadow-xs">
-                      Maksimal 25MB
+                      Maksimal ±3,5 MB per berkas
                     </span>
                   </div>
                 ) : (
@@ -670,6 +848,18 @@ LATIHAN SOAL EVALUASI:
                 </div>
               </div>
 
+              {questionsNeedingImage > 0 && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-800 text-xs flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <span>
+                    <strong>{questionsNeedingImage} soal</strong> merujuk gambar/diagram pada dokumen asli. Teks
+                    soalnya tetap diambil tanpa gambar, jadi tambahkan gambarnya secara manual lewat tombol
+                    “Unggah Gambar Soal” di editor kuis. Soal tersebut ditandai <strong>Butuh gambar</strong> di
+                    daftar berikut.
+                  </span>
+                </div>
+              )}
+
               {/* List of extracted questions */}
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
  <span className="text-xs font-bold text-slate-500  uppercase tracking-wider block">
@@ -685,9 +875,16 @@ LATIHAN SOAL EVALUASI:
                         </span>
  <span className="font-bold text-slate-800  leading-snug">{q.text}</span>
                       </div>
- <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white  border border-slate-200  text-slate-600  shrink-0">
-                        {q.type === 'multiple_choice' ? 'Pilihan Ganda' : q.type === 'short_answer' ? 'Isian Singkat' : 'Menjodohkan'}
-                      </span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {q.needsImage && (
+ <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 border border-amber-300 text-amber-800">
+                            Butuh gambar
+                          </span>
+                        )}
+ <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white  border border-slate-200  text-slate-600 ">
+                          {q.type === 'multiple_choice' ? 'Pilihan Ganda' : q.type === 'short_answer' ? 'Isian Singkat' : 'Menjodohkan'}
+                        </span>
+                      </div>
                     </div>
 
                     {q.type === 'multiple_choice' && (
@@ -749,13 +946,18 @@ LATIHAN SOAL EVALUASI:
             <button
               type="button"
               onClick={handleExtract}
-              disabled={isLoading || !selectedFile}
+              disabled={isLoading || isPreparingFile || !selectedFile}
               className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-bold text-xs shadow-md transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
                   <span>Mengekstrak Soal...</span>
+                </>
+              ) : isPreparingFile ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Membaca Berkas...</span>
                 </>
               ) : (
                 <>

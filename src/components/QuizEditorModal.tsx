@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { Quiz, Question, QuestionType, MatchingPair, QuizMaterial } from '../types/quiz.js';
 import { validateQuizData, generateQuizCode } from '../utils/quizLogic.js';
+import { questionRefersToImage } from '../utils/questionImageDetection.js';
 
 interface Props {
   initialQuiz?: Quiz | null;
@@ -600,7 +601,7 @@ export const QuizEditorModal: React.FC<Props> = ({
         );
         return;
       }
-      handleQuestionFieldChange(qIndex, { imageUrl: dataUrl });
+      handleQuestionFieldChange(qIndex, { imageUrl: dataUrl, needsImage: false });
     } catch {
       setErrorMessage('Gambar soal gagal diproses. Coba simpan sebagai PNG atau JPG lalu unggah kembali.');
     }
@@ -1449,6 +1450,16 @@ export const QuizEditorModal: React.FC<Props> = ({
 
                   {/* Gambar pendukung soal (opsional) */}
                   <div className="space-y-2">
+                    {q.needsImage && !q.imageUrl && (
+ <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-[11px] flex items-start gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                        <span>
+                          Soal ini merujuk gambar pada dokumen asli dan gambarnya tidak ikut diekstrak. Unggah
+                          gambarnya secara manual di sini; penanda ini hilang otomatis setelah gambar ditambahkan.
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex flex-wrap items-center gap-2">
                       <label
                         htmlFor={`question-image-${qIdx}`}
@@ -1478,7 +1489,12 @@ export const QuizEditorModal: React.FC<Props> = ({
                         />
                         <button
                           type="button"
-                          onClick={() => handleQuestionFieldChange(qIdx, { imageUrl: '' })}
+                          onClick={() =>
+                            handleQuestionFieldChange(qIdx, {
+                              imageUrl: '',
+                              needsImage: questionRefersToImage(q.text) ? true : undefined
+                            })
+                          }
                           className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-slate-900/70 text-white hover:bg-rose-600 transition-colors cursor-pointer"
                           title="Hapus gambar soal"
                         >

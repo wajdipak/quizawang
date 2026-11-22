@@ -734,6 +734,7 @@ ${typeSpecification}
 - Untuk 'matching': Wajib matchingPairs (array objek { id, left, right } minimal 2-4 pasang).
 - Tetapkan poin yang adil. Pastikan total poin dari seluruh soal berjumlah tepat 100 dengan membagi 100 dengan total soal dan menyesuaikan berdasarkan tingkat kompleksitas soal.
 - Berikan kategori materi (category) dan pembahasan edukatif (explanation) untuk setiap soal.
+- Jika soal asli merujuk pada gambar, diagram, grafik, atau foto (misalnya "perhatikan gambar berikut"), pertahankan kalimat rujukan tersebut apa adanya pada "text". Jangan menghapus rujukan itu, jangan menggambarkannya, dan jangan menambahkan gambar karena gambar tidak ikut diekstrak.
 - Berikan 'materialContent' berupa ringkasan bahan bacaan atau teks materi lengkap dari dokumen untuk dibaca siswa di awal kuis.
 
 Keluarkan HANYA JSON valid tanpa blok markdown tambahan (\`\`\`json):

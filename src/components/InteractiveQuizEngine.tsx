@@ -1145,6 +1145,14 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             {currentQuestion.text}
           </h3>
 
+          {currentQuestion.imageUrl && (
+            <img
+              src={currentQuestion.imageUrl}
+              alt="Gambar pendukung soal"
+              className="w-full max-h-64 object-contain rounded-2xl border border-slate-200  bg-white"
+            />
+          )}
+
           {/* MULTIPLE CHOICE OPTIONS */}
           {currentQuestion.type === 'multiple_choice' && currentQuestion.options && (
             <div className="grid grid-cols-1 gap-2.5 pt-1">

@@ -14,7 +14,8 @@ import {
   Type,
   Shuffle,
   ShieldCheck,
-  ScanSearch
+  ScanSearch,
+  ImagePlus
 } from 'lucide-react';
 import { Quiz, Question, QuestionType, MatchingPair, QuizMaterial } from '../types/quiz.js';
 import { validateQuizData, generateQuizCode } from '../utils/quizLogic.js';
@@ -523,6 +524,37 @@ export const QuizEditorModal: React.FC<Props> = ({
     const next = [...questions];
     next[qIndex] = { ...next[qIndex], ...fields };
     setQuestions(next);
+  };
+
+  // Gambar per butir soal (diunggah atau ditempel guru). Batas 800 KB agar dokumen kuis tetap muat disimpan.
+  const MAX_QUESTION_IMAGE_BYTES = 800 * 1024;
+
+  const readQuestionImageFile = (qIndex: number, file: File) => {
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Berkas gambar soal harus berupa gambar (PNG, JPG, WebP, atau GIF).');
+      return;
+    }
+    if (file.size > MAX_QUESTION_IMAGE_BYTES) {
+      setErrorMessage('Ukuran gambar soal maksimal 800 KB. Perkecil gambar lalu unggah kembali.');
+      return;
+    }
+    setErrorMessage(null);
+    const reader = new FileReader();
+    reader.onload = () => handleQuestionFieldChange(qIndex, { imageUrl: reader.result as string });
+    reader.readAsDataURL(file);
+  };
+
+  const handleQuestionImageUpload = (qIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) readQuestionImageFile(qIndex, file);
+    e.target.value = '';
+  };
+
+  const handleQuestionImagePaste = (qIndex: number, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const file = Array.from(e.clipboardData?.files || []).find((f) => f.type.startsWith('image/'));
+    if (!file) return;
+    e.preventDefault();
+    readQuestionImageFile(qIndex, file);
   };
 
   // Multiple Choice Helpers
@@ -1341,6 +1373,7 @@ export const QuizEditorModal: React.FC<Props> = ({
                       required
                       value={q.text}
                       onChange={(e) => handleQuestionFieldChange(qIdx, { text: e.target.value })}
+                      onPaste={(e) => handleQuestionImagePaste(qIdx, e)}
                       placeholder={
                         q.type === 'multiple_choice'
                           ? 'Ketik teks pertanyaan pilihan ganda...'
@@ -1350,6 +1383,47 @@ export const QuizEditorModal: React.FC<Props> = ({
                       }
                       className="w-full text-xs p-2.5 rounded-xl border border-slate-300  bg-slate-50/50  focus:bg-white  focus:outline-none focus:ring-2 focus:ring-teal-400/40 font-medium text-slate-800  placeholder:text-slate-400"
                     />
+                  </div>
+
+                  {/* Gambar pendukung soal (opsional) */}
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label
+                        htmlFor={`question-image-${qIdx}`}
+                        className="px-3 py-1.5 rounded-xl border border-dashed border-slate-300  bg-slate-50  hover:bg-teal-50/60 text-[11px] font-semibold text-slate-700  cursor-pointer inline-flex items-center gap-1.5 transition-colors"
+                      >
+                        <ImagePlus className="w-3.5 h-3.5" />
+                        <span>{q.imageUrl ? 'Ganti Gambar Soal' : 'Unggah Gambar Soal'}</span>
+                      </label>
+                      <input
+                        id={`question-image-${qIdx}`}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/gif"
+                        className="hidden"
+                        onChange={(e) => handleQuestionImageUpload(qIdx, e)}
+                      />
+ <span className="text-[11px] text-slate-500 ">
+                        Opsional. Tempel (Ctrl+V) di kotak pertanyaan untuk gambar dari papan klip.
+                      </span>
+                    </div>
+
+                    {q.imageUrl && (
+                      <div className="relative inline-block max-w-full">
+                        <img
+                          src={q.imageUrl}
+                          alt={`Gambar soal ${qIdx + 1}`}
+                          className="max-h-48 max-w-full rounded-xl border border-slate-200  bg-white object-contain"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleQuestionFieldChange(qIdx, { imageUrl: '' })}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-slate-900/70 text-white hover:bg-rose-600 transition-colors cursor-pointer"
+                          title="Hapus gambar soal"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* AI Answer-Key Correction Result */}

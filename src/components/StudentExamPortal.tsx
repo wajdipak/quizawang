@@ -1007,6 +1007,13 @@ export const StudentExamPortal: React.FC<Props> = ({
  <h2 className="text-base sm:text-lg font-bold text-slate-800  leading-relaxed">
                 {currentQ.text}
               </h2>
+              {currentQ.imageUrl && (
+                <img
+                  src={currentQ.imageUrl}
+                  alt={`Gambar soal ${currentIndex + 1}`}
+                  className="w-full max-h-72 object-contain rounded-2xl border border-slate-200  bg-white"
+                />
+              )}
             </div>
 
             {/* ANSWER INPUT: PILIHAN GANDA */}
@@ -1414,6 +1421,17 @@ export const StudentExamPortal: React.FC<Props> = ({
                     +{b.earnedPoints} / {b.points} Poin
                   </span>
                 </div>
+
+                {(() => {
+                  const questionImage = quiz.questions.find((qq) => qq.id === b.questionId)?.imageUrl;
+                  return questionImage ? (
+                    <img
+                      src={questionImage}
+                      alt={`Gambar soal ${idx + 1}`}
+                      className="w-full max-h-56 object-contain rounded-xl border border-slate-200  bg-white"
+                    />
+                  ) : null;
+                })()}
 
                 {/* Answer Summary */}
                 <div className="pl-8 space-y-1.5 text-xs">

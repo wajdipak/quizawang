@@ -10,6 +10,7 @@ export interface Question {
   id: string;
   type: QuestionType;
   text: string;
+  imageUrl?: string; // data URL gambar pendukung soal (diunggah/ditempel guru)
   category: string;
   points: number; // default e.g. 10
   explanation?: string;

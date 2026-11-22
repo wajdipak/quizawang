@@ -35,6 +35,7 @@ interface Props {
   onPlayQuiz: (quiz: Quiz, settings?: QuizSessionSettings) => void;
   onViewSubmissions: (quizId: string) => void;
   onManageSession: (session: QuizSession) => void;
+  onDeleteSession: (sessionId: string) => void;
 }
 
 export const TeacherQuizManager: React.FC<Props> = ({
@@ -48,7 +49,8 @@ export const TeacherQuizManager: React.FC<Props> = ({
   onShareQuiz,
   onPlayQuiz,
   onViewSubmissions,
-  onManageSession
+  onManageSession,
+  onDeleteSession
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
@@ -59,6 +61,14 @@ export const TeacherQuizManager: React.FC<Props> = ({
 
   const activeSessions = quizSessions.filter((s) => s.isExamStarted);
   const scheduledSessions = quizSessions.filter((s) => !s.isExamStarted && s.scheduledStartTime != null);
+  const quizIds = new Set(quizzes.map((q) => q.id));
+
+  const handleDeleteSession = (session: QuizSession, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm(`Hapus sesi "${session.quizTitle}" (${session.code}) dari daftar? Siswa tidak bisa lagi memakai PIN ini.`)) {
+      onDeleteSession(session.id);
+    }
+  };
 
   const filteredQuizzes = quizzes.filter((q) => {
     const qLower = searchQuery.toLowerCase();
@@ -167,8 +177,26 @@ export const TeacherQuizManager: React.FC<Props> = ({
             <div className="space-y-2">
               {activeSessions.map(s => (
  <div key={s.id} className="flex justify-between items-center gap-3 text-[0.8125rem] px-3 py-2.5 border-2 border-[var(--line)] bg-[var(--paper-2)] cursor-pointer hover:bg-[var(--paper-3)] transition-colors" onClick={() => onManageSession(s)}>
- <span className="font-semibold truncate">{s.quizTitle}</span>
- <span className="tnum font-mono bg-[var(--paper)] px-2 py-0.5 border-2 border-[var(--line)] shrink-0">{s.code}</span>
+                  <span className="font-semibold truncate min-w-0">
+                    {s.quizTitle}
+                    {!quizIds.has(s.quizId) && (
+                      <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--danger-ink)]">
+                        (kuis dihapus)
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-1.5 shrink-0">
+ <span className="tnum font-mono bg-[var(--paper)] px-2 py-0.5 border-2 border-[var(--line)]">{s.code}</span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteSession(s, e)}
+                      className="p-1.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--danger-ink)] hover:bg-[var(--danger-pale)] cursor-pointer transition-colors"
+                      title="Hapus sesi kuis ini"
+                      aria-label={`Hapus sesi ${s.quizTitle}`}
+                    >
+                      <Trash2 className="w-3 h-3" aria-hidden="true" />
+                    </button>
+                  </span>
                 </div>
               ))}
             </div>
@@ -187,9 +215,27 @@ export const TeacherQuizManager: React.FC<Props> = ({
             <div className="space-y-2">
               {scheduledSessions.map(s => (
  <div key={s.id} className="flex justify-between items-center gap-3 text-[0.8125rem] px-3 py-2.5 border-2 border-[var(--line)] bg-[var(--paper-2)] cursor-pointer hover:bg-[var(--paper-3)] transition-colors" onClick={() => onManageSession(s)}>
- <span className="font-semibold truncate">{s.quizTitle}</span>
+                  <span className="font-semibold truncate min-w-0">
+                    {s.quizTitle}
+                    {!quizIds.has(s.quizId) && (
+                      <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wider text-[var(--danger-ink)]">
+                        (kuis dihapus)
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-1.5 shrink-0">
  <span className="tnum">
                     {s.scheduledStartTime ? new Date(s.scheduledStartTime).toLocaleTimeString() : 'N/A'}
+                  </span>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteSession(s, e)}
+                      className="p-1.5 border-2 border-[var(--line)] bg-[var(--paper)] text-[var(--danger-ink)] hover:bg-[var(--danger-pale)] cursor-pointer transition-colors"
+                      title="Hapus sesi kuis ini"
+                      aria-label={`Hapus sesi ${s.quizTitle}`}
+                    >
+                      <Trash2 className="w-3 h-3" aria-hidden="true" />
+                    </button>
                   </span>
                 </div>
               ))}

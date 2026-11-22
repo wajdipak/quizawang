@@ -33,7 +33,8 @@ import {
   subscribeQuizzesRealtime,
   subscribeSubmissionsRealtime,
   subscribeQuizSessionsRealtime,
-  saveQuizSessionToFirebase
+  saveQuizSessionToFirebase,
+  deleteQuizSessionFromFirebase
 } from './services/firebaseSync.js';
 import { TeacherLiveSessionModal } from './components/TeacherLiveSessionModal.js';
 import { QuizSession } from './types/quiz.js';
@@ -217,11 +218,39 @@ export default function App() {
       return updated;
     });
 
+    // Sesi kuis yang menempel pada kuis ini ikut dihapus supaya tidak tertinggal
+    // sebagai entri yatim di "Kuis Sedang Berjalan" yang tidak bisa dikelola lagi.
+    const orphanSessions = quizSessions.filter((s) => s.quizId === quizId);
+    if (orphanSessions.length > 0) {
+      setQuizSessions((prev) => prev.filter((s) => s.quizId !== quizId));
+      setActiveLiveSession((prev) => (prev && prev.session.quizId === quizId ? null : prev));
+      await Promise.all(
+        orphanSessions.map(async (s) => {
+          try {
+            await deleteQuizSessionFromFirebase(s.id);
+          } catch (err) {
+            console.error('[Firebase] Failed to delete quiz session:', err);
+          }
+        })
+      );
+    }
+
     // Live delete from Firebase Firestore in real-time
     try {
       await deleteQuizFromFirebase(quizId);
     } catch (err) {
       console.error('[Firebase] Failed to delete quiz:', err);
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    setQuizSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    setActiveLiveSession((prev) => (prev && prev.session.id === sessionId ? null : prev));
+
+    try {
+      await deleteQuizSessionFromFirebase(sessionId);
+    } catch (err) {
+      console.error('[Firebase] Failed to delete quiz session:', err);
     }
   };
 
@@ -307,6 +336,12 @@ export default function App() {
     const quiz = quizzes.find((q) => q.id === session.quizId);
     if (quiz) {
       setActiveLiveSession({ quiz, session });
+      return;
+    }
+
+    // Sesi yatim (kuisnya sudah dihapus) tidak bisa dibuka; bersihkan saja.
+    if (window.confirm(`Kuis "${session.quizTitle}" sudah dihapus. Hapus sesi ini dari daftar Kuis Sedang Berjalan?`)) {
+      void handleDeleteSession(session.id);
     }
   };
 
@@ -533,6 +568,7 @@ export default function App() {
                 onPlayQuiz={handlePlayQuiz}
                 onViewSubmissions={handleViewAnalyticsForQuiz}
                 onManageSession={handleManageSession}
+                onDeleteSession={handleDeleteSession}
               />
             )}
 

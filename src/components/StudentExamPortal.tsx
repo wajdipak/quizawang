@@ -39,7 +39,7 @@ import {
   StudentAnswerValue,
   QuestionType
 } from '../types/quiz.js';
-import { calculateQuizScore, formatTimeRemaining } from '../utils/quizLogic.js';
+import { calculateQuizScore, formatStudentAnswer, formatTimeRemaining } from '../utils/quizLogic.js';
 import { gradeShortAnswersWithAI, type ShortAnswerVerdict } from '../utils/aiGrading.js';
 import { playSelectSound, playSuccessSound, playTickSound } from '../utils/audio.js';
 import { saveQuizSessionToFirebase } from '../services/firebaseSync.js';
@@ -1439,6 +1439,16 @@ export const StudentExamPortal: React.FC<Props> = ({
 
                 {/* Answer Summary */}
                 <div className="pl-8 space-y-1.5 text-xs">
+                  <div>
+ <span className="font-semibold text-slate-600 ">Jawaban Anda: </span>
+ <span className={b.isCorrect ? 'font-bold text-emerald-800' : 'font-bold text-rose-700'}>
+                      {formatStudentAnswer(
+                        quiz.questions.find((qq) => qq.id === b.questionId),
+                        b.studentAnswer
+                      )}
+                    </span>
+                  </div>
+
                   <div>
  <span className="font-semibold text-slate-600 ">Kunci Jawaban: </span>
  <span className="font-bold text-emerald-800 ">{b.correctAnswerSummary}</span>

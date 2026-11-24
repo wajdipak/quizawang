@@ -40,6 +40,36 @@ export function checkShortAnswer(
 }
 
 /**
+ * Formats a student's raw answer into readable text for the answer-review screens.
+ */
+export function formatStudentAnswer(
+  question: Question | undefined,
+  answer: StudentAnswerValue | null | undefined
+): string {
+  if (!question || answer === null || answer === undefined) return '(Tidak dijawab)';
+
+  if (question.type === 'multiple_choice') {
+    const idx = typeof answer === 'number' ? answer : null;
+    const optionText = idx !== null ? (question.options || [])[idx] : undefined;
+    if (idx === null || optionText === undefined) return '(Tidak dijawab)';
+    return `${String.fromCharCode(65 + idx)}. ${optionText}`;
+  }
+
+  if (question.type === 'short_answer') {
+    const text = typeof answer === 'string' ? answer.trim() : '';
+    return text || '(Tidak dijawab)';
+  }
+
+  const answerMap =
+    typeof answer === 'object' && !Array.isArray(answer) ? (answer as Record<string, string>) : {};
+  const matched = (question.matchingPairs || [])
+    .map((pair) => (answerMap[pair.left] ? `${pair.left} → ${answerMap[pair.left]}` : null))
+    .filter((line): line is string => line !== null);
+
+  return matched.length > 0 ? matched.join('; ') : '(Tidak dijawab)';
+}
+
+/**
  * Calculate quiz score and comprehensive breakdown for all question types.
  */
 export function calculateQuizScore(

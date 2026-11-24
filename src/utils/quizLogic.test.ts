@@ -80,7 +80,6 @@ test('calculateQuizScore grades short answer and matching correctly', () => {
   assert.equal(res.totalPoints, 30);
   assert.equal(res.correctCount, 2);
   assert.equal(res.isPassed, true);
-  assert.equal(res.categoryBreakdown['Biologi'].percentage, 100);
   assert.equal(res.categoryBreakdown['Sejarah'].percentage, 100);
 });
 

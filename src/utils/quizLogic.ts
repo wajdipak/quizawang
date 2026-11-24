@@ -45,7 +45,8 @@ export function checkShortAnswer(
 export function calculateQuizScore(
   userAnswers: Record<string, StudentAnswerValue>,
   questions: Question[],
-  passingGrade: number = 70
+  passingGrade: number = 70,
+  shortAnswerVerdicts: Record<string, { isCorrect: boolean; reason?: string }> = {}
 ): QuizResultCalculation {
   if (!questions || questions.length === 0) {
     return {
@@ -85,6 +86,7 @@ export function calculateQuizScore(
     let isPartial = false;
     let earned = 0;
     let correctAnswerSummary = '';
+    let aiReason: string | undefined;
     let matchingDetails: QuestionBreakdown['matchingDetails'];
 
     if (q.type === 'multiple_choice') {
@@ -97,7 +99,14 @@ export function calculateQuizScore(
       correctAnswerSummary = `${letter}. ${correctText}`;
     } else if (q.type === 'short_answer') {
       const studentText = typeof rawAns === 'string' ? rawAns : '';
-      isCorrect = checkShortAnswer(studentText, q.acceptedAnswers || [], q.caseSensitive);
+      const verdict = shortAnswerVerdicts[q.id];
+      if (verdict) {
+        // Penilaian AI berdasarkan makna jawaban, bukan kecocokan karakter.
+        isCorrect = verdict.isCorrect;
+        aiReason = verdict.reason;
+      } else {
+        isCorrect = checkShortAnswer(studentText, q.acceptedAnswers || [], q.caseSensitive);
+      }
       earned = isCorrect ? qPoints : 0;
       correctAnswerSummary = (q.acceptedAnswers || []).join(' / ');
     } else if (q.type === 'matching') {
@@ -147,6 +156,7 @@ export function calculateQuizScore(
       studentAnswer: rawAns !== undefined ? rawAns : null,
       correctAnswerSummary,
       explanation: q.explanation || '',
+      aiReason,
       matchingDetails
     };
   });

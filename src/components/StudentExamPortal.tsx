@@ -40,6 +40,7 @@ import {
   QuestionType
 } from '../types/quiz.js';
 import { calculateQuizScore, formatTimeRemaining } from '../utils/quizLogic.js';
+import { gradeShortAnswersWithAI, type ShortAnswerVerdict } from '../utils/aiGrading.js';
 import { playSelectSound, playSuccessSound, playTickSound } from '../utils/audio.js';
 import { saveQuizSessionToFirebase } from '../services/firebaseSync.js';
 
@@ -79,6 +80,7 @@ export const StudentExamPortal: React.FC<Props> = ({
   );
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
+  const [isGrading, setIsGrading] = useState(false);
   const [timeSpentSeconds, setTimeSpentSeconds] = useState(0);
 
   // Gambar materi: penampil dengan tombol perbesar / perkecil
@@ -114,7 +116,7 @@ export const StudentExamPortal: React.FC<Props> = ({
     if (currentSession !== 2 || result !== null || submittedRef.current) return;
     if (quiz.durationMinutes > 0 && secondsRemaining <= 0) {
       submittedRef.current = true;
-      handleSubmitQuiz();
+      void handleSubmitQuiz();
     }
   }, [secondsRemaining, currentSession, result]);
 
@@ -223,14 +225,25 @@ export const StudentExamPortal: React.FC<Props> = ({
   };
 
   // Submit and Grade Quiz
-  const handleSubmitQuiz = () => {
+  const handleSubmitQuiz = async () => {
     if (submittedRef.current) return;
     submittedRef.current = true;
 
     setShowSubmitModal(false);
+    setIsGrading(true);
 
-    const calculation = calculateQuizScore(answers, quiz.questions, quiz.passingGrade);
+    // Isian singkat dinilai AI berdasarkan makna jawaban. Bila AI tidak tersedia,
+    // penilaian jatuh kembali ke pencocokan teks seperti sebelumnya.
+    let aiVerdicts: Record<string, ShortAnswerVerdict> = {};
+    try {
+      aiVerdicts = await gradeShortAnswersWithAI(quiz, answers);
+    } catch (err) {
+      console.warn('Penilaian AI isian singkat tidak tersedia, memakai pencocokan teks:', err);
+    }
+
+    const calculation = calculateQuizScore(answers, quiz.questions, quiz.passingGrade, aiVerdicts);
     setResult(calculation);
+    setIsGrading(false);
 
     const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
     setTimeSpentSeconds(duration);
@@ -1043,7 +1056,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                     className="w-full text-xs sm:text-sm p-3 rounded-xl border border-slate-300  bg-white  focus:outline-none focus:ring-2 focus:ring-teal-400 font-medium text-slate-800  placeholder:text-slate-400 "
                   />
  <div className="flex flex-wrap items-center justify-between gap-1 text-xs sm:text-sm text-slate-500  pt-1">
- <span> Tips: Jawaban tidak membedakan huruf besar/kecil.</span>
+                             <span> Tips: Jawaban dinilai AI berdasarkan makna, jadi tidak harus sama persis dengan kunci.</span>
                     {(answers[currentQ.id] as string)?.trim() && (
  <span className="text-emerald-700  font-bold flex items-center gap-1">
                         <Check className="w-3.5 h-3.5" /> Jawaban Tersimpan
@@ -1117,6 +1130,21 @@ export const StudentExamPortal: React.FC<Props> = ({
 
             </div>
 
+          </div>
+        )}
+
+        {/* AI GRADING OVERLAY */}
+        {isGrading && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+            <div className="bg-white  rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200  text-center space-y-3 animate-in fade-in zoom-in-95 transition-colors">
+              <Sparkles className="w-8 h-8 text-teal-600  mx-auto animate-pulse" />
+              <h3 className="font-extrabold text-slate-800  text-base">
+                AI sedang memeriksa jawaban isian singkat...
+              </h3>
+              <p className="text-xs text-slate-500 ">
+                Jawaban dinilai berdasarkan makna, sehingga ejaan atau susunan kata yang berbeda tetap dapat diterima.
+              </p>
+            </div>
           </div>
         )}
 
@@ -1431,6 +1459,12 @@ export const StudentExamPortal: React.FC<Props> = ({
                           )}
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {b.aiReason && (
+                    <div className="pt-1 text-xs text-teal-800  bg-teal-50  p-2.5 rounded-xl border border-teal-200  leading-relaxed">
+                      <strong>Pertimbangan AI:</strong> {b.aiReason}
                     </div>
                   )}
 

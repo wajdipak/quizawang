@@ -43,6 +43,7 @@ import {
   StudentAnswerValue
 } from '../types/quiz.js';
 import { calculateQuizScore, checkShortAnswer, formatTimeRemaining } from '../utils/quizLogic.js';
+import { gradeShortAnswersWithAI, type ShortAnswerVerdict } from '../utils/aiGrading.js';
 import { playSelectSound, playSuccessSound, playTickSound } from '../utils/audio.js';
 
 interface Props {
@@ -50,6 +51,11 @@ interface Props {
   settings: QuizSessionSettings;
   onExit: () => void;
   onSubmissionSaved?: (submission: StudentSubmission) => void;
+}
+
+// Satu verdict AI berlaku untuk satu soal + satu teks jawaban tertentu.
+function verdictCacheKey(questionId: string, answerText: string): string {
+  return `${questionId}::${answerText.trim().toLowerCase()}`;
 }
 
 interface SimulatedPlayer {
@@ -75,6 +81,19 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
   // Answers map
   const [answers, setAnswers] = useState<Record<string, StudentAnswerValue>>({});
   const [flagged, setFlagged] = useState<Record<string, boolean>>({});
+
+  // Isian singkat dinilai AI berdasarkan makna, sama seperti portal ujian
+  const [aiVerdicts, setAiVerdicts] = useState<Record<string, ShortAnswerVerdict>>({});
+  const [isGrading, setIsGrading] = useState(false);
+  const [isGradingResult, setIsGradingResult] = useState(false);
+  const [lastAiReason, setLastAiReason] = useState<string | null>(null);
+  const answersRef = useRef<Record<string, StudentAnswerValue>>(answers);
+  // Verdict AI disimpan per jawaban (bukan per soal) agar percobaan ulang di mode
+  // MASTERY dengan jawaban berbeda tetap dinilai ulang.
+  const aiVerdictCacheRef = useRef<Record<string, ShortAnswerVerdict>>({});
+  const finishingRef = useRef(false);
+  const gradingRef = useRef(false);
+  const gradingPromiseRef = useRef<Promise<unknown> | null>(null);
 
   // Question Queue (for adaptive mastery mode)
   // Each item has question, attempts, consecutiveCorrect, isMastered
@@ -171,7 +190,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleFinishSession('Waktu Sesi Habis');
+          void handleFinishSession('Waktu Sesi Habis');
           return 0;
         }
         if (prev <= 10 && soundEnabled && mode !== 'TEST') {
@@ -218,7 +237,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
       if (nextCount >= maxViolations) {
         setIsDisqualified(true);
         setTimeout(() => {
-          handleFinishSession('Kuis otomatis dikunci karena melampaui batas pelanggaran anti-cheat.');
+          void handleFinishSession('Kuis otomatis dikunci karena melampaui batas pelanggaran anti-cheat.');
         }, 1500);
       }
       return nextCount;
@@ -284,27 +303,66 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
   };
 
   // HANDLE USER ANSWER SELECTION
-  const handleAnswerQuestion = (answerValue: StudentAnswerValue) => {
-    if (!currentQuestion) return;
+  const handleAnswerQuestion = async (answerValue: StudentAnswerValue) => {
+    if (!currentQuestion || isGrading || gradingRef.current) return;
     triggerAudio('select');
 
-    // Store in answers map
-    setAnswers((prev) => ({
-      ...prev,
-      [currentQuestion.id]: answerValue
-    }));
+    // Store in answers map. Ref diperbarui langsung agar penilaian AI memakai jawaban terbaru.
+    const nextAnswers = { ...answersRef.current, [currentQuestion.id]: answerValue };
+    answersRef.current = nextAnswers;
+    setAnswers(nextAnswers);
 
     // If PROCTORED TEST MODE: Don't reveal immediate right/wrong, simply save answer
     if (mode === 'TEST') {
       return;
     }
 
-    // Evaluate correctness for live feedback & gamification scoring
-    const isCorrect = evaluateAnswer(currentQuestion, answerValue);
-    setLastAnswerCorrect(isCorrect);
-
-    // Calculate time taken for Classic Formula
+    // Calculate time taken for Classic Formula (sebelum menunggu AI)
     const timeTakenMs = Date.now() - questionStartTimeRef.current;
+
+    // Evaluate correctness for live feedback & gamification scoring.
+    // Isian singkat yang tidak persis cocok dinilai AI berdasarkan makna.
+    let isCorrect = evaluateAnswer(currentQuestion, answerValue);
+    let aiReason: string | undefined;
+
+    if (currentQuestion.type === 'short_answer' && !isCorrect) {
+      const answerText = typeof answerValue === 'string' ? answerValue : '';
+      const cacheKey = verdictCacheKey(currentQuestion.id, answerText);
+      const cached = aiVerdictCacheRef.current[cacheKey];
+      if (cached) {
+        isCorrect = cached.isCorrect;
+        aiReason = cached.reason;
+      } else {
+        gradingRef.current = true;
+        setIsGrading(true);
+        try {
+          const gradingPromise = gradeShortAnswersWithAI(quiz, answersRef.current);
+          gradingPromiseRef.current = gradingPromise;
+          const verdicts = await gradingPromise;
+          const verdict = verdicts[currentQuestion.id];
+          if (verdict) {
+            isCorrect = verdict.isCorrect;
+            aiReason = verdict.reason;
+            aiVerdictCacheRef.current[cacheKey] = verdict;
+            setAiVerdicts((prev) => ({ ...prev, [currentQuestion.id]: verdict }));
+          }
+        } catch (err) {
+          // AI tidak tersedia atau melewati batas waktu: tetap pakai pencocokan teks.
+          console.warn('Penilaian AI isian singkat tidak tersedia, memakai pencocokan teks:', err);
+        } finally {
+          gradingPromiseRef.current = null;
+          gradingRef.current = false;
+          setIsGrading(false);
+        }
+      }
+    }
+
+    // Sesi bisa sudah ditutup timer/anti-cheat saat AI masih menilai.
+    // Jangan menambah skor atau umpan balik setelah sesi selesai.
+    if (finishingRef.current) return;
+
+    setLastAiReason(aiReason ?? null);
+    setLastAnswerCorrect(isCorrect);
     const basePoints = 1000;
     const qAllocatedSeconds = 30;
     const remainingFraction = Math.max(0, (qAllocatedSeconds * 1000 - timeTakenMs) / (qAllocatedSeconds * 1000));
@@ -426,7 +484,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
       });
 
       if (allUniqueMastered || nextIdx >= masteryQueue.length) {
-        handleFinishSession('Selamat! Anda telah menguasai seluruh butir soal hingga puncak gunung!');
+        void handleFinishSession('Selamat! Anda telah menguasai seluruh butir soal hingga puncak gunung!');
       } else {
         setMasteryCurrentQueueIndex(nextIdx);
       }
@@ -434,16 +492,74 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
       if (currentIndex + 1 < quiz.questions.length) {
         setCurrentIndex((i) => i + 1);
       } else {
-        handleFinishSession('Seluruh soal telah selesai dijawab!');
+        void handleFinishSession('Seluruh soal telah selesai dijawab!');
       }
     }
   };
 
   // FINISH & SUBMISSION SUMMARY
-  const handleFinishSession = (reason?: string) => {
-    setIsFinished(true);
+  const handleFinishSession = async (reason?: string) => {
+    if (finishingRef.current) return;
+    finishingRef.current = true;
+
     const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
-    const calculation = calculateQuizScore(answers, quiz.questions, quiz.passingGrade);
+    const finalAnswers = answersRef.current;
+
+    // Pastikan penilaian AI yang masih berjalan selesai dulu agar verdictnya
+    // tidak hilang dari skor akhir (dan tidak dikirim dua kali).
+    if (gradingPromiseRef.current) {
+      setIsGradingResult(true);
+      try {
+        await gradingPromiseRef.current;
+      } catch {
+        // Kegagalan sudah ditangani pemanggil aslinya; lanjut dengan pencocokan teks.
+      }
+    }
+
+    // Soal isian singkat yang belum dinilai AI (mis. mode ujian tanpa umpan balik
+    // per soal) dinilai sekaligus agar skor akhir sama dengan portal ujian.
+    // Verdict lama hanya dipakai bila jawaban akhirnya sama persis.
+    const verdicts: Record<string, ShortAnswerVerdict> = {};
+    const pendingAnswers: Record<string, StudentAnswerValue> = {};
+    for (const q of quiz.questions) {
+      if (q.type !== 'short_answer') continue;
+      const raw = finalAnswers[q.id];
+      const text = typeof raw === 'string' ? raw.trim() : '';
+      if (!text) continue;
+      if (checkShortAnswer(text, q.acceptedAnswers || [], q.caseSensitive)) continue;
+      const cached = aiVerdictCacheRef.current[verdictCacheKey(q.id, text)];
+      if (cached) {
+        verdicts[q.id] = cached;
+      } else {
+        pendingAnswers[q.id] = raw;
+      }
+    }
+
+    if (Object.keys(pendingAnswers).length > 0) {
+      setIsGradingResult(true);
+      try {
+        const graded = await gradeShortAnswersWithAI(quiz, pendingAnswers);
+        for (const [questionId, verdict] of Object.entries(graded)) {
+          verdicts[questionId] = verdict;
+          const raw = finalAnswers[questionId];
+          aiVerdictCacheRef.current[verdictCacheKey(questionId, typeof raw === 'string' ? raw : '')] = verdict;
+        }
+      } catch (err) {
+        console.warn('Penilaian AI isian singkat tidak tersedia, memakai pencocokan teks:', err);
+      } finally {
+        setIsGradingResult(false);
+      }
+    }
+
+    setAiVerdicts(verdicts);
+
+    const calculation = calculateQuizScore(
+      finalAnswers,
+      quiz.questions,
+      quiz.passingGrade,
+      verdicts
+    );
+    setIsFinished(true);
 
     try {
       confetti({ particleCount: 90, spread: 80, origin: { y: 0.5 } });
@@ -460,7 +576,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
         studentClass: 'Uji Coba Multi-Mode',
         studentNis: 'SIM-001',
         studentNote: `Pengerjaan via Mode ${mode}. ${reason || ''}`,
-        answers,
+        answers: finalAnswers,
         score: calculation.score,
         earnedPoints: calculation.earnedPoints,
         totalPoints: calculation.totalPoints,
@@ -518,7 +634,12 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
   // If session finished, show celebratory results breakdown
   if (isFinished) {
-    const finalCalc = calculateQuizScore(answers, quiz.questions, quiz.passingGrade);
+    const finalCalc = calculateQuizScore(
+      answers,
+      quiz.questions,
+      quiz.passingGrade,
+      aiVerdicts
+    );
 
     return (
  <div className="max-w-4xl mx-auto space-y-5 p-4 sm:p-6 animate-in fade-in duration-300 text-slate-800 ">
@@ -651,6 +772,13 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                     {b.explanation}
                   </div>
                 )}
+
+                {b.aiReason && (
+ <div className="p-2 rounded-xl bg-teal-50  border border-teal-200  text-[11px] text-teal-800 ">
+ <span className="font-semibold">Pertimbangan AI: </span>
+                    {b.aiReason}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -675,7 +803,22 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
   // ACTIVE GAME PLAY UI
   return (
     <div className="max-w-4xl mx-auto space-y-4 p-3 sm:p-5 relative">
-      
+
+      {/* AI GRADING OVERLAY (isian singkat saat sesi berakhir) */}
+      {isGradingResult && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white  rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200  text-center space-y-3 animate-in fade-in zoom-in-95">
+            <Sparkles className="w-8 h-8 text-teal-600  mx-auto animate-pulse" />
+            <h3 className="font-extrabold text-slate-800  text-base">
+              AI sedang memeriksa jawaban isian singkat...
+            </h3>
+            <p className="text-xs text-slate-500 ">
+              Jawaban dinilai berdasarkan makna, sehingga ejaan atau susunan kata yang berbeda tetap dapat diterima.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* FROZEN SCREEN SABOTAGE OVERLAY (Playground Mode) */}
       {isFrozenScreen && (
         <div className="fixed inset-0 z-50 bg-sky-950/80 backdrop-blur-md flex flex-col items-center justify-center p-4 text-center select-none animate-in fade-in">
@@ -1205,15 +1348,14 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             <div className="pt-2 space-y-3">
               <input
                 type="text"
-                disabled={showImmediateFeedback}
+                disabled={showImmediateFeedback || isGrading}
                 placeholder="Ketikkan jawaban singkat Anda di sini..."
                 value={(answers[currentQuestion.id] as string) || ''}
-                onChange={(e) =>
-                  setAnswers((prev) => ({
-                    ...prev,
-                    [currentQuestion.id]: e.target.value
-                  }))
-                }
+                onChange={(e) => {
+                  const next = { ...answersRef.current, [currentQuestion.id]: e.target.value };
+                  answersRef.current = next;
+                  setAnswers(next);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !showImmediateFeedback) {
                     handleAnswerQuestion((answers[currentQuestion.id] as string) || '');
@@ -1224,12 +1366,23 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
               <button
                 type="button"
-                disabled={showImmediateFeedback}
+                disabled={showImmediateFeedback || isGrading}
                 onClick={() => handleAnswerQuestion((answers[currentQuestion.id] as string) || '')}
                 className="px-5 py-2 rounded-2xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-xs cursor-pointer disabled:cursor-not-allowed transition-colors"
               >
-                Kirim Jawaban Singkat
+                {isGrading ? 'AI sedang memeriksa...' : 'Kirim Jawaban Singkat'}
               </button>
+
+              {isGrading && (
+                <p className="text-[11px] font-semibold text-teal-700  flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                  AI menilai makna jawaban Anda, bukan kecocokan karakter teks.
+                </p>
+              )}
+
+              <p className="text-[10px] text-slate-400 ">
+                Jawaban dinilai AI berdasarkan makna, jadi ejaan atau susunan kata yang berbeda tetap bisa benar.
+              </p>
             </div>
           )}
 
@@ -1243,7 +1396,9 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 pairs={currentQuestion.matchingPairs}
                 value={(answers[currentQuestion.id] as Record<string, string>) || {}}
                 onChange={(next) => {
-                  setAnswers((prev) => ({ ...prev, [currentQuestion.id]: next }));
+                  const updated = { ...answersRef.current, [currentQuestion.id]: next };
+                  answersRef.current = updated;
+                  setAnswers(updated);
                   if (!showImmediateFeedback) triggerAudio('select');
                 }}
                 disabled={showImmediateFeedback}
@@ -1300,6 +1455,12 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                 </p>
               )}
 
+              {lastAiReason && (
+                <p className="text-[11px] leading-relaxed opacity-90">
+                  <strong>Pertimbangan AI:</strong> {lastAiReason}
+                </p>
+              )}
+
               {mode === 'MASTERY' && !lastAnswerCorrect && (
  <div className="p-2 rounded-xl bg-white/60  text-[10px] font-semibold text-slate-700 ">
  <em>Soal ini dimasukkan ke antrean perulangan (*re-queue*) dan akan muncul kembali nanti agar Anda menguasainya!</em>
@@ -1344,7 +1505,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
               ) : (
                 <button
                   type="button"
-                  onClick={() => handleFinishSession('Ujian Selesai Dikirim')}
+                  onClick={() => void handleFinishSession('Ujian Selesai Dikirim')}
                   className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
                 >
                   <Send className="w-3.5 h-3.5" />

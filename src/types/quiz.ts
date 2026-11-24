@@ -116,6 +116,7 @@ export interface QuestionBreakdown {
   studentAnswer: StudentAnswerValue | null;
   correctAnswerSummary: string;
   explanation?: string;
+  aiReason?: string; // pertimbangan AI saat menilai jawaban isian singkat
   matchingDetails?: Array<{
     left: string;
     studentRight: string | null;

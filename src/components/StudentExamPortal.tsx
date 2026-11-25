@@ -1439,15 +1439,18 @@ export const StudentExamPortal: React.FC<Props> = ({
 
                 {/* Answer Summary */}
                 <div className="pl-8 space-y-1.5 text-xs">
-                  <div>
+                  {/* Soal menjodohkan menampilkan jawaban siswa per pasangan, bukan sebagai baris ringkasan. */}
+                  {!b.matchingDetails && (
+                    <div>
  <span className="font-semibold text-slate-600 ">Jawaban Anda: </span>
  <span className={b.isCorrect ? 'font-bold text-emerald-800' : 'font-bold text-rose-700'}>
-                      {formatStudentAnswer(
-                        quiz.questions.find((qq) => qq.id === b.questionId),
-                        b.studentAnswer
-                      )}
-                    </span>
-                  </div>
+                        {formatStudentAnswer(
+                          quiz.questions.find((qq) => qq.id === b.questionId),
+                          b.studentAnswer
+                        )}
+                      </span>
+                    </div>
+                  )}
 
                   <div>
  <span className="font-semibold text-slate-600 ">Kunci Jawaban: </span>
@@ -1456,6 +1459,7 @@ export const StudentExamPortal: React.FC<Props> = ({
 
                   {b.matchingDetails && (
                     <div className="space-y-1 pt-1">
+ <span className="font-semibold text-slate-600 ">Jawaban Anda: </span>
                       {b.matchingDetails.map((md, mIdx) => (
                         <div key={mIdx} className="text-xs flex items-center gap-2">
  <span>{md.isMatched ? '' : ''}</span>

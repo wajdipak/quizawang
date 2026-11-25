@@ -1,10 +1,27 @@
 import type {
   Question,
   QuestionType,
+  Quiz,
   QuizResultCalculation,
   QuestionBreakdown,
   StudentAnswerValue
 } from '../types/quiz.js';
+
+/**
+ * Data URL gambar sebuah soal. Gambar bisa milik soal itu sendiri (imageUrl) atau
+ * gambar bersama yang dipakai beberapa soal lewat Question.imageId -> Quiz.images.
+ */
+export function resolveQuestionImage(
+  quiz: Pick<Quiz, 'images'> | null | undefined,
+  question: Question | null | undefined
+): string | undefined {
+  if (!question) return undefined;
+  if (question.imageId) {
+    const shared = quiz?.images?.find((img) => img.id === question.imageId);
+    if (shared?.imageUrl) return shared.imageUrl;
+  }
+  return question.imageUrl || undefined;
+}
 
 /**
  * Normalizes text for lenient short-answer comparison.

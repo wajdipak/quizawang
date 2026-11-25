@@ -46,7 +46,8 @@ import {
   calculateQuizScore,
   checkShortAnswer,
   formatStudentAnswer,
-  formatTimeRemaining
+  formatTimeRemaining,
+  resolveQuestionImage
 } from '../utils/quizLogic.js';
 import { gradeShortAnswersWithAI, type ShortAnswerVerdict } from '../utils/aiGrading.js';
 import { playSelectSound, playSuccessSound, playTickSound } from '../utils/audio.js';
@@ -730,7 +731,7 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
 
         {/* Detailed Question Review List */}
  <div className="bg-white  rounded-3xl p-5 sm:p-6 border border-slate-200  shadow-sm space-y-4">
- <h3 className="font-bold text-sm text-slate-900  flex items-center justify-between">
+ <h3 className="font-bold text-sm text-slate-900  flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <span>Evaluasi Butir Soal</span>
             <span className="text-xs font-semibold text-slate-500">
               {finalCalc.correctCount} dari {finalCalc.totalQuestions} Soal Terjawab Benar
@@ -766,7 +767,8 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                   {b.questionText}
                 </p>
 
- <div className="text-[11px] text-slate-600 ">
+                {!b.matchingDetails && (
+                <div className="text-[11px] text-slate-600 ">
  <span className="font-semibold text-slate-700 ">Jawaban Anda: </span>
 <span className={b.isCorrect ? 'font-semibold text-emerald-700' : 'font-semibold text-rose-700'}>
                     {formatStudentAnswer(
@@ -775,11 +777,33 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
                     )}
                   </span>
                 </div>
+                )}
 
  <div className="text-[11px] text-slate-600 ">
  <span className="font-semibold text-slate-700 ">Kunci Jawaban: </span>
                   <span>{b.correctAnswerSummary}</span>
                 </div>
+
+                {b.matchingDetails && (
+                  <div className="text-[11px] text-slate-600  space-y-1">
+                    <span className="font-semibold text-slate-700 ">Jawaban Anda: </span>
+                    {b.matchingDetails.map((md, mIdx) => (
+                      <div
+                        key={mIdx}
+                        className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 border-b border-slate-200/60 pb-1 last:border-0 last:pb-0"
+                      >
+                        <span className="font-semibold text-slate-800 ">{md.left}</span>
+                        <span className="text-slate-400 ">→</span>
+                        <span className="text-slate-700  break-words">{md.studentRight || '(Kosong)'}</span>
+                        {!md.isMatched && (
+                          <span className="w-full text-emerald-700  italic font-medium sm:w-auto">
+                            (Seharusnya: {md.correctRight})
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {b.explanation && (
  <div className="p-2 rounded-xl bg-white/70  border border-slate-200/50  text-[11px] text-slate-600 ">
@@ -1303,13 +1327,16 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             {currentQuestion.text}
           </h3>
 
-          {currentQuestion.imageUrl && (
-            <img
-              src={currentQuestion.imageUrl}
-              alt="Gambar pendukung soal"
-              className="w-full max-h-64 object-contain rounded-2xl border border-slate-200  bg-white"
-            />
-          )}
+          {(() => {
+            const questionImage = resolveQuestionImage(quiz, currentQuestion);
+            return questionImage ? (
+              <img
+                src={questionImage}
+                alt="Gambar pendukung soal"
+                className="w-full max-h-64 object-contain rounded-2xl border border-slate-200  bg-white"
+              />
+            ) : null;
+          })()}
 
           {/* MULTIPLE CHOICE OPTIONS */}
           {currentQuestion.type === 'multiple_choice' && currentQuestion.options && (

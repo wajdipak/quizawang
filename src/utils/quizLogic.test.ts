@@ -6,7 +6,8 @@ import {
   formatTimeRemaining,
   validateQuizData,
   checkShortAnswer,
-  normalizeText
+  normalizeText,
+  resolveQuestionImage
 } from './quizLogic.ts';
 import type { Question } from '../types/quiz.js';
 
@@ -139,4 +140,26 @@ test('validateQuizData validates short_answer and matching rules', () => {
     }
   ];
   assert.equal(validateQuizData('Kuis', invalidMatching).isValid, false);
+});
+
+test('resolveQuestionImage follows imageId to shared images and falls back to imageUrl', () => {
+  const quiz = {
+    images: [
+      { id: 'img-1', imageUrl: 'data:image/png;base64,AAA' },
+      { id: 'img-2', imageUrl: 'data:image/png;base64,BBB' }
+    ]
+  };
+  const base: Question = { id: 'q1', type: 'multiple_choice', text: 'Soal', category: 'Umum', points: 10 };
+
+  // Dua soal merujuk gambar yang sama -> data URL yang sama, tanpa duplikasi.
+  assert.equal(resolveQuestionImage(quiz, { ...base, imageId: 'img-1' }), 'data:image/png;base64,AAA');
+  assert.equal(resolveQuestionImage(quiz, { ...base, id: 'q2', imageId: 'img-1' }), 'data:image/png;base64,AAA');
+
+  // Kuis lama yang belum punya pool gambar tetap tampil lewat imageUrl soal.
+  assert.equal(resolveQuestionImage({}, { ...base, imageUrl: 'data:image/png;base64,CCC' }), 'data:image/png;base64,CCC');
+
+  // Rujukan gambar yang sudah tidak ada jatuh ke imageUrl soal, dan soal tanpa gambar -> undefined.
+  assert.equal(resolveQuestionImage(quiz, { ...base, imageId: 'img-hilang' }), undefined);
+  assert.equal(resolveQuestionImage(quiz, { ...base, imageId: 'img-hilang', imageUrl: 'data:image/png;base64,DDD' }), 'data:image/png;base64,DDD');
+  assert.equal(resolveQuestionImage(null, null), undefined);
 });

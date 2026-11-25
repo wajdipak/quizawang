@@ -39,7 +39,7 @@ import {
   StudentAnswerValue,
   QuestionType
 } from '../types/quiz.js';
-import { calculateQuizScore, formatStudentAnswer, formatTimeRemaining } from '../utils/quizLogic.js';
+import { calculateQuizScore, formatStudentAnswer, formatTimeRemaining, resolveQuestionImage } from '../utils/quizLogic.js';
 import { gradeShortAnswersWithAI, type ShortAnswerVerdict } from '../utils/aiGrading.js';
 import { playSelectSound, playSuccessSound, playTickSound } from '../utils/audio.js';
 import { saveQuizSessionToFirebase } from '../services/firebaseSync.js';
@@ -998,13 +998,16 @@ export const StudentExamPortal: React.FC<Props> = ({
  <h2 className="text-base sm:text-lg font-bold text-slate-800  leading-relaxed">
                 {currentQ.text}
               </h2>
-              {currentQ.imageUrl && (
-                <img
-                  src={currentQ.imageUrl}
-                  alt={`Gambar soal ${currentIndex + 1}`}
-                  className="w-full max-h-72 object-contain rounded-2xl border border-slate-200  bg-white"
-                />
-              )}
+              {(() => {
+                const questionImage = resolveQuestionImage(quiz, currentQ);
+                return questionImage ? (
+                  <img
+                    src={questionImage}
+                    alt={`Gambar soal ${currentIndex + 1}`}
+                    className="w-full max-h-72 object-contain rounded-2xl border border-slate-200  bg-white"
+                  />
+                ) : null;
+              })()}
             </div>
 
             {/* ANSWER INPUT: PILIHAN GANDA */}
@@ -1398,7 +1401,7 @@ export const StudentExamPortal: React.FC<Props> = ({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <span
-                      className={`w-6 h-6 rounded-lg font-bold text-xs flex items-center justify-center text-white ${
+                      className={`w-6 h-6 shrink-0 rounded-lg font-bold text-xs flex items-center justify-center text-white ${
                         b.isCorrect
                           ? 'bg-emerald-600'
                           : b.isPartial
@@ -1427,7 +1430,10 @@ export const StudentExamPortal: React.FC<Props> = ({
                 </div>
 
                 {(() => {
-                  const questionImage = quiz.questions.find((qq) => qq.id === b.questionId)?.imageUrl;
+                  const questionImage = resolveQuestionImage(
+                    quiz,
+                    quiz.questions.find((qq) => qq.id === b.questionId)
+                  );
                   return questionImage ? (
                     <img
                       src={questionImage}
@@ -1461,13 +1467,15 @@ export const StudentExamPortal: React.FC<Props> = ({
                     <div className="space-y-1 pt-1">
  <span className="font-semibold text-slate-600 ">Jawaban Anda: </span>
                       {b.matchingDetails.map((md, mIdx) => (
-                        <div key={mIdx} className="text-xs flex items-center gap-2">
- <span>{md.isMatched ? '' : ''}</span>
+                        <div
+                          key={mIdx}
+                          className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5 border-b border-slate-200/60 pb-1 last:border-0 last:pb-0"
+                        >
  <span className="font-semibold text-slate-800 ">{md.left}</span>
  <span className="text-slate-400 ">→</span>
- <span className="text-slate-700 ">{md.studentRight || '(Kosong)'}</span>
+ <span className="text-slate-700  break-words">{md.studentRight || '(Kosong)'}</span>
                           {!md.isMatched && (
- <span className="text-emerald-700  italic font-medium">
+ <span className="w-full text-emerald-700  italic font-medium sm:w-auto">
                               (Seharusnya: {md.correctRight})
                             </span>
                           )}

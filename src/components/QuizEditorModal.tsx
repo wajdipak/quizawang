@@ -15,10 +15,11 @@ import {
   Shuffle,
   ShieldCheck,
   ScanSearch,
-  ImagePlus
+  ImagePlus,
+  Images
 } from 'lucide-react';
-import { Quiz, Question, QuestionType, MatchingPair, QuizMaterial } from '../types/quiz.js';
-import { validateQuizData, generateQuizCode } from '../utils/quizLogic.js';
+import { Quiz, Question, QuestionType, MatchingPair, QuizMaterial, QuizImage } from '../types/quiz.js';
+import { validateQuizData, generateQuizCode, resolveQuestionImage } from '../utils/quizLogic.js';
 import { questionRefersToImage } from '../utils/questionImageDetection.js';
 
 interface Props {
@@ -43,6 +44,29 @@ interface KeyCheckResult {
   applied?: boolean;
   // Snapshot teks soal saat diperiksa, agar hasil tidak nyangkut ke soal lain/setelah soal diedit
   forText?: string;
+}
+
+/**
+ * Gambar yang sama bisa dipakai beberapa soal. Agar dokumen kuis tidak menyimpan data URL
+ * berulang (batas ~1 MB Firestore), gambar dipindah ke quiz.images sekali saja dan tiap
+ * soal merujuknya lewat imageId. Gambar lama yang masih menempel di soal ikut dipindahkan.
+ */
+function normalizeSharedImages(rawQuestions: Question[], rawImages: QuizImage[] = []) {
+  const images: QuizImage[] = [...rawImages];
+  const questions: Question[] = rawQuestions.map((q) => {
+    if (q.imageId) {
+      return images.some((img) => img.id === q.imageId) ? q : { ...q, imageId: undefined };
+    }
+    if (!q.imageUrl) return q;
+    const existing = images.find((img) => img.imageUrl === q.imageUrl);
+    if (existing) return { ...q, imageId: existing.id, imageUrl: '' };
+    let n = images.length + 1;
+    while (images.some((img) => img.id === `img-${n}`)) n += 1;
+    const imageId = `img-${n}`;
+    images.push({ id: imageId, imageUrl: q.imageUrl, title: `Gambar ${n}` });
+    return { ...q, imageId, imageUrl: '' };
+  });
+  return { questions, images };
 }
 
 export const QuizEditorModal: React.FC<Props> = ({
@@ -86,22 +110,32 @@ export const QuizEditorModal: React.FC<Props> = ({
   const [newCatInput, setNewCatInput] = useState('');
   const [showAddCatInput, setShowAddCatInput] = useState(false);
 
-  const [questions, setQuestions] = useState<Question[]>(
-    initialQuiz?.questions && initialQuiz.questions.length > 0
-      ? initialQuiz.questions
-      : [
-          {
-            id: `q-${Date.now()}-1`,
-            type: 'multiple_choice',
-            category: globalCategories[0] || 'Umum',
-            points: 20,
-            text: '',
-            options: ['', '', '', ''],
-            correctOption: 0,
-            explanation: ''
-          }
-        ]
+  // Dihitung sekali saat modal dibuka: soal + gambar bersamanya.
+  const [initialQuestionState] = useState(() =>
+    normalizeSharedImages(
+      initialQuiz?.questions && initialQuiz.questions.length > 0
+        ? initialQuiz.questions
+        : [
+            {
+              id: `q-${Date.now()}-1`,
+              type: 'multiple_choice' as QuestionType,
+              category: globalCategories[0] || 'Umum',
+              points: 20,
+              text: '',
+              options: ['', '', '', ''],
+              correctOption: 0,
+              explanation: ''
+            }
+          ],
+      initialQuiz?.images
+    )
   );
+
+  const [questions, setQuestions] = useState<Question[]>(initialQuestionState.questions);
+  // Gambar soal yang dipakai bersama; soal merujuk ke sini lewat imageId.
+  const [questionImages, setQuestionImages] = useState<QuizImage[]>(initialQuestionState.images);
+  // Index soal yang sedang membuka pemilih "pakai gambar yang sama" (null = tertutup).
+  const [imagePickerFor, setImagePickerFor] = useState<number | null>(null);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAiScoring, setIsAiScoring] = useState(false);
@@ -601,7 +635,12 @@ export const QuizEditorModal: React.FC<Props> = ({
         );
         return;
       }
-      handleQuestionFieldChange(qIndex, { imageUrl: dataUrl, needsImage: false });
+      const imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      setQuestionImages((prev) => [
+        ...prev,
+        { id: imageId, imageUrl: dataUrl, title: file.name?.trim() || `Gambar ${prev.length + 1}` }
+      ]);
+      handleQuestionFieldChange(qIndex, { imageId, imageUrl: '', needsImage: false });
     } catch {
       setErrorMessage('Gambar soal gagal diproses. Coba simpan sebagai PNG atau JPG lalu unggah kembali.');
     }
@@ -618,6 +657,29 @@ export const QuizEditorModal: React.FC<Props> = ({
     if (!file) return;
     e.preventDefault();
     void readQuestionImageFile(qIndex, file);
+  };
+
+  // Pasang/lepas gambar bersama pada sebuah soal (satu gambar untuk beberapa soal).
+  const toggleSharedImageForQuestion = (qIndex: number, imageId: string) => {
+    const next = [...questions];
+    const q = next[qIndex];
+    next[qIndex] =
+      q.imageId === imageId
+        ? { ...q, imageId: undefined, needsImage: questionRefersToImage(q.text) ? true : undefined }
+        : { ...q, imageId, imageUrl: '', needsImage: false };
+    setQuestions(next);
+  };
+
+  const removeSharedImage = (imageId: string) => {
+    if (questionImages.length <= 1) setImagePickerFor(null);
+    setQuestionImages((prev) => prev.filter((img) => img.id !== imageId));
+    setQuestions((prev) =>
+      prev.map((q) =>
+        q.imageId === imageId
+          ? { ...q, imageId: undefined, needsImage: questionRefersToImage(q.text) ? true : undefined }
+          : q
+      )
+    );
   };
 
   // Multiple Choice Helpers
@@ -808,7 +870,10 @@ export const QuizEditorModal: React.FC<Props> = ({
       materialFileUrl: materials.find((m) => m.type === 'pdf' || m.type === 'ppt')?.fileUrl || '',
       materialFileName: materials.find((m) => m.type === 'pdf' || m.type === 'ppt')?.fileName || '',
       materialYoutubeUrl: materials.find((m) => m.type === 'youtube')?.youtubeUrl || '',
-      questions: finalQuestions
+      questions: finalQuestions,
+      // Hanya gambar bersama yang masih dirujuk soal yang disimpan. Array kosong tetap
+      // ditulis agar gambar yang sudah tidak dipakai ikut terhapus dari dokumen (merge).
+      images: questionImages.filter((img) => finalQuestions.some((q) => q.imageId === img.id))
     };
 
     onSave(quizToSave);
@@ -1356,7 +1421,7 @@ export const QuizEditorModal: React.FC<Props> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
                       {/* Category Selector */}
                       <div className="flex items-center gap-1">
  <Tag className="w-3.5 h-3.5 text-slate-400 " />
@@ -1450,7 +1515,7 @@ export const QuizEditorModal: React.FC<Props> = ({
 
                   {/* Gambar pendukung soal (opsional) */}
                   <div className="space-y-2">
-                    {q.needsImage && !q.imageUrl && (
+                    {q.needsImage && !q.imageUrl && !q.imageId && (
  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-[11px] flex items-start gap-1.5">
                         <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                         <span>
@@ -1466,7 +1531,11 @@ export const QuizEditorModal: React.FC<Props> = ({
                         className="px-3 py-1.5 rounded-xl border border-dashed border-slate-300  bg-slate-50  hover:bg-teal-50/60 text-[11px] font-semibold text-slate-700  cursor-pointer inline-flex items-center gap-1.5 transition-colors"
                       >
                         <ImagePlus className="w-3.5 h-3.5" />
-                        <span>{q.imageUrl ? 'Ganti Gambar Soal' : 'Unggah Gambar Soal'}</span>
+                        <span>
+                          {resolveQuestionImage({ images: questionImages }, q)
+                            ? 'Ganti Gambar Soal'
+                            : 'Unggah Gambar Soal'}
+                        </span>
                       </label>
                       <input
                         id={`question-image-${qIdx}`}
@@ -1475,31 +1544,118 @@ export const QuizEditorModal: React.FC<Props> = ({
                         className="hidden"
                         onChange={(e) => handleQuestionImageUpload(qIdx, e)}
                       />
+                      {questionImages.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setImagePickerFor(imagePickerFor === qIdx ? null : qIdx)}
+                          title="Tampilkan gambar yang sudah ada di kuis ini pada beberapa soal sekaligus"
+                          className={`px-3 py-1.5 rounded-xl border text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
+                            imagePickerFor === qIdx
+                              ? 'border-teal-400 bg-teal-50 text-teal-800 '
+                              : 'border-dashed border-slate-300  bg-slate-50  hover:bg-teal-50/60 text-slate-700 '
+                          }`}
+                        >
+                          <Images className="w-3.5 h-3.5" />
+                          <span>Pakai Gambar yang Sama</span>
+                        </button>
+                      )}
  <span className="text-[11px] text-slate-500 ">
                         Opsional. Tempel (Ctrl+V) di kotak pertanyaan untuk gambar dari papan klip. Gambar otomatis diperkecil dan dikompres (maksimal 300 KB) agar kuis tetap tersimpan.
                       </span>
                     </div>
 
-                    {q.imageUrl && (
-                      <div className="relative inline-block max-w-full">
-                        <img
-                          src={q.imageUrl}
-                          alt={`Gambar soal ${qIdx + 1}`}
-                          className="max-h-48 max-w-full rounded-xl border border-slate-200  bg-white object-contain"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleQuestionFieldChange(qIdx, {
-                              imageUrl: '',
-                              needsImage: questionRefersToImage(q.text) ? true : undefined
-                            })
-                          }
-                          className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-slate-900/70 text-white hover:bg-rose-600 transition-colors cursor-pointer"
-                          title="Hapus gambar soal"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                    {(() => {
+                      const questionImage = resolveQuestionImage({ images: questionImages }, q);
+                      return questionImage ? (
+                        <div className="relative inline-block max-w-full">
+                          <img
+                            src={questionImage}
+                            alt={`Gambar soal ${qIdx + 1}`}
+                            className="max-h-48 max-w-full rounded-xl border border-slate-200  bg-white object-contain"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handleQuestionFieldChange(qIdx, {
+                                imageUrl: '',
+                                imageId: undefined,
+                                needsImage: questionRefersToImage(q.text) ? true : undefined
+                              })
+                            }
+                            className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-slate-900/70 text-white hover:bg-rose-600 transition-colors cursor-pointer"
+                            title="Hapus gambar soal"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : null;
+                    })()}
+
+                    {/* Satu gambar untuk beberapa soal: klik nomor soal yang harus menampilkannya. */}
+                    {imagePickerFor === qIdx && (
+                      <div className="rounded-xl border border-teal-200 bg-teal-50/50 p-2.5 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+ <p className="text-[11px] font-semibold text-teal-900 ">
+                            Klik nomor soal yang harus menampilkan gambar yang sama.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => setImagePickerFor(null)}
+                            className="p-1 rounded-lg text-teal-700 hover:bg-teal-100 cursor-pointer shrink-0"
+                            title="Tutup pemilih gambar"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                        {questionImages.map((img) => (
+                          <div
+                            key={img.id}
+                            className="flex items-center gap-2 rounded-lg bg-white  p-2 border border-teal-100 "
+                          >
+                            <img
+                              src={img.imageUrl}
+                              alt={img.title || 'Gambar soal'}
+                              className="h-10 w-14 shrink-0 rounded-md border border-slate-200  bg-white object-contain"
+                            />
+                            <div className="flex-1 min-w-0 space-y-1">
+                              <p className="text-[11px] font-medium text-slate-600  truncate">
+                                {img.title || 'Gambar soal'}
+                              </p>
+                              <div className="flex flex-wrap gap-1">
+                                {questions.map((qq, idx) => {
+                                  const isActive = qq.imageId === img.id;
+                                  return (
+                                    <button
+                                      key={qq.id || idx}
+                                      type="button"
+                                      onClick={() => toggleSharedImageForQuestion(idx, img.id)}
+                                      title={
+                                        isActive
+                                          ? `Lepas gambar dari soal ${idx + 1}`
+                                          : `Tampilkan gambar ini di soal ${idx + 1}`
+                                      }
+                                      className={`h-6 min-w-6 px-1.5 rounded-md border text-[11px] font-bold transition-colors cursor-pointer ${
+                                        isActive
+                                          ? 'bg-teal-600 border-teal-600 text-white'
+                                          : 'bg-white  border-slate-300  text-slate-600  hover:border-teal-400'
+                                      }`}
+                                    >
+                                      {idx + 1}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeSharedImage(img.id)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 cursor-pointer shrink-0"
+                              title="Hapus gambar dari kuis ini"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

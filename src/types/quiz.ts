@@ -6,11 +6,18 @@ export interface MatchingPair {
   right: string;
 }
 
+export interface QuizImage {
+  id: string;
+  imageUrl: string; // data URL gambar soal
+  title?: string; // label singkat untuk pemilih gambar di editor
+}
+
 export interface Question {
   id: string;
   type: QuestionType;
   text: string;
-  imageUrl?: string; // data URL gambar pendukung soal (diunggah/ditempel guru)
+  imageUrl?: string; // data URL gambar khusus soal ini
+  imageId?: string; // rujukan ke Quiz.images: gambar yang sama dipakai beberapa soal
   needsImage?: boolean; // true bila soal merujuk gambar pada dokumen asli yang belum ditambahkan
   category: string;
   points: number; // default e.g. 10
@@ -61,6 +68,7 @@ export interface Quiz {
   materialFileUrl?: string;
   materialFileName?: string;
   materialYoutubeUrl?: string;
+  images?: QuizImage[]; // gambar soal yang dipakai bersama (dirujuk lewat Question.imageId)
   questions: Question[];
 }
 

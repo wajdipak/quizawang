@@ -635,6 +635,12 @@ export const QuizEditorModal: React.FC<Props> = ({
         );
         return;
       }
+      // Berkas yang sama (setelah dikompres) dipakai ulang, bukan disimpan lagi.
+      const existing = questionImages.find((img) => img.imageUrl === dataUrl);
+      if (existing) {
+        handleQuestionFieldChange(qIndex, { imageId: existing.id, imageUrl: '', needsImage: false });
+        return;
+      }
       const imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
       setQuestionImages((prev) => [
         ...prev,
@@ -1634,7 +1640,7 @@ export const QuizEditorModal: React.FC<Props> = ({
                                           ? `Lepas gambar dari soal ${idx + 1}`
                                           : `Tampilkan gambar ini di soal ${idx + 1}`
                                       }
-                                      className={`h-6 min-w-6 px-1.5 rounded-md border text-[11px] font-bold transition-colors cursor-pointer ${
+                                      className={`h-8 min-w-8 px-1.5 rounded-md border text-xs font-bold transition-colors cursor-pointer ${
                                         isActive
                                           ? 'bg-teal-600 border-teal-600 text-white'
                                           : 'bg-white  border-slate-300  text-slate-600  hover:border-teal-400'

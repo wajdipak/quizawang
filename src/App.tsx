@@ -38,7 +38,22 @@ import {
 } from './services/firebaseSync.js';
 import { TeacherLiveSessionModal } from './components/TeacherLiveSessionModal.js';
 import { QuizSession } from './types/quiz.js';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
+
+/** Pesan yang bisa dibaca guru saat kuis gagal dikirim ke Firestore. */
+function describeQuizSaveError(err: unknown): string {
+  const message = err instanceof Error ? err.message : String(err);
+  if (/exceeds the maximum|exceeds the limit|invalid-argument|too large/i.test(message)) {
+    return 'Kuis gagal disimpan ke server: dokumennya melebihi batas 1 MB Firestore. Kurangi jumlah atau ukuran aset (gambar/audio), lalu simpan lagi. Kuis masih tersimpan di perangkat ini.';
+  }
+  if (/permission-denied|insufficient permissions/i.test(message)) {
+    return 'Kuis gagal disimpan ke server: akun ini tidak punya izin mengubah kuis. Masuk dengan akun guru lalu simpan lagi. Kuis masih tersimpan di perangkat ini.';
+  }
+  if (/offline|unavailable|network/i.test(message)) {
+    return 'Kuis gagal disimpan ke server karena koneksi bermasalah. Kuis masih tersimpan di perangkat ini; coba simpan lagi saat jaringan pulih.';
+  }
+  return 'Kuis gagal disimpan ke server. Kuis masih tersimpan di perangkat ini; coba simpan lagi.';
+}
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -65,6 +80,8 @@ export default function App() {
   // Modals & Active selections
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
+  // Pesan kegagalan simpan ke Firestore (dokumen terlalu besar, izin, atau koneksi).
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [shareOpen, setShareOpen] = useState(false);
   const [sharingQuiz, setSharingQuiz] = useState<Quiz | null>(null);
@@ -198,14 +215,16 @@ export default function App() {
       });
     }
 
-    setEditorOpen(false);
-    setEditingQuiz(null);
-
-    // Live push to Firebase Firestore in real-time
+    // Live push to Firebase Firestore in real-time. Modal ditutup hanya kalau server
+    // benar-benar menerima kuis, supaya guru bisa memperbaiki aset yang terlalu besar.
     try {
       await saveQuizToFirebase(quiz);
+      setSaveError(null);
+      setEditorOpen(false);
+      setEditingQuiz(null);
     } catch (err) {
       console.error('[Firebase] Failed to save quiz:', err);
+      setSaveError(describeQuizSaveError(err));
     }
   };
 
@@ -514,6 +533,24 @@ export default function App() {
         setActiveTab={setActiveTab}
         savedQuizCount={quizzes.length}
       />
+
+      {/* Kuis tetap ada di perangkat ini, tetapi server belum menerimanya. */}
+      {saveError && (
+        <div
+          role="alert"
+          className="border-b-2 border-[var(--line)] bg-[var(--danger)] text-[#0a0a0a] px-4 py-2.5 flex items-start justify-between gap-3"
+        >
+          <p className="text-xs font-semibold leading-snug">{saveError}</p>
+          <button
+            type="button"
+            onClick={() => setSaveError(null)}
+            aria-label="Tutup pesan"
+            className="shrink-0 p-1 border-2 border-[#0a0a0a] hover:bg-[#0a0a0a] hover:text-[var(--danger)] transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Teacher Quiz Preview Notice when simulating a quiz */}
       {activeTab === 'ruang-siswa' && (

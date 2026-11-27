@@ -94,6 +94,26 @@ function normalizeSharedAssets(
   return { questions, assets };
 }
 
+/**
+ * Firestore membatasi satu dokumen sekitar 1 MB. Aset kuis (gambar/audio data URL, teks,
+ * link) ikut masuk dokumen itu bersama seluruh soal, jadi total aset dibatasi 700 KB agar
+ * masih ada ruang untuk teks soal. Batas per berkas saja tidak cukup: dua audio 400 KB
+ * menjadi ~1,1 MB setelah base64.
+ */
+const MAX_QUIZ_ASSETS_PAYLOAD_BYTES = 700 * 1024;
+
+function assetPayloadBytes(asset: QuizAsset): number {
+  return (asset.dataUrl?.length || 0) + (asset.content?.length || 0) + (asset.url?.length || 0);
+}
+
+function assetsPayloadBytes(list: QuizAsset[]): number {
+  return list.reduce((sum, asset) => sum + assetPayloadBytes(asset), 0);
+}
+
+function formatBytesAsKb(bytes: number): string {
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
 export const QuizEditorModal: React.FC<Props> = ({
   initialQuiz,
   existingCodes,
@@ -681,6 +701,12 @@ export const QuizEditorModal: React.FC<Props> = ({
         );
         return;
       }
+      if (assetsPayloadBytes(assets) + dataUrl.length > MAX_QUIZ_ASSETS_PAYLOAD_BYTES) {
+        setErrorMessage(
+          `Total aset kuis akan melebihi ${formatBytesAsKb(MAX_QUIZ_ASSETS_PAYLOAD_BYTES)} (dokumen Firestore maksimal ~1 MB). Hapus atau perkecil aset lain dulu, lalu unggah gambar ini lagi.`
+        );
+        return;
+      }
       addAsset({
         id: nextAssetId(),
         type: 'image',
@@ -701,6 +727,14 @@ export const QuizEditorModal: React.FC<Props> = ({
     if (file.size > MAX_ASSET_AUDIO_FILE_BYTES) {
       setErrorMessage(
         'Ukuran audio maksimal 400 KB agar kuis tetap tersimpan (batas dokumen ~1 MB). Pakai potongan suara yang lebih pendek.'
+      );
+      return;
+    }
+    // File akan membengkak ~4/3 setelah dijadikan data URL, jadi perkirakan ukurannya dulu.
+    const estimatedDataUrlBytes = Math.ceil((file.size * 4) / 3);
+    if (assetsPayloadBytes(assets) + estimatedDataUrlBytes > MAX_QUIZ_ASSETS_PAYLOAD_BYTES) {
+      setErrorMessage(
+        `Total aset kuis akan melebihi ${formatBytesAsKb(MAX_QUIZ_ASSETS_PAYLOAD_BYTES)} (dokumen Firestore maksimal ~1 MB). Hapus atau perkecil aset lain dulu, lalu unggah audio ini lagi.`
       );
       return;
     }
@@ -983,6 +1017,19 @@ export const QuizEditorModal: React.FC<Props> = ({
       }
     }
 
+    // Aset yang masih dipakai soal saja yang disimpan (aset sama tidak diduplikasi).
+    // Simpan ditolak bila totalnya membuat dokumen Firestore melebihi batas ~1 MB.
+    const usedAssets = assets.filter((asset) => finalQuestions.some((q) => q.assetIds?.includes(asset.id)));
+    const usedAssetsBytes = assetsPayloadBytes(usedAssets);
+    if (usedAssetsBytes > MAX_QUIZ_ASSETS_PAYLOAD_BYTES) {
+      setErrorMessage(
+        `Ukuran total aset kuis ${formatBytesAsKb(usedAssetsBytes)}, melebihi batas ${formatBytesAsKb(
+          MAX_QUIZ_ASSETS_PAYLOAD_BYTES
+        )}. Dokumen Firestore maksimal ~1 MB; hapus atau perkecil aset yang dipakai, lalu simpan lagi.`
+      );
+      return;
+    }
+
     const quizToSave: Quiz = {
       id: initialQuiz?.id || `quiz-${Date.now()}`,
       code: initialQuiz?.code || generateQuizCode(existingCodes),
@@ -1004,9 +1051,8 @@ export const QuizEditorModal: React.FC<Props> = ({
       materialFileName: materials.find((m) => m.type === 'pdf' || m.type === 'ppt')?.fileName || '',
       materialYoutubeUrl: materials.find((m) => m.type === 'youtube')?.youtubeUrl || '',
       questions: finalQuestions,
-      // Aset yang masih dipakai soal saja yang disimpan (aset sama tidak diduplikasi).
       // images dikosongkan agar gambar format lama yang sudah dipindah ke aset ikut terhapus (merge).
-      assets: assets.filter((asset) => finalQuestions.some((q) => q.assetIds?.includes(asset.id))),
+      assets: usedAssets,
       images: []
     };
 
@@ -1056,8 +1102,18 @@ export const QuizEditorModal: React.FC<Props> = ({
                   {assets.length}
                 </span>
               </div>
- <p className="text-[11px] text-slate-500 ">
+               <p className="text-[11px] text-slate-500 ">
                 Unggah berkas sekali di sini, lalu tarik asetnya ke kartu soal (bisa ke beberapa soal).
+              </p>
+              <p
+                className={`text-[10px] font-semibold ${
+                  assetsPayloadBytes(assets) > MAX_QUIZ_ASSETS_PAYLOAD_BYTES
+                    ? 'text-rose-600'
+                    : 'text-slate-500'
+                }`}
+              >
+                Ukuran aset {formatBytesAsKb(assetsPayloadBytes(assets))} /{' '}
+                {formatBytesAsKb(MAX_QUIZ_ASSETS_PAYLOAD_BYTES)} (batas dokumen Firestore)
               </p>
 
               <div className="grid grid-cols-2 gap-1.5">

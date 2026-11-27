@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -12,8 +12,82 @@ const isProd = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT) || 3000;
 
 const app = express();
-app.use(express.json({ limit: '25mb' }));
-app.use(express.urlencoded({ extended: true, limit: '25mb' }));
+
+// ==== Pembatas permintaan untuk endpoint AI ====
+// Kuota Gemini dibayar per pemanggilan, jadi endpoint AI dibatasi per IP.
+// Penghitung ini hidup di memori proses: di Vercel setiap instance punya hitungan
+// sendiri, dan perangkat di balik satu NAT (lab sekolah) berbagi satu IP. Karena itu
+// batasnya dibuat cukup longgar untuk satu kelas yang mengirim ujian bersamaan.
+interface RateBucket {
+  count: number;
+  resetAt: number;
+}
+
+const RATE_BUCKETS_MAX_ENTRIES = 5000;
+
+function createRateLimiter(options: { windowMs: number; max: number; message: string }) {
+  const buckets = new Map<string, RateBucket>();
+
+  const clientKey = (req: Request) => {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.trim()) {
+      return forwarded.split(',')[0].trim();
+    }
+    return req.ip || req.socket?.remoteAddress || 'unknown';
+  };
+
+  // Buang entri kedaluwarsa agar Map tidak tumbuh tanpa batas (IP palsu / acak).
+  const pruneExpired = (now: number) => {
+    buckets.forEach((bucket, key) => {
+      if (bucket.resetAt <= now) buckets.delete(key);
+    });
+  };
+
+  return (req: Request, res: Response, next: NextFunction) => {
+    const now = Date.now();
+    if (buckets.size >= RATE_BUCKETS_MAX_ENTRIES) pruneExpired(now);
+
+    const key = clientKey(req);
+    const bucket = buckets.get(key);
+
+    if (!bucket || bucket.resetAt <= now) {
+      buckets.set(key, { count: 1, resetAt: now + options.windowMs });
+      next();
+      return;
+    }
+
+    if (bucket.count >= options.max) {
+      const retryAfter = Math.max(1, Math.ceil((bucket.resetAt - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfter));
+      res.status(429).json({ error: options.message });
+      return;
+    }
+
+    bucket.count += 1;
+    next();
+  };
+}
+
+// Pembuatan soal dan ekstraksi berkas adalah panggilan termahal: 10 permintaan/menit/IP.
+const aiHeavyRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 10,
+  message: 'Terlalu banyak permintaan AI dari jaringan ini. Tunggu satu menit lalu coba lagi.'
+});
+
+// Penilaian isian singkat dipanggil sekali per siswa saat mengirim ujian; satu kelas
+// di balik satu IP bisa mengirim puluhan permintaan hampir bersamaan.
+const aiGradingRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+  message: 'Terlalu banyak permintaan penilaian dari jaringan ini. Tunggu satu menit lalu coba lagi.'
+});
+
+// Rute ekstraksi menerima berkas (data URL hingga ~3,5 MB dari klien) sehingga butuh
+// batas lebih besar. Parser di bawahnya otomatis melewati body yang sudah dibaca.
+app.use('/api/extract-quiz-from-file', express.json({ limit: '6mb' }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Initialize Gemini SDK with server-side environment key
 function getGeminiClient(): GoogleGenAI | null {
@@ -425,7 +499,7 @@ async function determineActiveAI(): Promise<'gemini' | 'ollama' | 'fallback'> {
 }
 
 // SSE Streaming AI Quiz Generator Endpoint
-app.get('/api/generate-quiz-stream', async (req: Request, res: Response) => {
+app.get('/api/generate-quiz-stream', aiHeavyRateLimit, async (req: Request, res: Response) => {
   const topic = String(req.query.topic || 'Sejarah Awang Long dan Kutai');
   const gradeLevel = String(req.query.gradeLevel || 'SMP');
   const count = Math.max(Number(req.query.count) || 5, 1);
@@ -576,7 +650,7 @@ Contoh skema JSON:
 });
 
 // JSON Post endpoint for direct AI generation
-app.post('/api/generate-quiz', async (req: Request, res: Response) => {
+app.post('/api/generate-quiz', aiHeavyRateLimit, async (req: Request, res: Response) => {
   const { topic = 'Sejarah Awang Long dan Kutai', gradeLevel = 'SMP', count: rawCount = 5, difficulty = 'Sedang' } = req.body;
   const count = Math.max(Number(rawCount) || 5, 1);
   const activeAI = await determineActiveAI();
@@ -649,7 +723,7 @@ Instruksi Khusus:
 });
 
 // AI Document / File Question Extractor Endpoint
-app.post('/api/extract-quiz-from-file', async (req: Request, res: Response) => {
+app.post('/api/extract-quiz-from-file', aiHeavyRateLimit, async (req: Request, res: Response) => {
   const {
     base64Data,
     mimeType = 'text/plain',
@@ -975,7 +1049,7 @@ app.get('/api/gemini-usage', async (_req: Request, res: Response) => {
 });
 
 // Endpoint: AI Smart Point Allocation across all quiz questions (Total strictly 100 pts)
-app.post('/api/smart-score-quiz', async (req: Request, res: Response) => {
+app.post('/api/smart-score-quiz', aiHeavyRateLimit, async (req: Request, res: Response) => {
   const { questions = [] } = req.body;
   if (!Array.isArray(questions) || questions.length === 0) {
     return res.status(400).json({ error: 'Tidak ada butir soal yang dikirim untuk penilaian.' });
@@ -1185,7 +1259,7 @@ interface VerifiedAnswerKey {
   suggestedExplanation?: string;
 }
 
-app.post('/api/verify-answer-keys', async (req: Request, res: Response) => {
+app.post('/api/verify-answer-keys', aiHeavyRateLimit, async (req: Request, res: Response) => {
   const { questions = [], subject = '', gradeLevel = '', quizTitle = '' } = req.body || {};
 
   if (!Array.isArray(questions) || questions.length === 0) {
@@ -1361,7 +1435,7 @@ interface ShortAnswerGradeVerdict {
   reason: string;
 }
 
-app.post('/api/grade-short-answers', async (req: Request, res: Response) => {
+app.post('/api/grade-short-answers', aiGradingRateLimit, async (req: Request, res: Response) => {
   const { items = [], subject = '', gradeLevel = '', quizTitle = '' } = req.body || {};
 
   if (!Array.isArray(items) || items.length === 0) {
@@ -1478,6 +1552,19 @@ Keluarkan HANYA JSON array valid (tanpa markdown) berisi satu objek per jawaban,
       error: 'Gagal menilai jawaban isian singkat dengan AI. Periksa koneksi/kuota AI lalu coba lagi.'
     });
   }
+});
+
+// Balasan JSON (bukan halaman HTML bawaan body-parser) saat body terlalu besar atau rusak.
+app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+  if (err?.type === 'entity.too.large') {
+    res.status(413).json({ error: 'Data yang dikirim terlalu besar. Perkecil berkas lalu coba lagi.' });
+    return;
+  }
+  if (err instanceof SyntaxError && 'body' in err) {
+    res.status(400).json({ error: 'Format JSON pada permintaan tidak valid.' });
+    return;
+  }
+  next(err);
 });
 
 // Setup Vite middleware in dev or static files in production

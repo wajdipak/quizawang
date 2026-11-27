@@ -10,6 +10,12 @@ service cloud.firestore {
       return id is string && id.size() > 0 && id.size() <= 128;
     }
 
+    // Hanya akun guru (admin) yang boleh mengubah atau menghapus data.
+    function isTeacher() {
+      return request.auth != null
+        && request.auth.uid == 'yQNuogQOmVOrLv6YPkUwaAWIfAn1';
+    }
+
     function isValidQuiz(data) {
       return data.keys().hasAll(['id', 'code', 'title', 'subject', 'questions', 'isActive'])
         && data.id is string && data.id.size() <= 128
@@ -31,17 +37,19 @@ service cloud.firestore {
     }
 
     match /quizzes/{quizId} {
+      // Dibaca siswa tanpa login karena portal ujian memuat soal dari sini.
       allow get: if isValidId(quizId);
       allow list: if true;
-      allow create, update: if isValidId(quizId) && isValidQuiz(request.resource.data);
-      allow delete: if isValidId(quizId);
+      allow create, update: if isTeacher() && isValidId(quizId) && isValidQuiz(request.resource.data);
+      allow delete: if isTeacher() && isValidId(quizId);
     }
 
     match /submissions/{submissionId} {
-      allow get: if isValidId(submissionId);
-      allow list: if true;
+      // Hasil siswa hanya boleh dibaca akun guru, bukan siswa lain.
+      allow get, list: if isTeacher();
+      // Siswa tanpa login tetap harus bisa mengirim lembar jawabannya sendiri.
       allow create: if isValidId(submissionId) && isValidSubmission(request.resource.data);
-      allow update, delete: if isValidId(submissionId);
+      allow update, delete: if isTeacher() && isValidId(submissionId);
     }
 
     function isValidQuizSession(data) {
@@ -56,8 +64,9 @@ service cloud.firestore {
 
     match /quiz_sessions/{sessionId} {
       allow get, list: if true;
+      // Siswa menambahkan dirinya ke connectedStudents saat masuk ruang tunggu.
       allow create, update: if isValidId(sessionId) && isValidQuizSession(request.resource.data);
-      allow delete: if isValidId(sessionId);
+      allow delete: if isTeacher() && isValidId(sessionId);
     }
   }
 }

@@ -51,6 +51,9 @@ export default function App() {
       : readInitialExamParams({ toString: () => window.location.search });
   const urlCode = examLink.quizCode;
   const autostart = examLink.autostart;
+  const isStudentMode =
+    examLink.isStudentLinkMode ||
+    (typeof window !== 'undefined' && window.location.pathname === '/siswa');
 
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [submissions, setSubmissions] = useState<StudentSubmission[]>([]);
@@ -149,10 +152,14 @@ export default function App() {
       saveStoredCategories(updatedCats);
     });
 
-    // 3. Real-time Firebase Firestore synchronizer for Student Submissions
-    const unsubSubmissions = subscribeSubmissionsRealtime((syncedSubs) => {
-      setSubmissions(syncedSubs);
-    });
+    // 3. Real-time Firebase Firestore synchronizer for Student Submissions.
+    // Aturan Firestore hanya mengizinkan akun guru membaca hasil siswa, jadi
+    // portal siswa tidak berlangganan koleksi ini.
+    const unsubSubmissions = isStudentMode
+      ? () => {}
+      : subscribeSubmissionsRealtime((syncedSubs) => {
+          setSubmissions(syncedSubs);
+        });
 
     // 4. Real-time Firebase Firestore synchronizer for Quiz Sessions
     const unsubSessions = subscribeQuizSessionsRealtime((syncedSessions) => {
@@ -164,7 +171,7 @@ export default function App() {
       unsubSubmissions();
       unsubSessions();
     };
-  }, [user]);
+  }, [user, isStudentMode]);
 
   // Save quizzes helper with real-time Firebase upload
   const handleSaveQuiz = async (quiz: Quiz) => {

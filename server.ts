@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI } from '@google/genai';
+import { gradeShortAnswersWithAi } from './server/shortAnswerAi.js';
+import { ExamApiError, checkExamAnswer, loadExamByCode, submitExamAnswers } from './server/examService.js';
 
 dotenv.config();
 
@@ -81,6 +83,26 @@ const aiGradingRateLimit = createRateLimiter({
   windowMs: 60_000,
   max: 60,
   message: 'Terlalu banyak permintaan penilaian dari jaringan ini. Tunggu satu menit lalu coba lagi.'
+});
+
+// Endpoint ujian dipanggil banyak perangkat sekaligus dari satu jaringan sekolah.
+// Satu kelas berisi 30-40 perangkat di balik satu IP NAT, dan tiap siswa bisa memuat
+// soal lebih dari sekali (muat ulang, pindah mode, ganti perangkat). Batas baca dibuat
+// longgar supaya satu kelas tidak saling menghabiskan kuota.
+const examReadRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 600,
+  message: 'Terlalu banyak permintaan soal dari jaringan ini. Tunggu sebentar lalu coba lagi.'
+});
+const examAnswerRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 120,
+  message: 'Terlalu banyak pemeriksaan jawaban dari jaringan ini. Tunggu sebentar lalu coba lagi.'
+});
+const examSubmitRateLimit = createRateLimiter({
+  windowMs: 60_000,
+  max: 60,
+  message: 'Terlalu banyak pengiriman lembar jawaban dari jaringan ini. Tunggu satu menit lalu coba lagi.'
 });
 
 // Rute ekstraksi menerima berkas (data URL hingga ~3,5 MB dari klien) sehingga butuh
@@ -496,6 +518,45 @@ async function determineActiveAI(): Promise<'gemini' | 'ollama' | 'fallback'> {
   const ollamaOk = await testOllamaConnection();
   if (ollamaOk) return 'ollama';
   return 'fallback';
+}
+
+/**
+ * Meminta model menilai isian singkat dengan batas waktu server. Dipakai endpoint
+ * penilaian lama dan endpoint kirim lembar jawaban ujian.
+ */
+async function generateShortAnswerText(
+  prompt: string,
+  action: string,
+  provider?: 'gemini' | 'ollama'
+): Promise<string> {
+  const activeAI = provider ?? (await determineActiveAI());
+  if (activeAI === 'fallback') {
+    throw new Error('Mesin AI belum tersedia untuk menilai isian singkat.');
+  }
+
+  let timeoutHandle: NodeJS.Timeout | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => reject(new Error('Waktu penilaian AI isian singkat habis')), 20000);
+  });
+
+  try {
+    return await Promise.race([
+      activeAI === 'ollama'
+        ? callOllama(prompt)
+        : generateGeminiWithRetry(
+            getGeminiClient()!,
+            {
+              contents: prompt,
+              config: { responseMimeType: 'application/json' },
+              action
+            },
+            ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']
+          ),
+      timeoutPromise
+    ]);
+  } finally {
+    if (timeoutHandle) clearTimeout(timeoutHandle);
+  }
 }
 
 // SSE Streaming AI Quiz Generator Endpoint
@@ -1428,12 +1489,6 @@ Keluarkan HANYA JSON array valid (tanpa markdown) berisi satu objek per soal, ur
 // AI Short-Answer Grading Endpoint
 // Menilai jawaban isian singkat berdasarkan MAKNA (bukan kecocokan karakter teks),
 // sehingga sinonim, salah ketik kecil, atau urutan kata berbeda tetap dinilai benar.
-interface ShortAnswerGradeVerdict {
-  questionId: string;
-  isCorrect: boolean;
-  confidence: 'tinggi' | 'sedang' | 'rendah';
-  reason: string;
-}
 
 app.post('/api/grade-short-answers', aiGradingRateLimit, async (req: Request, res: Response) => {
   const { items = [], subject = '', gradeLevel = '', quizTitle = '' } = req.body || {};
@@ -1453,89 +1508,14 @@ app.post('/api/grade-short-answers', aiGradingRateLimit, async (req: Request, re
     });
   }
 
-  const payload = items.map((item: any, index: number) => ({
-    index,
-    question: String(item?.question || '').slice(0, 400),
-    acceptedAnswers: (Array.isArray(item?.acceptedAnswers) ? item.acceptedAnswers : [])
-      .map((a: any) => String(a || '').trim())
-      .filter((a: string) => a.length > 0)
-      .slice(0, 8),
-    studentAnswer: String(item?.studentAnswer || '').slice(0, 400),
-    explanation: String(item?.explanation || '').slice(0, 300)
-  }));
-
-  const prompt = `Anda adalah guru penilai asesmen pendidikan yang adil dan teliti.
-Nilai jawaban ISIAN SINGKAT siswa untuk bidang "${subject || 'umum'}" jenjang ${gradeLevel || 'umum'}${quizTitle ? ` pada kuis "${quizTitle}"` : ''}.
-
-DATA JAWABAN:
-${JSON.stringify(payload, null, 2)}
-
-ATURAN PENILAIAN (WAJIB):
-- Nilai berdasarkan MAKNA jawaban, BUKAN kecocokan karakter teks. Jangan membandingkan huruf per huruf.
-- ANGGAP BENAR bila makna jawaban siswa setara dengan kunci, termasuk: sinonim, istilah lain yang semakna, singkatan umum, salah ketik kecil, perbedaan imbuhan/ejaan, urutan kata berbeda, penulisan angka vs huruf, atau jawaban lebih panjang yang tetap benar dan tidak bertentangan dengan kunci.
-- ANGGAP SALAH bila konsep/nama/angka berbeda, jawaban menyebut beberapa kemungkinan sekaligus tanpa memilih yang benar, jawaban terlalu umum sehingga tidak menjawab pertanyaan, atau jawaban kosong.
-- Gunakan kunci jawaban (acceptedAnswers) sebagai acuan utama; bila kunci tampak kurang lengkap, nilai menurut kebenaran faktual materi.
-- reason = alasan singkat dalam bahasa Indonesia, maksimal 2 kalimat, menjelaskan mengapa jawaban dinilai benar/salah.
-
-Keluarkan HANYA JSON array valid (tanpa markdown) berisi satu objek per jawaban, urut sesuai index:
-[
-  { "index": 0, "isCorrect": true, "confidence": "tinggi" | "sedang" | "rendah", "reason": "alasan singkat" }
-]`;
-
   try {
-    // Batas waktu sisi server: klien sudah punya batas sendiri, tetapi percobaan
-    // ulang multi-model tidak boleh menggantung lebih dari ini.
-    let timeoutHandle: NodeJS.Timeout | undefined;
-    const timeoutPromise = new Promise<never>((_, reject) => {
-      timeoutHandle = setTimeout(() => reject(new Error('Waktu penilaian AI isian singkat habis')), 20000);
-    });
-
-    let responseText: string;
-    try {
-      responseText = await Promise.race([
-        activeAI === 'ollama'
-          ? callOllama(prompt)
-          : generateGeminiWithRetry(
-              getGeminiClient()!,
-              {
-                contents: prompt,
-                config: { responseMimeType: 'application/json' },
-                action: 'grade-short-answers'
-              },
-              ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest']
-            ),
-        timeoutPromise
-      ]);
-    } finally {
-      if (timeoutHandle) clearTimeout(timeoutHandle);
-    }
-
-    const cleaned = responseText
-      .trim()
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/```$/i, '')
-      .trim();
-    const parsed = JSON.parse(cleaned);
-    const rawResults: any[] = Array.isArray(parsed) ? parsed : Array.isArray(parsed?.results) ? parsed.results : [];
-
-    const verdicts: ShortAnswerGradeVerdict[] = [];
-
-    for (const raw of rawResults) {
-      const index = Number(raw?.index);
-      if (!Number.isInteger(index) || index < 0 || index >= payload.length) continue;
-
-      const item: any = payload[index];
-      const isCorrect = raw?.isCorrect === true || String(raw?.isCorrect).toLowerCase() === 'true';
-      const confidence = ['tinggi', 'sedang', 'rendah'].includes(raw?.confidence) ? raw.confidence : 'sedang';
-
-      verdicts.push({
-        questionId: String(items[index]?.questionId || ''),
-        isCorrect,
-        confidence,
-        reason: String(raw?.reason || '').trim().slice(0, 300) || (isCorrect ? 'Makna jawaban setara dengan kunci.' : 'Jawaban belum sesuai dengan kunci.')
-      });
-    }
+    // Prompt dan pembacaan balasan ada di server/shortAnswerAi.ts, sama dengan yang
+    // dipakai endpoint kirim lembar jawaban, supaya kedua jalur menilai dengan aturan sama.
+    const verdicts = await gradeShortAnswersWithAi(
+      items,
+      { subject, gradeLevel, quizTitle },
+      (prompt) => generateShortAnswerText(prompt, 'grade-short-answers', activeAI)
+    );
 
     if (verdicts.length === 0) {
       return res.status(502).json({ error: 'AI tidak mengembalikan hasil penilaian yang valid. Coba lagi.' });
@@ -1551,6 +1531,54 @@ Keluarkan HANYA JSON array valid (tanpa markdown) berisi satu objek per jawaban,
     return res.status(502).json({
       error: 'Gagal menilai jawaban isian singkat dengan AI. Periksa koneksi/kuota AI lalu coba lagi.'
     });
+  }
+});
+
+// ==== Endpoint ujian: soal bersih, cek jawaban, dan kirim lembar jawaban ====
+// Siswa tidak membaca koleksi quizzes lagi. Kunci jawaban tetap di dokumen kuis dan
+// hanya dibaca server (Admin SDK) serta akun guru; siswa menerima soal tanpa kunci.
+function sendExamError(res: Response, error: unknown) {
+  if (error instanceof ExamApiError) {
+    res.status(error.status).json({ error: error.message });
+    return;
+  }
+  console.error('[exam] kesalahan server ujian:', error);
+  res.status(500).json({ error: 'Terjadi kesalahan pada server ujian. Coba lagi.' });
+}
+
+app.get('/api/exam/:code', examReadRateLimit, async (req: Request, res: Response) => {
+  try {
+    const exam = await loadExamByCode(String(req.params.code || ''));
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(exam);
+  } catch (error) {
+    sendExamError(res, error);
+  }
+});
+
+app.post('/api/exam/:code/answer', examAnswerRateLimit, async (req: Request, res: Response) => {
+  try {
+    res.json(await checkExamAnswer(String(req.params.code || ''), req.body || {}));
+  } catch (error) {
+    sendExamError(res, error);
+  }
+});
+
+app.post('/api/exam/:code/submit', examSubmitRateLimit, async (req: Request, res: Response) => {
+  try {
+    const result = await submitExamAnswers(String(req.params.code || ''), req.body || {}, {
+      gradeShortAnswers: async (items, meta) => {
+        const verdicts = await gradeShortAnswersWithAi(items, meta, (prompt) =>
+          generateShortAnswerText(prompt, 'submit-exam')
+        );
+        return Object.fromEntries(
+          verdicts.map((verdict) => [verdict.questionId, { isCorrect: verdict.isCorrect, reason: verdict.reason }])
+        );
+      }
+    });
+    res.json(result);
+  } catch (error) {
+    sendExamError(res, error);
   }
 });
 

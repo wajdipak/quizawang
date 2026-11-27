@@ -7,7 +7,9 @@ import {
   validateQuizData,
   checkShortAnswer,
   normalizeText,
-  resolveQuestionImage
+  resolveQuestionImage,
+  resolveQuestionAssets,
+  youtubeEmbedUrl
 } from './quizLogic.ts';
 import type { Question } from '../types/quiz.js';
 
@@ -162,4 +164,60 @@ test('resolveQuestionImage follows imageId to shared images and falls back to im
   assert.equal(resolveQuestionImage(quiz, { ...base, imageId: 'img-hilang' }), undefined);
   assert.equal(resolveQuestionImage(quiz, { ...base, imageId: 'img-hilang', imageUrl: 'data:image/png;base64,DDD' }), 'data:image/png;base64,DDD');
   assert.equal(resolveQuestionImage(null, null), undefined);
+});
+
+test('resolveQuestionAssets reads shared assets once and keeps legacy images', () => {
+  const quiz = {
+    images: [{ id: 'img-1', imageUrl: 'data:image/png;base64,AAA' }],
+    assets: [
+      { id: 'a-1', type: 'image' as const, title: 'Peta', dataUrl: 'data:image/png;base64,AAA' },
+      { id: 'a-2', type: 'audio' as const, title: 'Narasi', dataUrl: 'data:audio/mp3;base64,BBB' },
+      { id: 'a-3', type: 'text' as const, title: 'Kutipan', content: 'Teks' },
+      { id: 'a-4', type: 'youtube' as const, title: 'Video', url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' }
+    ]
+  };
+  const base: Question = { id: 'q1', type: 'multiple_choice', text: 'Soal', category: 'Umum', points: 10 };
+
+  // Aset yang sama dirujuk lebih dari sekali tidak ditampilkan dua kali.
+  assert.deepEqual(
+    resolveQuestionAssets(quiz, { ...base, assetIds: ['a-2', 'a-4', 'a-2'] }).map((a) => a.id),
+    ['a-2', 'a-4']
+  );
+
+  // Dua soal memakai aset yang sama -> objek/data URL yang sama, bukan salinan.
+  assert.equal(resolveQuestionAssets(quiz, { ...base, id: 'q2', assetIds: ['a-1'] })[0], quiz.assets[0]);
+
+  // Rujukan aset yang sudah dihapus diabaikan.
+  assert.deepEqual(resolveQuestionAssets(quiz, { ...base, assetIds: ['a-hilang'] }), []);
+  assert.deepEqual(resolveQuestionAssets(null, { ...base, assetIds: ['a-1'] }), []);
+
+  // Gambar format lama (imageId / imageUrl) tetap tampil sebagai aset gambar.
+  const legacy = resolveQuestionAssets(quiz, { ...base, imageId: 'img-1' });
+  assert.equal(legacy.length, 1);
+  assert.equal(legacy[0].type, 'image');
+  assert.equal(legacy[0].dataUrl, 'data:image/png;base64,AAA');
+  assert.equal(
+    resolveQuestionAssets({}, { ...base, imageUrl: 'data:image/png;base64,DDD' })[0].dataUrl,
+    'data:image/png;base64,DDD'
+  );
+
+  // Gambar lama yang isinya sama dengan aset yang sudah terpasang tidak diduplikasi.
+  const dedup = resolveQuestionAssets(quiz, { ...base, assetIds: ['a-1'], imageUrl: 'data:image/png;base64,AAA' });
+  assert.equal(dedup.length, 1);
+  assert.equal(dedup[0].id, 'a-1');
+});
+
+test('youtubeEmbedUrl accepts common YouTube links and rejects others', () => {
+  assert.equal(
+    youtubeEmbedUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ'),
+    'https://www.youtube.com/embed/dQw4w9WgXcQ'
+  );
+  assert.equal(youtubeEmbedUrl('https://youtu.be/dQw4w9WgXcQ?t=10'), 'https://www.youtube.com/embed/dQw4w9WgXcQ');
+  assert.equal(
+    youtubeEmbedUrl('https://www.youtube.com/shorts/dQw4w9WgXcQ'),
+    'https://www.youtube.com/embed/dQw4w9WgXcQ'
+  );
+  assert.equal(youtubeEmbedUrl('https://example.com/video'), null);
+  assert.equal(youtubeEmbedUrl(''), null);
+  assert.equal(youtubeEmbedUrl(undefined), null);
 });

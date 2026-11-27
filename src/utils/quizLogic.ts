@@ -2,6 +2,7 @@ import type {
   Question,
   QuestionType,
   Quiz,
+  QuizAsset,
   QuizResultCalculation,
   QuestionBreakdown,
   StudentAnswerValue
@@ -21,6 +22,41 @@ export function resolveQuestionImage(
     if (shared?.imageUrl) return shared.imageUrl;
   }
   return question.imageUrl || undefined;
+}
+
+/** URL embed YouTube dari berbagai bentuk link (watch, youtu.be, shorts, embed). */
+export function youtubeEmbedUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const match = url.match(/^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|&v=)([^#&?]*).*/);
+  return match && match[2].length === 11 ? `https://www.youtube.com/embed/${match[2]}` : null;
+}
+
+/**
+ * Aset bilah aset yang ditempel ke sebuah soal. Aset hanya disimpan sekali di Quiz.assets,
+ * jadi beberapa soal yang memakai aset yang sama membaca data URL yang sama.
+ * Gambar format lama (Quiz.images via imageId, atau Question.imageUrl) tetap ditampilkan.
+ */
+export function resolveQuestionAssets(
+  quiz: Pick<Quiz, 'assets' | 'images'> | null | undefined,
+  question: Question | null | undefined
+): QuizAsset[] {
+  if (!question) return [];
+  const assets: QuizAsset[] = [];
+  (question.assetIds || []).forEach((assetId) => {
+    const asset = quiz?.assets?.find((a) => a.id === assetId);
+    if (asset && !assets.some((a) => a.id === asset.id)) assets.push(asset);
+  });
+
+  const legacyImage = resolveQuestionImage(quiz, question);
+  if (legacyImage && !assets.some((a) => a.type === 'image' && a.dataUrl === legacyImage)) {
+    assets.push({
+      id: `legacy-image-${question.id}`,
+      type: 'image',
+      title: 'Gambar soal',
+      dataUrl: legacyImage
+    });
+  }
+  return assets;
 }
 
 /**

@@ -12,12 +12,29 @@ export interface QuizImage {
   title?: string; // label singkat untuk pemilih gambar di editor
 }
 
+export type QuizAssetType = 'audio' | 'image' | 'text' | 'youtube';
+
+/**
+ * Aset dari bilah aset editor. Disimpan sekali di Quiz.assets dan dirujuk soal lewat
+ * Question.assetIds, sehingga aset yang sama dipakai beberapa soal tanpa duplikasi data.
+ */
+export interface QuizAsset {
+  id: string;
+  type: QuizAssetType;
+  title: string;
+  dataUrl?: string; // gambar atau audio (data URL)
+  content?: string; // kotak teks
+  url?: string; // link YouTube
+  fileName?: string;
+}
+
 export interface Question {
   id: string;
   type: QuestionType;
   text: string;
   imageUrl?: string; // data URL gambar khusus soal ini
   imageId?: string; // rujukan ke Quiz.images: gambar yang sama dipakai beberapa soal
+  assetIds?: string[]; // rujukan ke Quiz.assets: aset bilah aset yang tampil di soal ini
   needsImage?: boolean; // true bila soal merujuk gambar pada dokumen asli yang belum ditambahkan
   category: string;
   points: number; // default e.g. 10
@@ -69,6 +86,7 @@ export interface Quiz {
   materialFileName?: string;
   materialYoutubeUrl?: string;
   images?: QuizImage[]; // gambar soal yang dipakai bersama (dirujuk lewat Question.imageId)
+  assets?: QuizAsset[]; // aset bilah aset (gambar, audio, teks, YouTube) yang dipakai bersama
   questions: Question[];
 }
 

@@ -39,7 +39,8 @@ import {
   StudentAnswerValue,
   QuestionType
 } from '../types/quiz.js';
-import { calculateQuizScore, formatStudentAnswer, formatTimeRemaining, resolveQuestionImage } from '../utils/quizLogic.js';
+import { calculateQuizScore, formatStudentAnswer, formatTimeRemaining, resolveQuestionAssets } from '../utils/quizLogic.js';
+import { QuestionAssets } from './QuestionAssets.js';
 import { gradeShortAnswersWithAI, type ShortAnswerVerdict } from '../utils/aiGrading.js';
 import { playSelectSound, playSuccessSound, playTickSound } from '../utils/audio.js';
 import { saveQuizSessionToFirebase } from '../services/firebaseSync.js';
@@ -998,16 +999,7 @@ export const StudentExamPortal: React.FC<Props> = ({
  <h2 className="text-base sm:text-lg font-bold text-slate-800  leading-relaxed">
                 {currentQ.text}
               </h2>
-              {(() => {
-                const questionImage = resolveQuestionImage(quiz, currentQ);
-                return questionImage ? (
-                  <img
-                    src={questionImage}
-                    alt={`Gambar soal ${currentIndex + 1}`}
-                    className="w-full max-h-72 object-contain rounded-2xl border border-slate-200  bg-white"
-                  />
-                ) : null;
-              })()}
+              <QuestionAssets assets={resolveQuestionAssets(quiz, currentQ)} />
             </div>
 
             {/* ANSWER INPUT: PILIHAN GANDA */}
@@ -1429,19 +1421,13 @@ export const StudentExamPortal: React.FC<Props> = ({
                   </span>
                 </div>
 
-                {(() => {
-                  const questionImage = resolveQuestionImage(
+                <QuestionAssets
+                  assets={resolveQuestionAssets(
                     quiz,
                     quiz.questions.find((qq) => qq.id === b.questionId)
-                  );
-                  return questionImage ? (
-                    <img
-                      src={questionImage}
-                      alt={`Gambar soal ${idx + 1}`}
-                      className="w-full max-h-56 object-contain rounded-xl border border-slate-200  bg-white"
-                    />
-                  ) : null;
-                })()}
+                  )}
+                  imageClassName="w-full max-h-56 object-contain rounded-xl border border-slate-200  bg-white"
+                />
 
                 {/* Answer Summary */}
                 <div className="pl-8 space-y-1.5 text-xs">

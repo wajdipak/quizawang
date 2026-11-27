@@ -16,7 +16,8 @@ import {
   X
 } from 'lucide-react';
 import { Quiz, StudentSubmission } from '../types/quiz.js';
-import { formatTimeRemaining, resolveQuestionImage } from '../utils/quizLogic.js';
+import { formatTimeRemaining, resolveQuestionAssets } from '../utils/quizLogic.js';
+import { QuestionAssets } from './QuestionAssets.js';
 
 interface Props {
   quizzes: Quiz[];
@@ -470,16 +471,10 @@ export const SubmissionsAnalytics: React.FC<Props> = ({
 
  <p className="text-slate-700  font-medium">{q.text}</p>
 
-                    {(() => {
-                      const questionImage = resolveQuestionImage(currentInspectedQuiz, q);
-                      return questionImage ? (
-                        <img
-                          src={questionImage}
-                          alt={`Gambar soal ${idx + 1}`}
-                          className="w-full max-h-56 object-contain rounded-xl border border-slate-200  bg-white"
-                        />
-                      ) : null;
-                    })()}
+                    <QuestionAssets
+                      assets={resolveQuestionAssets(currentInspectedQuiz, q)}
+                      imageClassName="w-full max-h-56 object-contain rounded-xl border border-slate-200  bg-white"
+                    />
 
  <div className="p-2.5 rounded-xl bg-white  border border-slate-200  space-y-1">
                       <div className="flex items-center gap-2">

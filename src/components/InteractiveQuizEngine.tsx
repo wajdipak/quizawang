@@ -47,8 +47,9 @@ import {
   checkShortAnswer,
   formatStudentAnswer,
   formatTimeRemaining,
-  resolveQuestionImage
+  resolveQuestionAssets
 } from '../utils/quizLogic.js';
+import { QuestionAssets } from './QuestionAssets.js';
 import { gradeShortAnswersWithAI, type ShortAnswerVerdict } from '../utils/aiGrading.js';
 import { playSelectSound, playSuccessSound, playTickSound } from '../utils/audio.js';
 
@@ -1327,16 +1328,10 @@ export const InteractiveQuizEngine: React.FC<Props> = ({
             {currentQuestion.text}
           </h3>
 
-          {(() => {
-            const questionImage = resolveQuestionImage(quiz, currentQuestion);
-            return questionImage ? (
-              <img
-                src={questionImage}
-                alt="Gambar pendukung soal"
-                className="w-full max-h-64 object-contain rounded-2xl border border-slate-200  bg-white"
-              />
-            ) : null;
-          })()}
+          <QuestionAssets
+            assets={resolveQuestionAssets(quiz, currentQuestion)}
+            imageClassName="w-full max-h-64 object-contain rounded-2xl border border-slate-200  bg-white"
+          />
 
           {/* MULTIPLE CHOICE OPTIONS */}
           {currentQuestion.type === 'multiple_choice' && currentQuestion.options && (

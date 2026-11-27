@@ -16,10 +16,15 @@ import {
   ShieldCheck,
   ScanSearch,
   ImagePlus,
-  Images
+  Images,
+  Music,
+  FileText,
+  Youtube,
+  GripVertical,
+  LayoutPanelLeft
 } from 'lucide-react';
-import { Quiz, Question, QuestionType, MatchingPair, QuizMaterial, QuizImage } from '../types/quiz.js';
-import { validateQuizData, generateQuizCode, resolveQuestionImage } from '../utils/quizLogic.js';
+import { Quiz, Question, QuestionType, MatchingPair, QuizMaterial, QuizImage, QuizAsset } from '../types/quiz.js';
+import { validateQuizData, generateQuizCode, youtubeEmbedUrl } from '../utils/quizLogic.js';
 import { questionRefersToImage } from '../utils/questionImageDetection.js';
 
 interface Props {
@@ -47,26 +52,46 @@ interface KeyCheckResult {
 }
 
 /**
- * Gambar yang sama bisa dipakai beberapa soal. Agar dokumen kuis tidak menyimpan data URL
- * berulang (batas ~1 MB Firestore), gambar dipindah ke quiz.images sekali saja dan tiap
- * soal merujuknya lewat imageId. Gambar lama yang masih menempel di soal ikut dipindahkan.
+ * Semua aset soal (gambar, audio, kotak teks, link YouTube) disimpan sekali di Quiz.assets
+ * dan soal merujuknya lewat Question.assetIds. Gambar format lama (Quiz.images +
+ * Question.imageId, atau Question.imageUrl) dipindahkan ke daftar aset yang sama agar hanya
+ * ada satu mekanisme dan data URL tidak tersimpan berulang (batas ~1 MB Firestore).
  */
-function normalizeSharedImages(rawQuestions: Question[], rawImages: QuizImage[] = []) {
-  const images: QuizImage[] = [...rawImages];
-  const questions: Question[] = rawQuestions.map((q) => {
-    if (q.imageId) {
-      return images.some((img) => img.id === q.imageId) ? q : { ...q, imageId: undefined };
-    }
-    if (!q.imageUrl) return q;
-    const existing = images.find((img) => img.imageUrl === q.imageUrl);
-    if (existing) return { ...q, imageId: existing.id, imageUrl: '' };
-    let n = images.length + 1;
-    while (images.some((img) => img.id === `img-${n}`)) n += 1;
-    const imageId = `img-${n}`;
-    images.push({ id: imageId, imageUrl: q.imageUrl, title: `Gambar ${n}` });
-    return { ...q, imageId, imageUrl: '' };
+function normalizeSharedAssets(
+  rawQuestions: Question[],
+  rawAssets: QuizAsset[] = [],
+  rawImages: QuizImage[] = []
+) {
+  const assets: QuizAsset[] = [...rawAssets];
+  rawImages.forEach((img) => {
+    if (!img?.imageUrl || assets.some((a) => a.id === img.id)) return;
+    assets.push({
+      id: img.id || `img-${assets.length + 1}`,
+      type: 'image',
+      title: img.title || 'Gambar soal',
+      dataUrl: img.imageUrl
+    });
   });
-  return { questions, images };
+
+  let counter = assets.length;
+  const questions: Question[] = rawQuestions.map((q) => {
+    const assetIds = (q.assetIds || []).filter((id) => assets.some((a) => a.id === id));
+    if (q.imageId && assets.some((a) => a.id === q.imageId)) {
+      if (!assetIds.includes(q.imageId)) assetIds.push(q.imageId);
+    } else if (!q.imageId && q.imageUrl) {
+      const existing = assets.find((a) => a.type === 'image' && a.dataUrl === q.imageUrl);
+      if (existing) {
+        if (!assetIds.includes(existing.id)) assetIds.push(existing.id);
+      } else {
+        counter += 1;
+        const id = `asset-lama-${counter}`;
+        assets.push({ id, type: 'image', title: `Gambar ${counter}`, dataUrl: q.imageUrl });
+        assetIds.push(id);
+      }
+    }
+    return { ...q, assetIds, imageId: undefined, imageUrl: undefined };
+  });
+  return { questions, assets };
 }
 
 export const QuizEditorModal: React.FC<Props> = ({
@@ -112,7 +137,7 @@ export const QuizEditorModal: React.FC<Props> = ({
 
   // Dihitung sekali saat modal dibuka: soal + gambar bersamanya.
   const [initialQuestionState] = useState(() =>
-    normalizeSharedImages(
+    normalizeSharedAssets(
       initialQuiz?.questions && initialQuiz.questions.length > 0
         ? initialQuiz.questions
         : [
@@ -127,15 +152,17 @@ export const QuizEditorModal: React.FC<Props> = ({
               explanation: ''
             }
           ],
+      initialQuiz?.assets,
       initialQuiz?.images
     )
   );
 
   const [questions, setQuestions] = useState<Question[]>(initialQuestionState.questions);
-  // Gambar soal yang dipakai bersama; soal merujuk ke sini lewat imageId.
-  const [questionImages, setQuestionImages] = useState<QuizImage[]>(initialQuestionState.images);
-  // Index soal yang sedang membuka pemilih "pakai gambar yang sama" (null = tertutup).
-  const [imagePickerFor, setImagePickerFor] = useState<number | null>(null);
+  // Aset bilah aset (gambar, audio, kotak teks, YouTube); soal merujuk ke sini lewat assetIds.
+  const [assets, setAssets] = useState<QuizAsset[]>(initialQuestionState.assets);
+  const [youtubeInput, setYoutubeInput] = useState('');
+  const [draggingAssetId, setDraggingAssetId] = useState<string | null>(null);
+  const [dragOverQuestion, setDragOverQuestion] = useState<number | null>(null);
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isAiScoring, setIsAiScoring] = useState(false);
@@ -561,11 +588,13 @@ export const QuizEditorModal: React.FC<Props> = ({
     setQuestions(next);
   };
 
-  // Gambar per butir soal (diunggah atau ditempel guru). Gambar diperkecil & dikompres di klien
-  // agar data URL-nya tidak membuat dokumen kuis melewati batas ~1 MB Firestore.
-  const MAX_QUESTION_IMAGE_FILE_BYTES = 15 * 1024 * 1024;
-  const MAX_QUESTION_IMAGE_DATA_URL_LENGTH = 300 * 1024;
-  const QUESTION_IMAGE_ATTEMPTS = [
+  // ==== Bilah aset: gambar, audio, kotak teks, dan link YouTube ====
+  // Tiap berkas disimpan sekali di `assets`; soal hanya merujuk id aset lewat assetIds.
+  // Dengan begitu aset yang tampil di beberapa soal tidak menyalin data URL (batas ~1 MB Firestore).
+  const MAX_ASSET_IMAGE_FILE_BYTES = 15 * 1024 * 1024;
+  const MAX_ASSET_IMAGE_DATA_URL_LENGTH = 300 * 1024;
+  const MAX_ASSET_AUDIO_FILE_BYTES = 400 * 1024;
+  const ASSET_IMAGE_ATTEMPTS = [
     { maxDimension: 1280, quality: 0.82 },
     { maxDimension: 1024, quality: 0.75 },
     { maxDimension: 800, quality: 0.65 },
@@ -573,7 +602,24 @@ export const QuizEditorModal: React.FC<Props> = ({
     { maxDimension: 480, quality: 0.45 }
   ];
 
-  const loadQuestionImageElement = (file: File) =>
+  const assetSignature = (asset: QuizAsset) =>
+    asset.type === 'text'
+      ? `text:${(asset.content || '').trim()}`
+      : asset.type === 'youtube'
+      ? `youtube:${(asset.url || '').trim()}`
+      : `${asset.type}:${asset.dataUrl || ''}`;
+
+  const nextAssetId = () => `asset-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+  // Berkas dengan isi yang sama dipakai ulang, bukan disimpan sebagai aset kedua.
+  const addAsset = (asset: QuizAsset) => {
+    const duplicate = assets.find((a) => assetSignature(a) === assetSignature(asset));
+    if (duplicate) return duplicate.id;
+    setAssets((prev) => [...prev, asset]);
+    return asset.id;
+  };
+
+  const loadImageElement = (file: File) =>
     new Promise<HTMLImageElement>((resolve, reject) => {
       const objectUrl = URL.createObjectURL(file);
       const img = new Image();
@@ -588,14 +634,14 @@ export const QuizEditorModal: React.FC<Props> = ({
       img.src = objectUrl;
     });
 
-  const compressQuestionImage = async (file: File) => {
-    const img = await loadQuestionImageElement(file);
+  const compressAssetImage = async (file: File) => {
+    const img = await loadImageElement(file);
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('Peramban tidak mendukung pengolahan gambar.');
 
     let lastDataUrl = '';
-    for (const attempt of QUESTION_IMAGE_ATTEMPTS) {
+    for (const attempt of ASSET_IMAGE_ATTEMPTS) {
       const scale = Math.min(1, attempt.maxDimension / Math.max(img.width, img.height));
       const width = Math.max(1, Math.round(img.width * scale));
       const height = Math.max(1, Math.round(img.height * scale));
@@ -612,80 +658,161 @@ export const QuizEditorModal: React.FC<Props> = ({
         dataUrl = canvas.toDataURL('image/jpeg', attempt.quality);
       }
       lastDataUrl = dataUrl;
-      if (dataUrl.length <= MAX_QUESTION_IMAGE_DATA_URL_LENGTH) return dataUrl;
+      if (dataUrl.length <= MAX_ASSET_IMAGE_DATA_URL_LENGTH) return dataUrl;
     }
     return lastDataUrl;
   };
 
-  const readQuestionImageFile = async (qIndex: number, file: File) => {
+  const readAssetImage = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      setErrorMessage('Berkas gambar soal harus berupa gambar (PNG, JPG, WebP, atau GIF).');
+      setErrorMessage('Aset gambar harus berupa gambar (PNG, JPG, WebP, atau GIF).');
       return;
     }
-    if (file.size > MAX_QUESTION_IMAGE_FILE_BYTES) {
-      setErrorMessage('Ukuran berkas gambar soal maksimal 15 MB. Perkecil gambar lalu unggah kembali.');
+    if (file.size > MAX_ASSET_IMAGE_FILE_BYTES) {
+      setErrorMessage('Ukuran gambar maksimal 15 MB. Perkecil gambar lalu unggah kembali.');
       return;
     }
     setErrorMessage(null);
     try {
-      const dataUrl = await compressQuestionImage(file);
-      if (dataUrl.length > MAX_QUESTION_IMAGE_DATA_URL_LENGTH) {
+      const dataUrl = await compressAssetImage(file);
+      if (dataUrl.length > MAX_ASSET_IMAGE_DATA_URL_LENGTH) {
         setErrorMessage(
-          'Gambar soal tetap melebihi 300 KB setelah dikompres otomatis. Potong bagian pentingnya atau perkecil gambar lalu unggah kembali.'
+          'Gambar tetap melebihi 300 KB setelah dikompres otomatis. Potong bagian pentingnya lalu unggah kembali.'
         );
         return;
       }
-      // Berkas yang sama (setelah dikompres) dipakai ulang, bukan disimpan lagi.
-      const existing = questionImages.find((img) => img.imageUrl === dataUrl);
-      if (existing) {
-        handleQuestionFieldChange(qIndex, { imageId: existing.id, imageUrl: '', needsImage: false });
-        return;
-      }
-      const imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-      setQuestionImages((prev) => [
-        ...prev,
-        { id: imageId, imageUrl: dataUrl, title: file.name?.trim() || `Gambar ${prev.length + 1}` }
-      ]);
-      handleQuestionFieldChange(qIndex, { imageId, imageUrl: '', needsImage: false });
+      addAsset({
+        id: nextAssetId(),
+        type: 'image',
+        title: file.name?.trim() || `Gambar ${assets.length + 1}`,
+        dataUrl,
+        fileName: file.name
+      });
     } catch {
-      setErrorMessage('Gambar soal gagal diproses. Coba simpan sebagai PNG atau JPG lalu unggah kembali.');
+      setErrorMessage('Gambar gagal diproses. Coba simpan sebagai PNG atau JPG lalu unggah kembali.');
     }
   };
 
-  const handleQuestionImageUpload = (qIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const readAssetAudio = (file: File) => {
+    if (!file.type.startsWith('audio/')) {
+      setErrorMessage('Aset audio harus berupa berkas suara (MP3, WAV, OGG, atau M4A).');
+      return;
+    }
+    if (file.size > MAX_ASSET_AUDIO_FILE_BYTES) {
+      setErrorMessage(
+        'Ukuran audio maksimal 400 KB agar kuis tetap tersimpan (batas dokumen ~1 MB). Pakai potongan suara yang lebih pendek.'
+      );
+      return;
+    }
+    setErrorMessage(null);
+    const reader = new FileReader();
+    reader.onload = () => {
+      addAsset({
+        id: nextAssetId(),
+        type: 'audio',
+        title: file.name?.trim() || `Audio ${assets.length + 1}`,
+        dataUrl: String(reader.result || ''),
+        fileName: file.name
+      });
+    };
+    reader.onerror = () => setErrorMessage('Berkas audio gagal dibaca.');
+    reader.readAsDataURL(file);
+  };
+
+  const handleAssetFileInput = (e: React.ChangeEvent<HTMLInputElement>, kind: 'image' | 'audio') => {
     const file = e.target.files?.[0];
-    if (file) void readQuestionImageFile(qIndex, file);
+    if (file) {
+      if (kind === 'image') void readAssetImage(file);
+      else readAssetAudio(file);
+    }
     e.target.value = '';
   };
 
-  const handleQuestionImagePaste = (qIndex: number, e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const file = Array.from(e.clipboardData?.files || []).find((f) => f.type.startsWith('image/'));
-    if (!file) return;
-    e.preventDefault();
-    void readQuestionImageFile(qIndex, file);
+  const addTextAsset = () =>
+    setAssets((prev) => [
+      ...prev,
+      { id: nextAssetId(), type: 'text', title: `Kotak Teks ${prev.length + 1}`, content: '' }
+    ]);
+
+  const addYoutubeAsset = () => {
+    const url = youtubeInput.trim();
+    if (!url) {
+      setErrorMessage('Tempel link YouTube terlebih dahulu.');
+      return;
+    }
+    if (!youtubeEmbedUrl(url)) {
+      setErrorMessage(
+        'Link YouTube tidak dikenali. Gunakan tautan seperti https://www.youtube.com/watch?v=...'
+      );
+      return;
+    }
+    setErrorMessage(null);
+    addAsset({
+      id: nextAssetId(),
+      type: 'youtube',
+      title: `Video YouTube ${assets.length + 1}`,
+      url
+    });
+    setYoutubeInput('');
   };
 
-  // Pasang/lepas gambar bersama pada sebuah soal (satu gambar untuk beberapa soal).
-  const toggleSharedImageForQuestion = (qIndex: number, imageId: string) => {
-    const next = [...questions];
-    const q = next[qIndex];
-    next[qIndex] =
-      q.imageId === imageId
-        ? { ...q, imageId: undefined, needsImage: questionRefersToImage(q.text) ? true : undefined }
-        : { ...q, imageId, imageUrl: '', needsImage: false };
-    setQuestions(next);
+  const updateAsset = (id: string, updates: Partial<QuizAsset>) => {
+    setAssets((prev) => prev.map((a) => (a.id === id ? { ...a, ...updates } : a)));
   };
 
-  const removeSharedImage = (imageId: string) => {
-    if (questionImages.length <= 1) setImagePickerFor(null);
-    setQuestionImages((prev) => prev.filter((img) => img.id !== imageId));
+  const removeAsset = (id: string) => {
+    setAssets((prev) => prev.filter((a) => a.id !== id));
     setQuestions((prev) =>
       prev.map((q) =>
-        q.imageId === imageId
-          ? { ...q, imageId: undefined, needsImage: questionRefersToImage(q.text) ? true : undefined }
+        q.assetIds?.includes(id)
+          ? {
+              ...q,
+              assetIds: q.assetIds.filter((assetId) => assetId !== id),
+              needsImage: questionRefersToImage(q.text) ? true : undefined
+            }
           : q
       )
     );
+  };
+
+  const toggleAssetForQuestion = (qIndex: number, assetId: string) => {
+    setQuestions((prev) => {
+      const q = prev[qIndex];
+      if (!q) return prev;
+      const ids = q.assetIds || [];
+      const next = [...prev];
+      next[qIndex] = ids.includes(assetId)
+        ? { ...q, assetIds: ids.filter((id) => id !== assetId) }
+        : { ...q, assetIds: [...ids, assetId], needsImage: false };
+      return next;
+    });
+  };
+
+  // Tarik-lepas aset ke kartu soal. Aset yang sudah terpasang tidak ditambahkan dua kali.
+  const addAssetToQuestion = (qIndex: number, assetId: string) => {
+    setQuestions((prev) => {
+      const q = prev[qIndex];
+      if (!q) return prev;
+      const ids = q.assetIds || [];
+      if (ids.includes(assetId)) return prev;
+      const next = [...prev];
+      next[qIndex] = { ...q, assetIds: [...ids, assetId], needsImage: false };
+      return next;
+    });
+  };
+
+  const detachAssetFromQuestion = (qIndex: number, assetId: string) => {
+    setQuestions((prev) => {
+      const q = prev[qIndex];
+      if (!q || !q.assetIds?.includes(assetId)) return prev;
+      const next = [...prev];
+      next[qIndex] = {
+        ...q,
+        assetIds: q.assetIds.filter((id) => id !== assetId),
+        needsImage: questionRefersToImage(q.text) ? true : undefined
+      };
+      return next;
+    });
   };
 
   // Multiple Choice Helpers
@@ -877,9 +1004,10 @@ export const QuizEditorModal: React.FC<Props> = ({
       materialFileName: materials.find((m) => m.type === 'pdf' || m.type === 'ppt')?.fileName || '',
       materialYoutubeUrl: materials.find((m) => m.type === 'youtube')?.youtubeUrl || '',
       questions: finalQuestions,
-      // Hanya gambar bersama yang masih dirujuk soal yang disimpan. Array kosong tetap
-      // ditulis agar gambar yang sudah tidak dipakai ikut terhapus dari dokumen (merge).
-      images: questionImages.filter((img) => finalQuestions.some((q) => q.imageId === img.id))
+      // Aset yang masih dipakai soal saja yang disimpan (aset sama tidak diduplikasi).
+      // images dikosongkan agar gambar format lama yang sudah dipindah ke aset ikut terhapus (merge).
+      assets: assets.filter((asset) => finalQuestions.some((q) => q.assetIds?.includes(asset.id))),
+      images: []
     };
 
     onSave(quizToSave);
@@ -890,7 +1018,7 @@ export const QuizEditorModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 md:p-6 overflow-y-auto">
- <div className="bg-white  rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200  animate-in fade-in zoom-in-95 my-auto transition-colors">
+ <div className="bg-white  rounded-2xl sm:rounded-3xl max-w-6xl w-full max-h-[94vh] flex flex-col shadow-2xl border border-slate-200  animate-in fade-in zoom-in-95 my-auto transition-colors">
         
         {/* Modal Header */}
  <div className="p-4 sm:p-6 border-b border-slate-100  flex items-center justify-between">
@@ -914,8 +1042,190 @@ export const QuizEditorModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Modal Scrollable Body */}
-        <form onSubmit={handleSubmit} className="overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex-1">
+        {/* Body: soal di kiri, bilah aset di kanan (di ponsel bilah tampil di atas) */}
+        <div className="flex-1 flex flex-col lg:flex-row min-h-0">
+          {/* Bilah aset: unggah sekali, lalu tarik ke satu atau beberapa soal */}
+          <aside className="order-first lg:order-last shrink-0 lg:w-80 border-b lg:border-b-0 lg:border-l border-slate-200  bg-slate-50/70  flex flex-col max-h-[45vh] lg:max-h-none lg:min-h-0">
+            <div className="p-3 sm:p-4 border-b border-slate-200/70  space-y-2 shrink-0">
+              <div className="flex items-center gap-1.5">
+                <LayoutPanelLeft className="w-3.5 h-3.5 text-teal-600 " />
+ <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 ">
+                  Bilah Aset
+                </h3>
+                <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-white  border border-slate-200  text-slate-600 ">
+                  {assets.length}
+                </span>
+              </div>
+ <p className="text-[11px] text-slate-500 ">
+                Unggah berkas sekali di sini, lalu tarik asetnya ke kartu soal (bisa ke beberapa soal).
+              </p>
+
+              <div className="grid grid-cols-2 gap-1.5">
+                <label className="px-2 py-1.5 rounded-xl border border-slate-300  bg-white  hover:bg-teal-50/60 text-[11px] font-semibold text-slate-700  cursor-pointer inline-flex items-center justify-center gap-1.5 transition-colors">
+                  <ImagePlus className="w-3.5 h-3.5" />
+                  <span>Gambar</span>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    className="hidden"
+                    onChange={(e) => handleAssetFileInput(e, 'image')}
+                  />
+                </label>
+                <label className="px-2 py-1.5 rounded-xl border border-slate-300  bg-white  hover:bg-teal-50/60 text-[11px] font-semibold text-slate-700  cursor-pointer inline-flex items-center justify-center gap-1.5 transition-colors">
+                  <Music className="w-3.5 h-3.5" />
+                  <span>Audio</span>
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={(e) => handleAssetFileInput(e, 'audio')}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={addTextAsset}
+                  className="px-2 py-1.5 rounded-xl border border-slate-300  bg-white  hover:bg-teal-50/60 text-[11px] font-semibold text-slate-700  cursor-pointer inline-flex items-center justify-center gap-1.5 transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Kotak Teks</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={addYoutubeAsset}
+                  disabled={!youtubeInput.trim()}
+                  className="px-2 py-1.5 rounded-xl border border-slate-300  bg-white  hover:bg-teal-50/60 text-[11px] font-semibold text-slate-700  cursor-pointer inline-flex items-center justify-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  <Youtube className="w-3.5 h-3.5" />
+                  <span>Link YouTube</span>
+                </button>
+              </div>
+
+              <input
+                type="url"
+                value={youtubeInput}
+                onChange={(e) => setYoutubeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addYoutubeAsset();
+                  }
+                }}
+                placeholder="Tempel link YouTube lalu klik Link YouTube..."
+                className="w-full text-[11px] p-2 rounded-xl border border-slate-300  bg-white  text-slate-800  focus:outline-none focus:ring-2 focus:ring-teal-400/40"
+              />
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2">
+              {assets.length === 0 ? (
+                <p className="text-[11px] text-slate-500  text-center p-4 rounded-xl border border-dashed border-slate-300  bg-white ">
+                  Belum ada aset. Unggah gambar/audio, buat kotak teks, atau tambahkan link YouTube, lalu tarik
+                  ke soal.
+                </p>
+              ) : (
+                assets.map((asset) => {
+                  const usedBy = questions.filter((qq) => qq.assetIds?.includes(asset.id)).length;
+                  return (
+                    <div
+                      key={asset.id}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('application/x-quiz-asset', asset.id);
+                        e.dataTransfer.setData('text/plain', asset.id);
+                        e.dataTransfer.effectAllowed = 'copy';
+                        setDraggingAssetId(asset.id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggingAssetId(null);
+                        setDragOverQuestion(null);
+                      }}
+                      className={`rounded-xl border bg-white  p-2 space-y-1.5 cursor-grab active:cursor-grabbing transition-colors ${
+                        draggingAssetId === asset.id
+                          ? 'border-teal-400 ring-1 ring-teal-300'
+                          : 'border-slate-200 '
+                      }`}
+                    >
+                      <div className="flex items-start gap-1.5">
+                        <GripVertical className="w-3.5 h-3.5 text-slate-300  mt-0.5 shrink-0" />
+                        <input
+                          type="text"
+                          value={asset.title}
+                          onChange={(e) => updateAsset(asset.id, { title: e.target.value })}
+                          className="flex-1 min-w-0 text-[11px] font-semibold p-1 rounded-md border border-transparent hover:border-slate-200  focus:border-teal-300 focus:outline-none text-slate-800 "
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeAsset(asset.id)}
+                          className="p-1 rounded-md text-slate-400 hover:text-rose-600 cursor-pointer shrink-0"
+                          title="Hapus aset dari kuis ini"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      {asset.type === 'image' && asset.dataUrl && (
+                        <img
+                          src={asset.dataUrl}
+                          alt={asset.title || 'Aset gambar'}
+                          draggable={false}
+                          className="h-20 w-full object-contain rounded-md border border-slate-200  bg-white"
+                        />
+                      )}
+                      {asset.type === 'audio' && asset.dataUrl && (
+                        <audio src={asset.dataUrl} controls className="w-full h-9" />
+                      )}
+                      {asset.type === 'text' && (
+                        <textarea
+                          rows={2}
+                          value={asset.content || ''}
+                          onChange={(e) => updateAsset(asset.id, { content: e.target.value })}
+                          placeholder="Isi kotak teks yang tampil di soal..."
+                          className="w-full text-[11px] p-1.5 rounded-md border border-slate-200  bg-slate-50  text-slate-800  focus:outline-none focus:ring-1 focus:ring-teal-400"
+                        />
+                      )}
+                      {asset.type === 'youtube' && (
+                        <input
+                          type="url"
+                          value={asset.url || ''}
+                          onChange={(e) => updateAsset(asset.id, { url: e.target.value })}
+                          className="w-full text-[11px] p-1.5 rounded-md border border-slate-200  bg-slate-50  text-slate-800  focus:outline-none focus:ring-1 focus:ring-teal-400"
+                        />
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-1 pt-0.5">
+                        <span className="text-[10px] text-slate-400 ">
+                          {usedBy > 0 ? `Dipakai ${usedBy} soal:` : 'Soal:'}
+                        </span>
+                        {questions.map((qq, idx) => {
+                          const isActive = Boolean(qq.assetIds?.includes(asset.id));
+                          return (
+                            <button
+                              key={qq.id || idx}
+                              type="button"
+                              onClick={() => toggleAssetForQuestion(idx, asset.id)}
+                              title={
+                                isActive
+                                  ? `Lepas aset dari soal ${idx + 1}`
+                                  : `Tampilkan aset ini di soal ${idx + 1}`
+                              }
+                              className={`h-6 min-w-6 px-1 rounded-md border text-[10px] font-bold transition-colors cursor-pointer ${
+                                isActive
+                                  ? 'bg-teal-600 border-teal-600 text-white'
+                                  : 'bg-white  border-slate-300  text-slate-600  hover:border-teal-400'
+                              }`}
+                            >
+                              {idx + 1}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </aside>
+
+          <form onSubmit={handleSubmit} className="overflow-y-auto p-3.5 sm:p-6 space-y-4 sm:space-y-6 flex-1 min-w-0">
           {errorMessage && (
  <div className="p-3 sm:p-3.5 rounded-xl sm:rounded-2xl bg-rose-50  border border-rose-200  text-rose-700  text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
@@ -1380,7 +1690,28 @@ export const QuizEditorModal: React.FC<Props> = ({
               {questions.map((q, qIdx) => (
                 <div
                   key={q.id || qIdx}
-                  className="p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white  border border-slate-200  shadow-xs space-y-3 sm:space-y-4 relative group transition-colors"
+                  onDragOver={(e) => {
+                    if (!Array.from(e.dataTransfer.types).includes('application/x-quiz-asset')) return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'copy';
+                    setDragOverQuestion(qIdx);
+                  }}
+                  onDragLeave={() => setDragOverQuestion((prev) => (prev === qIdx ? null : prev))}
+                  onDrop={(e) => {
+                    const assetId =
+                      e.dataTransfer.getData('application/x-quiz-asset') ||
+                      e.dataTransfer.getData('text/plain');
+                    setDragOverQuestion(null);
+                    setDraggingAssetId(null);
+                    if (!assetId) return;
+                    e.preventDefault();
+                    if (assets.some((a) => a.id === assetId)) addAssetToQuestion(qIdx, assetId);
+                  }}
+                  className={`p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-white  border shadow-xs space-y-3 sm:space-y-4 relative group transition-colors ${
+                    dragOverQuestion === qIdx
+                      ? 'border-teal-400 ring-2 ring-teal-300/60'
+                      : 'border-slate-200 '
+                  }`}
                 >
                   {/* Top Bar of each Question: Number, Type Selector, Category Selector, Points, Delete */}
  <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100 ">
@@ -1507,7 +1838,6 @@ export const QuizEditorModal: React.FC<Props> = ({
                       required
                       value={q.text}
                       onChange={(e) => handleQuestionFieldChange(qIdx, { text: e.target.value })}
-                      onPaste={(e) => handleQuestionImagePaste(qIdx, e)}
                       placeholder={
                         q.type === 'multiple_choice'
                           ? 'Ketik teks pertanyaan pilihan ganda...'
@@ -1519,151 +1849,57 @@ export const QuizEditorModal: React.FC<Props> = ({
                     />
                   </div>
 
-                  {/* Gambar pendukung soal (opsional) */}
+                  {/* Aset soal: hasil tarik dari bilah aset; aset sama bisa dipakai beberapa soal */}
                   <div className="space-y-2">
-                    {q.needsImage && !q.imageUrl && !q.imageId && (
+                    {q.needsImage && (q.assetIds || []).length === 0 && (
  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-[11px] flex items-start gap-1.5">
                         <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                         <span>
-                          Soal ini merujuk gambar pada dokumen asli dan gambarnya tidak ikut diekstrak. Unggah
-                          gambarnya secara manual di sini; penanda ini hilang otomatis setelah gambar ditambahkan.
+                          Soal ini merujuk gambar pada dokumen asli dan gambarnya tidak ikut diekstrak. Tarik
+                          gambar dari bilah aset ke kartu soal ini; penanda ini hilang otomatis setelah aset
+                          ditambahkan.
                         </span>
                       </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-2">
-                      <label
-                        htmlFor={`question-image-${qIdx}`}
-                        className="px-3 py-1.5 rounded-xl border border-dashed border-slate-300  bg-slate-50  hover:bg-teal-50/60 text-[11px] font-semibold text-slate-700  cursor-pointer inline-flex items-center gap-1.5 transition-colors"
-                      >
-                        <ImagePlus className="w-3.5 h-3.5" />
-                        <span>
-                          {resolveQuestionImage({ images: questionImages }, q)
-                            ? 'Ganti Gambar Soal'
-                            : 'Unggah Gambar Soal'}
-                        </span>
-                      </label>
-                      <input
-                        id={`question-image-${qIdx}`}
-                        type="file"
-                        accept="image/png,image/jpeg,image/webp,image/gif"
-                        className="hidden"
-                        onChange={(e) => handleQuestionImageUpload(qIdx, e)}
-                      />
-                      {questionImages.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setImagePickerFor(imagePickerFor === qIdx ? null : qIdx)}
-                          title="Tampilkan gambar yang sudah ada di kuis ini pada beberapa soal sekaligus"
-                          className={`px-3 py-1.5 rounded-xl border text-[11px] font-semibold inline-flex items-center gap-1.5 transition-colors cursor-pointer ${
-                            imagePickerFor === qIdx
-                              ? 'border-teal-400 bg-teal-50 text-teal-800 '
-                              : 'border-dashed border-slate-300  bg-slate-50  hover:bg-teal-50/60 text-slate-700 '
-                          }`}
-                        >
-                          <Images className="w-3.5 h-3.5" />
-                          <span>Pakai Gambar yang Sama</span>
-                        </button>
-                      )}
- <span className="text-[11px] text-slate-500 ">
-                        Opsional. Tempel (Ctrl+V) di kotak pertanyaan untuk gambar dari papan klip. Gambar otomatis diperkecil dan dikompres (maksimal 300 KB) agar kuis tetap tersimpan.
-                      </span>
-                    </div>
-
-                    {(() => {
-                      const questionImage = resolveQuestionImage({ images: questionImages }, q);
-                      return questionImage ? (
-                        <div className="relative inline-block max-w-full">
-                          <img
-                            src={questionImage}
-                            alt={`Gambar soal ${qIdx + 1}`}
-                            className="max-h-48 max-w-full rounded-xl border border-slate-200  bg-white object-contain"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleQuestionFieldChange(qIdx, {
-                                imageUrl: '',
-                                imageId: undefined,
-                                needsImage: questionRefersToImage(q.text) ? true : undefined
-                              })
-                            }
-                            className="absolute top-1.5 right-1.5 p-1 rounded-lg bg-slate-900/70 text-white hover:bg-rose-600 transition-colors cursor-pointer"
-                            title="Hapus gambar soal"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ) : null;
-                    })()}
-
-                    {/* Satu gambar untuk beberapa soal: klik nomor soal yang harus menampilkannya. */}
-                    {imagePickerFor === qIdx && (
-                      <div className="rounded-xl border border-teal-200 bg-teal-50/50 p-2.5 space-y-2">
-                        <div className="flex items-start justify-between gap-2">
- <p className="text-[11px] font-semibold text-teal-900 ">
-                            Klik nomor soal yang harus menampilkan gambar yang sama.
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => setImagePickerFor(null)}
-                            className="p-1 rounded-lg text-teal-700 hover:bg-teal-100 cursor-pointer shrink-0"
-                            title="Tutup pemilih gambar"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                        {questionImages.map((img) => (
-                          <div
-                            key={img.id}
-                            className="flex items-center gap-2 rounded-lg bg-white  p-2 border border-teal-100 "
-                          >
-                            <img
-                              src={img.imageUrl}
-                              alt={img.title || 'Gambar soal'}
-                              className="h-10 w-14 shrink-0 rounded-md border border-slate-200  bg-white object-contain"
-                            />
-                            <div className="flex-1 min-w-0 space-y-1">
-                              <p className="text-[11px] font-medium text-slate-600  truncate">
-                                {img.title || 'Gambar soal'}
-                              </p>
-                              <div className="flex flex-wrap gap-1">
-                                {questions.map((qq, idx) => {
-                                  const isActive = qq.imageId === img.id;
-                                  return (
-                                    <button
-                                      key={qq.id || idx}
-                                      type="button"
-                                      onClick={() => toggleSharedImageForQuestion(idx, img.id)}
-                                      title={
-                                        isActive
-                                          ? `Lepas gambar dari soal ${idx + 1}`
-                                          : `Tampilkan gambar ini di soal ${idx + 1}`
-                                      }
-                                      className={`h-8 min-w-8 px-1.5 rounded-md border text-xs font-bold transition-colors cursor-pointer ${
-                                        isActive
-                                          ? 'bg-teal-600 border-teal-600 text-white'
-                                          : 'bg-white  border-slate-300  text-slate-600  hover:border-teal-400'
-                                      }`}
-                                    >
-                                      {idx + 1}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeSharedImage(img.id)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 cursor-pointer shrink-0"
-                              title="Hapus gambar dari kuis ini"
+                    {(q.assetIds || []).length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {(q.assetIds || []).map((assetId) => {
+                          const asset = assets.find((a) => a.id === assetId);
+                          if (!asset) return null;
+                          const AssetIcon =
+                            asset.type === 'image'
+                              ? Images
+                              : asset.type === 'audio'
+                              ? Music
+                              : asset.type === 'text'
+                              ? FileText
+                              : Youtube;
+                          return (
+                            <span
+                              key={assetId}
+                              className="inline-flex items-center gap-1 max-w-full rounded-xl border border-teal-200 bg-teal-50 px-2 py-1 text-[11px] font-semibold text-teal-900"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
+                              <AssetIcon className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate max-w-[11rem]">{asset.title || 'Aset'}</span>
+                              <button
+                                type="button"
+                                onClick={() => detachAssetFromQuestion(qIdx, assetId)}
+                                className="p-0.5 rounded hover:bg-teal-100 cursor-pointer"
+                                title="Lepas aset dari soal ini"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          );
+                        })}
                       </div>
                     )}
+
+ <p className="text-[11px] text-slate-500 ">
+                      Tarik aset dari bilah aset ke kartu soal ini, atau klik nomor soal pada aset di bilah
+                      samping. Aset yang sama bisa dipakai beberapa soal tanpa menyimpan berkas ganda.
+                    </p>
                   </div>
 
                   {/* AI Answer-Key Correction Result */}
@@ -1963,6 +2199,7 @@ export const QuizEditorModal: React.FC<Props> = ({
             </button>
           </div>
         </form>
+        </div>
 
       </div>
     </div>

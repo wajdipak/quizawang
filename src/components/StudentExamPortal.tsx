@@ -116,7 +116,8 @@ export const StudentExamPortal: React.FC<Props> = ({
   useEffect(() => {
     if (currentSession !== 2 || result !== null || submittedRef.current) return;
     if (quiz.durationMinutes > 0 && secondsRemaining <= 0) {
-      submittedRef.current = true;
+      // handleSubmitQuiz sendiri yang mengunci submittedRef; menguncinya di sini
+      // membuat fungsi itu langsung berhenti dan ujian tidak pernah terkirim.
       void handleSubmitQuiz();
     }
   }, [secondsRemaining, currentSession, result]);

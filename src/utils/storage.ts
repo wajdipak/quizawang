@@ -46,15 +46,7 @@ export function loadStoredSubmissions(): StudentSubmission[] {
       return [];
     }
     const parsed = JSON.parse(raw);
-    const subs = Array.isArray(parsed) ? parsed : [];
-    const cleaned = subs.filter((s: StudentSubmission) => {
-      const name = (s.studentName || '').toLowerCase();
-      return !name.includes('ahmad faiz') && !name.includes('siti nurhaliza');
-    });
-    if (cleaned.length !== subs.length) {
-      saveStoredSubmissions(cleaned);
-    }
-    return cleaned;
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
     return [];
   }

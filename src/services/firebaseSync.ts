@@ -152,24 +152,9 @@ export function subscribeSubmissionsRealtime(
         }
 
         const items: StudentSubmission[] = [];
-        const docsToDelete: string[] = [];
         snapshot.forEach((docSnap) => {
-          const sub = docSnap.data() as StudentSubmission;
-          const name = (sub.studentName || '').toLowerCase();
-          if (name.includes('ahmad faiz') || name.includes('siti nurhaliza')) {
-            docsToDelete.push(docSnap.id);
-          } else {
-            items.push(sub);
-          }
+          items.push(docSnap.data() as StudentSubmission);
         });
-
-        if (docsToDelete.length > 0) {
-          const batch = writeBatch(db);
-          docsToDelete.forEach((id) => {
-            batch.delete(doc(db, collectionPath, id));
-          });
-          await batch.commit();
-        }
 
         // Sort by submittedAt desc
         items.sort((a, b) => new Date(b.submittedAt || 0).getTime() - new Date(a.submittedAt || 0).getTime());

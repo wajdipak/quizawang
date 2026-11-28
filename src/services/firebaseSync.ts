@@ -5,6 +5,10 @@ import {
   deleteDoc,
   onSnapshot,
   getDocs,
+  getDoc,
+  query,
+  where,
+  limit,
   writeBatch
 } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from '../firebase.js';
@@ -303,6 +307,45 @@ export function subscribeQuizSessionsRealtime(
   );
 
   return unsubscribe;
+}
+
+/**
+ * One-shot PIN lookup. Cheaper than listening to the whole quiz_sessions
+ * collection: the server filters by code, so a joiner reads a single document.
+ */
+export async function findQuizSessionByCode(code: string): Promise<QuizSession | null> {
+  const cleanCode = code.trim().toUpperCase();
+  if (!cleanCode) return null;
+  const snap = await getDocs(
+    query(collection(db, 'quiz_sessions'), where('code', '==', cleanCode), limit(1))
+  );
+  if (snap.empty) return null;
+  return snap.docs[0].data() as QuizSession;
+}
+
+/**
+ * Watch a single session document, so a waiting student re-reads only that
+ * session when it changes instead of the entire collection.
+ */
+export function subscribeQuizSessionById(
+  sessionId: string,
+  onUpdate: (session: QuizSession | null) => void,
+  onError?: (err: unknown) => void
+): () => void {
+  return onSnapshot(
+    doc(db, 'quiz_sessions', sessionId),
+    (snap) => onUpdate(snap.exists() ? (snap.data() as QuizSession) : null),
+    (err) => {
+      console.error('[Firebase] Session doc onSnapshot error:', err);
+      onError?.(err);
+    }
+  );
+}
+
+/** One-shot quiz lookup for a student who only knows their session. */
+export async function findQuizById(quizId: string): Promise<Quiz | null> {
+  const snap = await getDoc(doc(db, 'quizzes', quizId));
+  return snap.exists() ? (snap.data() as Quiz) : null;
 }
 
 export async function saveQuizSessionToFirebase(session: QuizSession): Promise<void> {

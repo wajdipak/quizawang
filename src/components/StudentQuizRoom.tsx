@@ -11,7 +11,7 @@ import {
 import { Quiz, QuizSession, StudentSubmission } from '../types/quiz.js';
 import { StudentExamPortal } from './StudentExamPortal.js';
 import { StudentWaitingRoom } from './StudentWaitingRoom.js';
-import { subscribeQuizSessionsRealtime } from '../services/firebaseSync.js';
+import { findQuizSessionByCode, findQuizById } from '../services/firebaseSync.js';
 import { loadStoredQuizzes } from '../utils/storage.js';
 
 interface Props {
@@ -31,22 +31,25 @@ export const StudentQuizRoom: React.FC<Props> = ({
 }) => {
   const [activeQuiz, setActiveQuiz] = useState<Quiz | null>(initialQuiz || null);
   const [activeSession, setActiveSession] = useState<QuizSession | null>(null);
-  const [allSessions, setAllSessions] = useState<QuizSession[]>([]);
   const [pinInput, setPinInput] = useState(initialQuiz?.code || '');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLookingUp, setIsLookingUp] = useState(false);
 
+  // Direct exam link: resolve only the matching session instead of downloading
+  // the whole quiz_sessions collection for every student.
   useEffect(() => {
-    const unsubscribe = subscribeQuizSessionsRealtime((sessions) => {
-      setAllSessions(sessions);
-      if (initialQuiz) {
-        // Check if initialQuiz matches a session code
-        const matched = sessions.find((s) => s.quizId === initialQuiz.id || s.code.toUpperCase() === initialQuiz.code.toUpperCase());
-        if (matched) {
-          setActiveSession(matched);
-        }
-      }
-    });
-    return unsubscribe;
+    if (!initialQuiz) return;
+    let cancelled = false;
+    findQuizSessionByCode(initialQuiz.code)
+      .then((matched) => {
+        if (!cancelled && matched) setActiveSession(matched);
+      })
+      .catch((err) => {
+        console.error('[Firebase] Gagal mencari sesi untuk tautan langsung:', err);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [initialQuiz]);
 
   useEffect(() => {
@@ -56,7 +59,7 @@ export const StudentQuizRoom: React.FC<Props> = ({
     }
   }, [initialQuiz]);
 
-  const handleSelectQuizByPin = (e: React.FormEvent) => {
+  const handleSelectQuizByPin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
@@ -66,37 +69,53 @@ export const StudentQuizRoom: React.FC<Props> = ({
       return;
     }
 
-    // 1. Check if PIN matches an active teacher session
-    const matchedSession = allSessions.find((s) => s.code.toUpperCase() === cleanPin);
-    if (matchedSession) {
-      const matchedQuiz = availableQuizzes.find((q) => q.id === matchedSession.quizId) ||
-        loadStoredQuizzes().find((q) => q.id === matchedSession.quizId) ||
-        initialQuiz;
-      if (matchedQuiz) {
-        setActiveSession(matchedSession);
-        setActiveQuiz(matchedQuiz);
+    setIsLookingUp(true);
+    try {
+      // 1. Ask the server for exactly this PIN (one document read).
+      const matchedSession = await findQuizSessionByCode(cleanPin);
+      if (matchedSession) {
+        const matchedQuiz =
+          availableQuizzes.find((q) => q.id === matchedSession.quizId) ||
+          loadStoredQuizzes().find((q) => q.id === matchedSession.quizId) ||
+          (await findQuizById(matchedSession.quizId)) ||
+          initialQuiz;
+        if (matchedQuiz) {
+          setActiveSession(matchedSession);
+          setActiveQuiz(matchedQuiz);
+          return;
+        }
+        setErrorMessage(
+          `PIN "${cleanPin}" aktif, tetapi kuisnya belum termuat. Minta guru membuka ulang sesi kuis.`
+        );
         return;
       }
+
+      // 2. Fallback to direct quiz code
+      const matched = availableQuizzes.find(
+        (q) => q.code.toUpperCase() === cleanPin
+      ) || loadStoredQuizzes().find(
+        (q) => q.code.toUpperCase() === cleanPin
+      );
+
+      if (!matched) {
+        setErrorMessage(`Kode PIN "${cleanPin}" tidak ditemukan atau kuis belum diaktifkan guru.`);
+        return;
+      }
+
+      if (!matched.questions || matched.questions.length === 0) {
+        setErrorMessage('Kuis ini belum memiliki butir soal.');
+        return;
+      }
+
+      setActiveQuiz(matched);
+    } catch (err) {
+      console.error('[Firebase] Pencarian PIN gagal:', err);
+      setErrorMessage(
+        'Server kuis belum bisa dihubungi (kuota/sinkronisasi Firebase). Coba lagi beberapa saat; kalau masih gagal, hubungi guru.'
+      );
+    } finally {
+      setIsLookingUp(false);
     }
-
-    // 2. Fallback to direct quiz code
-    const matched = availableQuizzes.find(
-      (q) => q.code.toUpperCase() === cleanPin
-    ) || loadStoredQuizzes().find(
-      (q) => q.code.toUpperCase() === cleanPin
-    );
-
-    if (!matched) {
-      setErrorMessage(`Kode PIN "${cleanPin}" tidak ditemukan atau kuis belum diaktifkan guru.`);
-      return;
-    }
-
-    if (!matched.questions || matched.questions.length === 0) {
-      setErrorMessage('Kuis ini belum memiliki butir soal.');
-      return;
-    }
-
-    setActiveQuiz(matched);
   };
 
   // If a session and quiz are selected, render StudentWaitingRoom (which gates on session.isExamStarted)
@@ -218,9 +237,10 @@ export const StudentQuizRoom: React.FC<Props> = ({
           <div className="max-w-xs mx-auto pt-2">
             <button
               type="submit"
-              className="btn-ink w-full py-3.5 text-sm"
+              disabled={isLookingUp}
+              className="btn-ink w-full py-3.5 text-sm disabled:opacity-60"
             >
-              <span>Masuk Ruang Ujian</span>
+              <span>{isLookingUp ? 'Memeriksa PIN…' : 'Masuk Ruang Ujian'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

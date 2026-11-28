@@ -178,10 +178,14 @@ export default function App() {
           setSubmissions(syncedSubs);
         });
 
-    // 4. Real-time Firebase Firestore synchronizer for Quiz Sessions
-    const unsubSessions = subscribeQuizSessionsRealtime((syncedSessions) => {
-      setQuizSessions(syncedSessions);
-    });
+    // 4. Real-time Firebase Firestore synchronizer for Quiz Sessions.
+    // Sama seperti hasil siswa, portal siswa tidak perlu seluruh koleksi sesi;
+    // ia mencari PIN-nya sendiri (satu dokumen) dan hanya memantau sesi itu.
+    const unsubSessions = isStudentMode
+      ? () => {}
+      : subscribeQuizSessionsRealtime((syncedSessions) => {
+          setQuizSessions(syncedSessions);
+        });
 
     return () => {
       unsubQuizzes();

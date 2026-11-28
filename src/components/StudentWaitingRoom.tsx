@@ -10,7 +10,7 @@ import {
   Radio
 } from 'lucide-react';
 import { Quiz, QuizSession, StudentSubmission } from '../types/quiz.js';
-import { subscribeQuizSessionsRealtime } from '../services/firebaseSync.js';
+import { subscribeQuizSessionById } from '../services/firebaseSync.js';
 import { StudentExamPortal } from './StudentExamPortal.js';
 
 interface Props {
@@ -33,16 +33,14 @@ export const StudentWaitingRoom: React.FC<Props> = ({
   const [session, setSession] = useState<QuizSession>(initialSession);
   const [countdownText, setCountdownText] = useState<string>('');
 
-  // Subscribe to real-time session updates so that when teacher clicks "Mulai Ujian", session.isExamStarted becomes true instantly!
+  // Watch this session document only, so 30+ students waiting do not each
+  // re-download the whole quiz_sessions collection on every change.
   useEffect(() => {
-    const unsubscribe = subscribeQuizSessionsRealtime((sessions) => {
-      const found = sessions.find((s) => s.id === initialSession.id || s.code.toUpperCase() === initialSession.code.toUpperCase());
-      if (found) {
-        setSession(found);
-      }
+    const unsubscribe = subscribeQuizSessionById(initialSession.id, (found) => {
+      if (found) setSession(found);
     });
     return unsubscribe;
-  }, [initialSession.id, initialSession.code]);
+  }, [initialSession.id]);
 
   // Check scheduled start time countdown if set
   useEffect(() => {
